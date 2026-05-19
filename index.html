@@ -494,6 +494,7 @@ tr:hover td { background: var(--bg3); }
 
 <script>
 const R2J = 'https://api.rss2json.com/v1/api.json?rss_url=';
+const ALLORIGINS = 'https://api.allorigins.win/get?url=';
 const RSS_FEEDS = [
   { id:'tokyo', name:'東京リサイクル', badge:'b-tokyo', site:'https://tokyo-recycle.net/collections/all', url:'https://tokyo-recycle.net/collections/all.atom' },
   { id:'murata', name:'村田商会', badge:'b-murata', site:'https://muratashokai.theshop.jp/', url:'https://muratashokai.theshop.jp/feeds/items.atom' },
@@ -633,15 +634,60 @@ function renderItems() {
     </div>`;
   }).join('');
 }
-async function fetchFeed(feed) {
-  const res = await fetch(R2J + encodeURIComponent(feed.url) + '&count=40');
+function parseXmlFeed(xmlStr, feed) {
+  const doc = new DOMParser().parseFromString(xmlStr, 'text/xml');
+  if (doc.querySelector('parsererror')) throw new Error('XML parse error');
+  const isAtom = !!doc.querySelector('feed');
+  const entries = isAtom ? [...doc.querySelectorAll('entry')] : [...doc.querySelectorAll('item')];
+  return entries.slice(0, 40).map(e => {
+    let title, link, pubDate, desc, thumb;
+    if (isAtom) {
+      title = e.querySelector('title')?.textContent?.trim() || '—';
+      link = e.querySelector('link[rel="alternate"]')?.getAttribute('href') || e.querySelector('link')?.getAttribute('href') || feed.site;
+      pubDate = e.querySelector('published')?.textContent || e.querySelector('updated')?.textContent;
+      desc = e.querySelector('content')?.textContent || e.querySelector('summary')?.textContent || '';
+      thumb = e.querySelector('[url]')?.getAttribute('url') || null;
+    } else {
+      title = e.querySelector('title')?.textContent?.trim() || '—';
+      link = e.querySelector('link')?.textContent?.trim() || feed.site;
+      pubDate = e.querySelector('pubDate')?.textContent;
+      desc = e.querySelector('description')?.textContent || '';
+      thumb = e.querySelector('thumbnail')?.getAttribute('url') || e.querySelector('enclosure[type^="image"]')?.getAttribute('url') || null;
+    }
+    const full = title + ' ' + desc;
+    const pm = full.match(/[¥￥][\d,]+|[\d,]+円/);
+    return { source:feed.id, title, link, date:parseDate(pubDate), thumbnail:thumb, price:pm?pm[0]:null, sizes:extractSizes(full), matched:isMatch(title), isNew:false };
+  });
+}
+function fetchWithTimeout(url, timeoutMs) {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), timeoutMs);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(tid));
+}
+async function fetchViaProxy(feed) {
+  const res = await fetchWithTimeout(ALLORIGINS + encodeURIComponent(feed.url), 12000);
+  if (!res.ok) throw new Error('proxy HTTP ' + res.status);
+  const j = await res.json();
+  if (!j.contents) throw new Error('proxy empty response');
+  return parseXmlFeed(j.contents, feed);
+}
+async function fetchViaRss2json(feed) {
+  const res = await fetchWithTimeout(R2J + encodeURIComponent(feed.url) + '&count=40', 10000);
+  if (!res.ok) throw new Error('rss2json HTTP ' + res.status);
   const data = await res.json();
-  if (data.status!=='ok') throw new Error(data.message||'error');
+  if (data.status !== 'ok') throw new Error(data.message || 'rss2json error');
   return (data.items||[]).map(item => {
-    const full = item.title+' '+(item.description||'');
+    const full = item.title + ' ' + (item.description || '');
     const pm = full.match(/[¥￥][\d,]+|[\d,]+円/);
     return { source:feed.id, title:item.title||'—', link:item.link||feed.site, date:parseDate(item.pubDate), thumbnail:item.thumbnail||item.enclosure?.link||null, price:pm?pm[0]:null, sizes:extractSizes(full), matched:isMatch(item.title||''), isNew:false };
   });
+}
+async function fetchFeed(feed) {
+  try {
+    return await fetchViaProxy(feed);
+  } catch(e) {
+    return await fetchViaRss2json(feed);
+  }
 }
 async function loadAll() {
   setStatus('loading','取得中...');
