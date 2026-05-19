@@ -105,13 +105,12 @@ input::placeholder { color: var(--text3); }
 .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
 
 /* Size filter */
-.size-box { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 14px; }
-.size-box-head { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 10px; }
-.size-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
-.size-item label { font-size: 11px; color: var(--text3); display: flex; justify-content: space-between; margin-bottom: 4px; }
-.size-item label span { color: var(--text); font-family: var(--mono); }
+.size-bar { display: flex; align-items: center; gap: 10px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.size-bar-label { font-size: 11px; color: var(--text3); white-space: nowrap; font-weight: 500; flex-shrink: 0; }
+.size-dim { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text3); flex: 1; min-width: 100px; }
+.size-dim input[type=range] { flex: 1; accent-color: var(--accent); }
+.size-dim .sv { font-family: var(--mono); font-size: 11px; color: var(--text); min-width: 34px; text-align: right; }
 input[type=range] { width: 100%; accent-color: var(--accent); }
-.size-note { font-size: 11px; color: var(--text3); margin-top: 8px; }
 
 /* Items */
 .items-list { display: flex; flex-direction: column; gap: 6px; }
@@ -260,28 +259,11 @@ tr:hover td { background: var(--bg3); }
       </div>
       <div class="tag-list" id="tagList"></div>
 
-      <div class="size-box">
-        <div class="size-box-head" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleSize()">
-          <span>サイズフィルター（クリックで開閉）</span>
-          <span id="sizeToggleLabel" style="font-size:11px;color:var(--text3)">▼ 開く</span>
-        </div>
-        <div id="sizeBody" style="display:none;margin-top:10px">
-          <div class="size-grid">
-            <div class="size-item">
-              <label>幅 (W) <span id="wVal">200cm</span></label>
-              <input type="range" id="wRange" min="0" max="300" step="10" value="200" oninput="updateSize('w',this.value)">
-            </div>
-            <div class="size-item">
-              <label>高さ (H) <span id="hVal">150cm</span></label>
-              <input type="range" id="hRange" min="0" max="250" step="10" value="150" oninput="updateSize('h',this.value)">
-            </div>
-            <div class="size-item">
-              <label>奥行 (D) <span id="dVal">100cm</span></label>
-              <input type="range" id="dRange" min="0" max="200" step="10" value="100" oninput="updateSize('d',this.value)">
-            </div>
-          </div>
-          <div class="size-note">※ 商品説明に寸法記載がある場合のみ適用。記載なしはすべて表示。</div>
-        </div>
+      <div class="size-bar">
+        <span class="size-bar-label">サイズ上限</span>
+        <span class="size-dim">W <input type="range" id="wRange" min="0" max="300" step="10" value="200" oninput="updateSize('w',this.value)"><span class="sv" id="wVal">200cm</span></span>
+        <span class="size-dim">H <input type="range" id="hRange" min="0" max="250" step="10" value="150" oninput="updateSize('h',this.value)"><span class="sv" id="hVal">150cm</span></span>
+        <span class="size-dim">D <input type="range" id="dRange" min="0" max="200" step="10" value="100" oninput="updateSize('d',this.value)"><span class="sv" id="dVal">100cm</span></span>
       </div>
 
       <div class="stats" style="margin-top:14px">
@@ -458,6 +440,24 @@ tr:hover td { background: var(--bg3); }
         </div>
       </div>
       <div class="settings-section">
+        <div class="settings-title">Microsoft Teams通知</div>
+        <div class="settings-row"><label>Webhook URL</label><input type="text" id="teamsUrl" placeholder="https://outlook.office.com/webhook/..."></div>
+        <div class="settings-row"><label>通知タイミング</label>
+          <select id="teamsTrigger">
+            <option value="match">キーワード一致のみ</option>
+            <option value="new">新着すべて</option>
+          </select>
+        </div>
+        <div class="settings-row"><label>通知有効</label>
+          <label class="toggle"><input type="checkbox" id="teamsEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn primary" onclick="saveTeams()">保存</button>
+          <button class="btn" onclick="testTeams()">テスト送信</button>
+        </div>
+        <div id="teamsTestResult" style="display:none"></div>
+      </div>
+      <div class="settings-section">
         <div class="settings-title">Vercel更新手順</div>
         <div class="deploy-step"><span class="deploy-num">1</span>Claudeで「○○を修正して」と依頼</div>
         <div class="deploy-step"><span class="deploy-num">2</span>新しい index.html をダウンロード</div>
@@ -521,6 +521,8 @@ let sedoriList = JSON.parse(localStorage.getItem('sedori') || '[]');
 let editIdx = -1;
 let intervalSec = 300, countdown = 300, countRef = null;
 let slackCfg = JSON.parse(localStorage.getItem('slack') || '{"url":"","trigger":"match","enabled":true}');
+let teamsCfg = JSON.parse(localStorage.getItem('teams') || '{"url":"","trigger":"match","enabled":true}');
+let shopOrder = JSON.parse(localStorage.getItem('shopOrder') || 'null') || SEARCH_SHOPS.map((_,i)=>i);
 
 // Nav
 function goPage(id, btn) {
@@ -708,6 +710,10 @@ async function loadAll() {
     const notify = allItems.filter(i=>i.isNew&&(slackCfg.trigger==='new'||i.matched));
     if (notify.length) sendSlack(notify);
   }
+  if (nc>0 && teamsCfg.enabled && teamsCfg.url) {
+    const notify = allItems.filter(i=>i.isNew&&(teamsCfg.trigger==='new'||i.matched));
+    if (notify.length) sendTeams(notify);
+  }
   startCd();
 }
 function startCd() {
@@ -721,25 +727,30 @@ function startCd() {
   }, 1000);
 }
 function manualRefresh() { if(countRef)clearInterval(countRef); loadAll(); }
-function toggleSize() {
-  const body = document.getElementById('sizeBody');
-  const label = document.getElementById('sizeToggleLabel');
-  const open = body.style.display === 'none';
-  body.style.display = open ? '' : 'none';
-  label.textContent = open ? '▲ 閉じる' : '▼ 開く';
-}
 function updateInterval() { intervalSec=parseInt(document.getElementById('intervalSel').value); if(countRef)clearInterval(countRef); startCd(); }
 
 // Search
+function saveShopOrder() { localStorage.setItem('shopOrder', JSON.stringify(shopOrder)); }
+function moveShop(si, dir) {
+  const j = si + dir;
+  if (j < 0 || j >= shopOrder.length) return;
+  [shopOrder[si], shopOrder[j]] = [shopOrder[j], shopOrder[si]];
+  saveShopOrder(); renderSearch();
+}
 function renderSearch() {
   const el = document.getElementById('searchShops');
   if (!keywords.length) { el.innerHTML='<div class="empty">キーワードを追加してください</div>'; return; }
-  el.innerHTML = SEARCH_SHOPS.map((shop,si) => `
+  const shops = shopOrder.map(i => SEARCH_SHOPS[i]);
+  el.innerHTML = shops.map((shop, si) => `
     ${si>0?'<div class="divider"></div>':''}
     <div class="shop-block">
       <div class="shop-head">
         <div class="shop-icon">${shop.icon}</div>
-        <div><div class="shop-name">${shop.name}</div><div class="shop-sub">${shop.sub}</div></div>
+        <div style="flex:1"><div class="shop-name">${shop.name}</div><div class="shop-sub">${shop.sub}</div></div>
+        <div style="display:flex;flex-direction:column;gap:2px;margin-left:8px">
+          <button class="btn-xs" onclick="moveShop(${si},-1)"${si===0?' disabled':''}>↑</button>
+          <button class="btn-xs" onclick="moveShop(${si},1)"${si===shops.length-1?' disabled':''}>↓</button>
+        </div>
       </div>
       <div class="link-grid">
         ${keywords.map(kw=>`<a class="search-link" href="${shop.url(kw)}" target="_blank" rel="noopener">↗ <span>${kw}</span></a>`).join('')}
@@ -860,11 +871,36 @@ async function sendSlack(items) {
   try{await fetch(slackCfg.url,{method:'POST',body:JSON.stringify({text:`🛋 *KAGUWATCH 新着* (${items.length}件)\n${lines.join('\n')}`}),headers:{'Content-Type':'application/json'}});}catch(e){}
 }
 
+// Teams
+function saveTeams() {
+  teamsCfg={url:document.getElementById('teamsUrl').value.trim(), trigger:document.getElementById('teamsTrigger').value, enabled:document.getElementById('teamsEnabled').checked};
+  localStorage.setItem('teams',JSON.stringify(teamsCfg)); alert('保存しました');
+}
+async function testTeams() {
+  const url=document.getElementById('teamsUrl').value.trim();
+  const r=document.getElementById('teamsTestResult');
+  if(!url){r.style.display='';r.className='test-result test-err';r.textContent='Webhook URLを入力してください';return;}
+  try {
+    await fetch(url,{method:'POST',body:JSON.stringify({"@type":"MessageCard","@context":"http://schema.org/extensions","text":"🛋 KAGUWATCH テスト通知\nTeams連携が正常に動作しています！"}),headers:{'Content-Type':'application/json'}});
+    r.style.display='';r.className='test-result test-ok';r.textContent='✓ 送信成功！Teamsを確認してください';
+  } catch(e) {
+    r.style.display='';r.className='test-result test-err';r.textContent='送信失敗（CORSエラーの可能性あり。Vercel上では正常に動作します）';
+  }
+}
+async function sendTeams(items) {
+  if(!teamsCfg.url)return;
+  const lines=items.slice(0,5).map(i=>`• ${i.matched?'★ ':''}${i.title}${i.price?' ('+i.price+')':''}  \n${i.link}`);
+  try{await fetch(teamsCfg.url,{method:'POST',body:JSON.stringify({"@type":"MessageCard","@context":"http://schema.org/extensions","themeColor":"2a5c3f","summary":"KAGUWATCH 新着","sections":[{"activityTitle":`🛋 KAGUWATCH 新着 (${items.length}件)`,"activityText":lines.join('\n')}]}),headers:{'Content-Type':'application/json'}});}catch(e){}
+}
+
 // Init
 function init() {
   document.getElementById('slackUrl').value=slackCfg.url||'';
   document.getElementById('slackTrigger').value=slackCfg.trigger||'match';
   document.getElementById('slackEnabled').checked=slackCfg.enabled!==false;
+  document.getElementById('teamsUrl').value=teamsCfg.url||'';
+  document.getElementById('teamsTrigger').value=teamsCfg.trigger||'match';
+  document.getElementById('teamsEnabled').checked=teamsCfg.enabled!==false;
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   renderTags(); renderSedori(); updateNavBadge(); loadAll();
 }
