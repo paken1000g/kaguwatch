@@ -698,16 +698,23 @@ function fetchWithTimeout(url, timeoutMs) {
   const tid = setTimeout(() => ctrl.abort(), timeoutMs);
   return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(tid));
 }
-async function fetchViaProxy(feed) {
+async function fetchViaCorsproxy(feed) {
+  const res = await fetchWithTimeout('https://corsproxy.io/?' + encodeURIComponent(feed.url), 12000);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const xml = await res.text();
+  if (!xml || xml.trim().length < 30) throw new Error('empty');
+  return parseXmlFeed(xml, feed);
+}
+async function fetchViaAllOrigins(feed) {
   const res = await fetchWithTimeout(ALLORIGINS + encodeURIComponent(feed.url), 12000);
-  if (!res.ok) throw new Error('proxy HTTP ' + res.status);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   const j = await res.json();
-  if (!j.contents) throw new Error('proxy empty response');
+  if (!j.contents || j.contents.trim().length < 30) throw new Error('empty');
   return parseXmlFeed(j.contents, feed);
 }
 async function fetchViaRss2json(feed) {
   const res = await fetchWithTimeout(R2J + encodeURIComponent(feed.url) + '&count=40', 10000);
-  if (!res.ok) throw new Error('rss2json HTTP ' + res.status);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
   const data = await res.json();
   if (data.status !== 'ok') throw new Error(data.message || 'rss2json error');
   return (data.items||[]).map(item => {
@@ -717,11 +724,10 @@ async function fetchViaRss2json(feed) {
   });
 }
 async function fetchFeed(feed) {
-  try {
-    return await fetchViaProxy(feed);
-  } catch(e) {
-    return await fetchViaRss2json(feed);
+  for (const fn of [fetchViaCorsproxy, fetchViaAllOrigins, fetchViaRss2json]) {
+    try { return await fn(feed); } catch(e) {}
   }
+  throw new Error(feed.name + ': 全プロキシ失敗');
 }
 async function loadAll() {
   setStatus('loading','取得中...');
