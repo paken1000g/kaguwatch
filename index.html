@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KAGUWATCH — 家具ウォッチャー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0f0f0f;
+  --bg2: #171717;
+  --bg3: #1e1e1e;
+  --border: rgba(255,255,255,0.08);
+  --border2: rgba(255,255,255,0.14);
+  --text: #f0ede8;
+  --text2: #888;
+  --text3: #555;
+  --accent: #c8f55a;
+  --accent2: #8bba2f;
+  --accent-dim: rgba(200,245,90,0.12);
+  --red: #ff5f5f;
+  --red-dim: rgba(255,95,95,0.12);
+  --blue: #5faaff;
+  --blue-dim: rgba(95,170,255,0.12);
+  --amber: #ffb347;
+  --amber-dim: rgba(255,179,71,0.12);
+  --radius: 10px;
+  --radius-lg: 14px;
+  --mono: 'DM Mono', monospace;
+  --sans: 'Noto Sans JP', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; }
+
+/* ── Layout ── */
+.shell { display: grid; grid-template-columns: 220px 1fr; min-height: 100vh; }
+.sidebar { background: var(--bg2); border-right: 1px solid var(--border); padding: 0; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
+.main { overflow: auto; }
+
+/* ── Sidebar ── */
+.logo { padding: 20px 18px 16px; border-bottom: 1px solid var(--border); }
+.logo-mark { font-family: var(--mono); font-size: 11px; color: var(--accent); letter-spacing: .2em; text-transform: uppercase; margin-bottom: 2px; }
+.logo-name { font-size: 18px; font-weight: 700; letter-spacing: -.02em; }
+.nav { padding: 12px 8px; flex: 1; overflow-y: auto; }
+.nav-section { font-family: var(--mono); font-size: 10px; color: var(--text3); letter-spacing: .15em; text-transform: uppercase; padding: 10px 10px 6px; }
+.nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-size: 13px; transition: all .15s; margin-bottom: 2px; border: none; background: none; width: 100%; text-align: left; }
+.nav-item:hover { background: var(--bg3); color: var(--text); }
+.nav-item.active { background: var(--accent-dim); color: var(--accent); }
+.nav-item .icon { width: 16px; text-align: center; font-size: 15px; }
+.nav-badge { margin-left: auto; font-family: var(--mono); font-size: 10px; background: var(--accent-dim); color: var(--accent); padding: 2px 6px; border-radius: 99px; }
+.nav-badge.red { background: var(--red-dim); color: var(--red); }
+.sidebar-footer { padding: 12px 8px; border-top: 1px solid var(--border); }
+.status-pill { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: var(--radius); background: var(--bg3); font-size: 12px; color: var(--text2); }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+.status-dot.loading { background: var(--amber); animation: blink 1.2s infinite; }
+.status-dot.err { background: var(--red); }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
+.countdown-txt { margin-left: auto; font-family: var(--mono); font-size: 11px; color: var(--text3); }
+
+/* ── Page Header ── */
+.page-header { padding: 24px 28px 0; border-bottom: 1px solid var(--border); }
+.page-title { font-size: 22px; font-weight: 700; letter-spacing: -.03em; margin-bottom: 4px; }
+.page-sub { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+.tab-bar { display: flex; gap: 0; }
+.tab { padding: 10px 18px; font-size: 13px; color: var(--text2); border-bottom: 2px solid transparent; cursor: pointer; background: none; border-top: none; border-left: none; border-right: none; transition: all .15s; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Content ── */
+.content { padding: 24px 28px; }
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* ── Stats Row ── */
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px; }
+.stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; }
+.stat-n { font-family: var(--mono); font-size: 24px; font-weight: 500; color: var(--text); }
+.stat-n.green { color: var(--accent); }
+.stat-n.red { color: var(--red); }
+.stat-n.blue { color: var(--blue); }
+.stat-l { font-size: 11px; color: var(--text3); margin-top: 4px; letter-spacing: .03em; }
+
+/* ── Toolbar ── */
+.toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+.filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+.chip { padding: 5px 12px; font-size: 12px; border: 1px solid var(--border); border-radius: 99px; background: none; cursor: pointer; color: var(--text2); transition: all .15s; }
+.chip:hover { border-color: var(--border2); color: var(--text); }
+.chip.active { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
+.spacer { flex: 1; }
+.btn { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius); border: 1px solid var(--border2); background: var(--bg3); color: var(--text); font-size: 13px; cursor: pointer; transition: all .15s; font-family: var(--sans); }
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); color: #0f0f0f; border-color: var(--accent); font-weight: 700; }
+.btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+
+/* ── Keyword Input ── */
+.kw-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.kw-row input { flex: 1; }
+input, select, textarea {
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text);
+  border-radius: var(--radius); padding: 8px 12px; font-size: 13px; font-family: var(--sans);
+  outline: none; transition: border-color .15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+input::placeholder { color: var(--text3); }
+.tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; min-height: 30px; }
+.tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--accent-dim); border: 1px solid rgba(200,245,90,.25); border-radius: 99px; font-size: 12px; color: var(--accent); }
+.tag button { background: none; border: none; color: var(--accent2); cursor: pointer; font-size: 14px; line-height: 1; padding: 0; display: flex; align-items: center; }
+
+/* ── Size Filter ── */
+.size-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 16px; }
+.size-panel-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+.size-panel-title { font-size: 13px; font-weight: 500; display: flex; align-items: center; gap: 8px; }
+.size-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+.size-item label { font-size: 11px; color: var(--text3); display: flex; justify-content: space-between; margin-bottom: 6px; }
+.size-item label span { color: var(--text); font-family: var(--mono); }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.size-note { font-size: 11px; color: var(--text3); margin-top: 10px; }
+
+/* ── Item Cards ── */
+.items-list { display: flex; flex-direction: column; gap: 8px; }
+.item-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start; transition: border-color .15s; }
+.item-card:hover { border-color: var(--border2); }
+.item-card.matched { border-color: rgba(200,245,90,.35); }
+.item-thumb { width: 56px; height: 56px; border-radius: var(--radius); object-fit: cover; flex-shrink: 0; background: var(--bg3); }
+.item-thumb-ph { width: 56px; height: 56px; border-radius: var(--radius); background: var(--bg3); display: flex; align-items: center; justify-content: center; flex-shrink: 0; color: var(--text3); font-size: 22px; }
+.item-body { flex: 1; min-width: 0; }
+.item-top { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 5px; flex-wrap: wrap; }
+.item-title { font-size: 14px; font-weight: 500; flex: 1; min-width: 0; line-height: 1.4; }
+.badge { font-size: 10px; padding: 2px 7px; border-radius: 99px; font-weight: 500; white-space: nowrap; flex-shrink: 0; font-family: var(--mono); }
+.b-tokyo { background: rgba(95,170,255,.15); color: var(--blue); }
+.b-murata { background: rgba(200,245,90,.12); color: var(--accent); }
+.b-jmty { background: rgba(255,179,71,.15); color: var(--amber); }
+.b-match { background: var(--accent-dim); color: var(--accent); }
+.b-new { background: var(--red-dim); color: var(--red); }
+.item-meta { font-size: 12px; color: var(--text2); display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.item-link { color: var(--blue); text-decoration: none; font-size: 12px; }
+.item-link:hover { text-decoration: underline; }
+.item-actions { display: flex; gap: 6px; margin-top: 6px; }
+.btn-sm { padding: 4px 10px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg3); color: var(--text2); cursor: pointer; transition: all .15s; font-family: var(--sans); }
+.btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+.btn-sm.green { border-color: rgba(200,245,90,.4); color: var(--accent); }
+mark { background: rgba(200,245,90,.25); color: var(--accent); border-radius: 2px; padding: 0 2px; }
+.empty { text-align: center; padding: 3rem; color: var(--text3); font-size: 13px; line-height: 2; }
+
+/* ── Search Links ── */
+.shop-block { margin-bottom: 20px; }
+.shop-block-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+.shop-block-icon { width: 32px; height: 32px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 15px; }
+.shop-block-name { font-size: 14px; font-weight: 500; }
+.shop-block-sub { font-size: 11px; color: var(--text3); }
+.link-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px,1fr)); gap: 6px; }
+.search-link { display: flex; align-items: center; gap: 8px; padding: 8px 12px; background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); font-size: 12px; color: var(--text2); text-decoration: none; transition: all .15s; }
+.search-link:hover { border-color: var(--border2); color: var(--text); }
+.search-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* ── Sedori Table ── */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { text-align: left; font-size: 11px; font-weight: 500; color: var(--text3); padding: 8px 12px; border-bottom: 1px solid var(--border); font-family: var(--mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
+td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--bg3); }
+.status-badge { font-size: 10px; padding: 3px 8px; border-radius: 99px; font-family: var(--mono); }
+.s-watching { background: var(--blue-dim); color: var(--blue); }
+.s-purchased { background: var(--amber-dim); color: var(--amber); }
+.s-listed { background: var(--accent-dim); color: var(--accent); }
+.s-sold { background: rgba(95,95,95,.3); color: var(--text2); }
+.profit-pos { color: var(--accent); font-family: var(--mono); }
+.profit-neg { color: var(--red); font-family: var(--mono); }
+.profit-zero { color: var(--text3); font-family: var(--mono); }
+
+/* ── Add Form ── */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
+.form-group { display: flex; flex-direction: column; gap: 5px; }
+.form-group.full { grid-column: 1/-1; }
+.form-label { font-size: 11px; color: var(--text3); font-family: var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.7); display: flex; align-items: center; justify-content: center; z-index: 100; backdrop-filter: blur(4px); }
+.modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 480px; }
+.modal-title { font-size: 16px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+.modal-close { background: none; border: none; color: var(--text2); cursor: pointer; font-size: 20px; }
+
+/* ── Slack Settings ── */
+.settings-section { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 16px; }
+.settings-title { font-size: 14px; font-weight: 500; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+.settings-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+.settings-row label { font-size: 12px; color: var(--text2); width: 100px; flex-shrink: 0; }
+.settings-row input, .settings-row select { flex: 1; }
+.settings-row:last-child { margin-bottom: 0; }
+.toggle { position: relative; width: 36px; height: 20px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.toggle-slider { position: absolute; inset: 0; background: var(--bg3); border: 1px solid var(--border2); border-radius: 99px; cursor: pointer; transition: .2s; }
+.toggle-slider:before { content: ''; position: absolute; width: 14px; height: 14px; left: 2px; top: 2px; background: var(--text3); border-radius: 50%; transition: .2s; }
+.toggle input:checked + .toggle-slider { background: var(--accent-dim); border-color: var(--accent); }
+.toggle input:checked + .toggle-slider:before { transform: translateX(16px); background: var(--accent); }
+.test-result { font-size: 12px; padding: 8px 12px; border-radius: var(--radius); margin-top: 8px; }
+.test-result.ok { background: var(--accent-dim); color: var(--accent); }
+.test-result.err { background: var(--red-dim); color: var(--red); }
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- ── Sidebar ── -->
+<aside class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">// KAGUWATCH</div>
+    <div class="logo-name">家具ウォッチャー</div>
+  </div>
+  <nav class="nav">
+    <div class="nav-section">メイン</div>
+    <button class="nav-item active" onclick="goPage('watch',this)">
+      <span class="icon">◎</span> 入荷監視
+      <span class="nav-badge" id="navMatch">0</span>
+    </button>
+    <button class="nav-item" onclick="goPage('search',this)">
+      <span class="icon">⌕</span> 検索リンク
+    </button>
+    <div class="nav-section">せどり管理</div>
+    <button class="nav-item" onclick="goPage('sedori',this)">
+      <span class="icon">◈</span> 仕入れ台帳
+      <span class="nav-badge red" id="navActive">0</span>
+    </button>
+    <button class="nav-item" onclick="goPage('profit',this)">
+      <span class="icon">◇</span> 損益サマリ
+    </button>
+    <div class="nav-section">設定</div>
+    <button class="nav-item" onclick="goPage('settings',this)">
+      <span class="icon">⚙</span> Slack通知設定
+    </button>
+  </nav>
+  <div class="sidebar-footer">
+    <div class="status-pill">
+      <span class="status-dot loading" id="dot"></span>
+      <span id="statusTxt" style="font-size:12px">接続中...</span>
+      <span class="countdown-txt" id="ctDown">5:00</span>
+    </div>
+  </div>
+</aside>
+
+<!-- ── Main ── -->
+<main class="main">
+
+  <!-- 入荷監視 -->
+  <div id="page-watch">
+    <div class="page-header">
+      <div class="page-title">入荷監視</div>
+      <div class="page-sub">3店舗のRSSをリアルタイム取得・キーワードフィルタリング</div>
+      <div class="tab-bar">
+        <button class="tab active" onclick="switchTab('feed',this,'watch')">フィード</button>
+        <button class="tab" onclick="switchTab('filter',this,'watch')">フィルター設定</button>
+      </div>
+    </div>
+    <div class="content">
+      <div id="watch-feed" class="panel active">
+        <div class="kw-row">
+          <input type="text" id="kwIn" placeholder="キーワード追加（例：USMハラー、カリモク）" />
+          <button class="btn primary" onclick="addKw()">＋ 追加</button>
+          <button class="btn" onclick="manualRefresh()">↺ 今すぐ更新</button>
+        </div>
+        <div class="tag-list" id="tagList"></div>
+        <div class="stats" id="watchStats">
+          <div class="stat"><div class="stat-n green" id="sMatch">—</div><div class="stat-l">キーワード一致</div></div>
+          <div class="stat"><div class="stat-n" id="sTotal">—</div><div class="stat-l">取得件数</div></div>
+          <div class="stat"><div class="stat-n red" id="sNew">—</div><div class="stat-l">新着（前回比）</div></div>
+          <div class="stat"><div class="stat-n blue" id="sShops">3</div><div class="stat-l">対象店舗</div></div>
+        </div>
+        <div class="toolbar">
+          <div class="filter-chips">
+            <button class="chip active" onclick="setFilter('all',this)">すべて</button>
+            <button class="chip" onclick="setFilter('matched',this)">一致のみ</button>
+            <button class="chip" onclick="setFilter('tokyo',this)">東京リサイクル</button>
+            <button class="chip" onclick="setFilter('murata',this)">村田商会</button>
+            <button class="chip" onclick="setFilter('jmty',this)">ジモティー</button>
+          </div>
+        </div>
+        <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
+      </div>
+      <div id="watch-filter" class="panel">
+        <div class="size-panel">
+          <div class="size-panel-header">
+            <div class="size-panel-title">📐 サイズフィルター</div>
+          </div>
+          <div class="size-grid">
+            <div class="size-item">
+              <label>幅 (W) <span id="wVal">200cm以下</span></label>
+              <input type="range" id="wRange" min="0" max="300" step="10" value="200" oninput="updateSize('w',this.value)">
+            </div>
+            <div class="size-item">
+              <label>高さ (H) <span id="hVal">150cm以下</span></label>
+              <input type="range" id="hRange" min="0" max="250" step="10" value="150" oninput="updateSize('h',this.value)">
+            </div>
+            <div class="size-item">
+              <label>奥行 (D) <span id="dVal">100cm以下</span></label>
+              <input type="range" id="dRange" min="0" max="200" step="10" value="100" oninput="updateSize('d',this.value)">
+            </div>
+          </div>
+          <div class="size-note">※ 商品説明に寸法記載がある場合のみ適用。記載なしはすべて表示。</div>
+        </div>
+        <div style="margin-top:20px">
+          <div style="font-size:13px;font-weight:500;margin-bottom:12px;color:var(--text2)">追跡キーワード一覧</div>
+          <div class="kw-row">
+            <input type="text" id="kwIn2" placeholder="キーワード追加" />
+            <button class="btn primary" onclick="addKw2()">＋ 追加</button>
+          </div>
+          <div class="tag-list" id="tagList2"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 検索リンク -->
+  <div id="page-search" style="display:none">
+    <div class="page-header">
+      <div class="page-title">検索リンク集</div>
+      <div class="page-sub">登録キーワードで各サイトの検索ページへ直接ジャンプ</div>
+    </div>
+    <div class="content" id="searchShops"></div>
+  </div>
+
+  <!-- せどり台帳 -->
+  <div id="page-sedori" style="display:none">
+    <div class="page-header">
+      <div class="page-title">仕入れ台帳</div>
+      <div class="page-sub">仕入れ・出品・売却の記録と利益計算</div>
+      <div class="tab-bar">
+        <button class="tab active" onclick="switchTab('list',this,'sedori')">一覧</button>
+        <button class="tab" onclick="switchTab('add',this,'sedori')">新規登録</button>
+      </div>
+    </div>
+    <div class="content">
+      <div id="sedori-list" class="panel active">
+        <div class="toolbar">
+          <div class="filter-chips">
+            <button class="chip active" onclick="setSedoriFilter('all',this)">すべて</button>
+            <button class="chip" onclick="setSedoriFilter('watching',this)">検討中</button>
+            <button class="chip" onclick="setSedoriFilter('purchased',this)">仕入済</button>
+            <button class="chip" onclick="setSedoriFilter('listed',this)">出品中</button>
+            <button class="chip" onclick="setSedoriFilter('sold',this)">売却済</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr>
+              <th>商品名</th><th>仕入値</th><th>売値</th><th>利益</th><th>利益率</th><th>ステータス</th><th>仕入日</th><th>操作</th>
+            </tr></thead>
+            <tbody id="sedoriBody"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="sedoriEmpty" style="display:none">まだ登録がありません。「新規登録」タブから追加してください。</div>
+      </div>
+      <div id="sedori-add" class="panel">
+        <div style="max-width:500px">
+          <div class="form-grid">
+            <div class="form-group full">
+              <div class="form-label">商品名</div>
+              <input type="text" id="f-name" placeholder="例：USM Haller テーブル 白 W140" />
+            </div>
+            <div class="form-group">
+              <div class="form-label">仕入値（円）</div>
+              <input type="number" id="f-buy" placeholder="0" />
+            </div>
+            <div class="form-group">
+              <div class="form-label">目標売値（円）</div>
+              <input type="number" id="f-sell" placeholder="0" />
+            </div>
+            <div class="form-group">
+              <div class="form-label">仕入れ元</div>
+              <select id="f-source">
+                <option>東京リサイクル</option>
+                <option>村田商会</option>
+                <option>ジモティー</option>
+                <option>セカンドストリート</option>
+                <option>ハードオフ</option>
+                <option>ヤフオク</option>
+                <option>メルカリ</option>
+                <option>その他</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <div class="form-label">ステータス</div>
+              <select id="f-status">
+                <option value="watching">検討中</option>
+                <option value="purchased">仕入済</option>
+                <option value="listed">出品中</option>
+                <option value="sold">売却済</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <div class="form-label">メモ</div>
+              <input type="text" id="f-memo" placeholder="状態・傷の有無など" />
+            </div>
+            <div class="form-group">
+              <div class="form-label">仕入日</div>
+              <input type="date" id="f-date" />
+            </div>
+            <div class="form-group">
+              <div class="form-label">出品先リンク</div>
+              <input type="text" id="f-link" placeholder="https://..." />
+            </div>
+          </div>
+          <div style="margin-top:8px;padding:12px;background:var(--bg3);border-radius:var(--radius);font-family:var(--mono);font-size:13px;margin-bottom:16px" id="profitPreview">
+            予想利益: — 円 / 利益率: — %
+          </div>
+          <button class="btn primary" onclick="addSedori()">＋ 登録する</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 損益サマリ -->
+  <div id="page-profit" style="display:none">
+    <div class="page-header">
+      <div class="page-title">損益サマリ</div>
+      <div class="page-sub">累計・月別の仕入れ・売上・利益</div>
+    </div>
+    <div class="content">
+      <div class="stats" id="profitStats">
+        <div class="stat"><div class="stat-n green" id="pNetProfit">¥0</div><div class="stat-l">累計純利益</div></div>
+        <div class="stat"><div class="stat-n" id="pRevenue">¥0</div><div class="stat-l">累計売上</div></div>
+        <div class="stat"><div class="stat-n red" id="pCost">¥0</div><div class="stat-l">累計仕入れ</div></div>
+        <div class="stat"><div class="stat-n blue" id="pMargin">0%</div><div class="stat-l">平均利益率</div></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>商品名</th><th>仕入値</th><th>売値</th><th>利益</th><th>利益率</th><th>売却日</th></tr></thead>
+          <tbody id="profitBody"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="profitEmpty">売却済みの商品がありません</div>
+    </div>
+  </div>
+
+  <!-- Slack設定 -->
+  <div id="page-settings" style="display:none">
+    <div class="page-header">
+      <div class="page-title">Slack通知設定</div>
+      <div class="page-sub">キーワード一致時に指定チャンネルへ自動通知</div>
+    </div>
+    <div class="content">
+      <div class="settings-section">
+        <div class="settings-title">🔔 Slack Webhook</div>
+        <div class="settings-row">
+          <label>Webhook URL</label>
+          <input type="text" id="slackUrl" placeholder="https://hooks.slack.com/services/..." />
+        </div>
+        <div class="settings-row">
+          <label>通知トリガー</label>
+          <select id="slackTrigger">
+            <option value="match">キーワード一致のみ</option>
+            <option value="all">新着すべて</option>
+            <option value="new">前回から新着のみ</option>
+          </select>
+        </div>
+        <div class="settings-row">
+          <label>通知有効</label>
+          <label class="toggle">
+            <input type="checkbox" id="slackEnabled" checked>
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div style="margin-top:12px;display:flex;gap:8px">
+          <button class="btn primary" onclick="saveSlackSettings()">設定を保存</button>
+          <button class="btn" onclick="testSlack()">テスト送信</button>
+        </div>
+        <div id="slackTestResult" style="display:none" class="test-result"></div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">⚙ 更新間隔</div>
+        <div class="settings-row">
+          <label>自動更新</label>
+          <select id="intervalSelect" onchange="updateInterval()">
+            <option value="300">5分ごと（推奨）</option>
+            <option value="600">10分ごと</option>
+            <option value="180">3分ごと</option>
+            <option value="60">1分ごと（負荷注意）</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-title">📋 Vercelデプロイ手順</div>
+        <div style="font-size:13px;color:var(--text2);line-height:2">
+          <div>① <a href="https://github.com" target="_blank" style="color:var(--blue)">GitHub</a> にアカウント作成（無料）</div>
+          <div>② このindex.htmlをリポジトリにプッシュ</div>
+          <div>③ <a href="https://vercel.com" target="_blank" style="color:var(--blue)">Vercel</a> にGitHubでサインイン</div>
+          <div>④「New Project」→ リポジトリを選択 → Deploy</div>
+          <div>⑤ 発行されたURLをブックマーク・友達に共有</div>
+          <div style="margin-top:8px;font-size:11px;color:var(--text3)">※ 無料枠で完全に動作します。月額0円。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<!-- Modal for sedori edit -->
+<div class="modal-overlay" id="editModal" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-title">仕入れ記録を編集 <button class="modal-close" onclick="closeModal()">×</button></div>
+    <div class="form-grid">
+      <div class="form-group full"><div class="form-label">商品名</div><input type="text" id="e-name"></div>
+      <div class="form-group"><div class="form-label">仕入値（円）</div><input type="number" id="e-buy"></div>
+      <div class="form-group"><div class="form-label">実売値（円）</div><input type="number" id="e-sell"></div>
+      <div class="form-group"><div class="form-label">ステータス</div>
+        <select id="e-status">
+          <option value="watching">検討中</option>
+          <option value="purchased">仕入済</option>
+          <option value="listed">出品中</option>
+          <option value="sold">売却済</option>
+        </select>
+      </div>
+      <div class="form-group"><div class="form-label">仕入れ元</div><input type="text" id="e-source"></div>
+      <div class="form-group full"><div class="form-label">メモ</div><input type="text" id="e-memo"></div>
+    </div>
+    <button class="btn primary" onclick="saveEdit()" style="width:100%">保存する</button>
+  </div>
+</div>
+
+<script>
+const RSS2JSON = 'https://api.rss2json.com/v1/api.json?rss_url=';
+const RSS_FEEDS = [
+  { id:'tokyo', name:'東京リサイクル', badge:'b-tokyo', siteUrl:'https://tokyo-recycle.net/collections/all', url:'https://tokyo-recycle.net/collections/all.atom' },
+  { id:'murata', name:'村田商会', badge:'b-murata', siteUrl:'https://muratashokai.theshop.jp/', url:'https://muratashokai.theshop.jp/feeds/items.atom' },
+  { id:'jmty', name:'ジモティー家具', badge:'b-jmty', siteUrl:'https://jmty.jp/all/furn', url:'https://jmty.jp/all/furn/rss' }
+];
+const SEARCH_SHOPS = [
+  { name:'セカンドストリート', icon:'🔁', iconBg:'#1a2533', sub:'全国展開・家具コーナーあり', url: kw=>`https://www.2ndstreet.jp/search/result?keyword=${encodeURIComponent(kw)}&categoryId=5` },
+  { name:'ハードオフ / オフハウス', icon:'🏬', iconBg:'#2a1a10', sub:'家電・家具・インテリア', url: kw=>`https://www.hardoff.co.jp/ec/product/list/?keyword=${encodeURIComponent(kw)}&category=030000` },
+  { name:'ヤフオク', icon:'🔨', iconBg:'#1a1f2a', sub:'オークション・即決あり', url: kw=>`https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(kw)}&auccat=0` },
+  { name:'メルカリ', icon:'🏷', iconBg:'#2a1020', sub:'個人売買・即購入OK', url: kw=>`https://jp.mercari.com/search/?keyword=${encodeURIComponent(kw)}&category_id=715` },
+  { name:'ジモティー', icon:'📍', iconBg:'#1a2a1a', sub:'地元の無料〜格安出品', url: kw=>`https://jmty.jp/all/furn?keyword=${encodeURIComponent(kw)}` }
+];
+
+// ── State ──
+let keywords = ['IKEAソファ','USMハラー','カリモク'];
+let allItems = [];
+let prevLinks = new Set();
+let currentFilter = 'all';
+let sizeFilter = { w:200, h:150, d:100 };
+let sedoriList = JSON.parse(localStorage.getItem('sedori') || '[]');
+let sedoriFilter = 'all';
+let editIdx = -1;
+let intervalSec = 300;
+let countdown = 300;
+let countRef = null;
+let slackSettings = JSON.parse(localStorage.getItem('slack') || '{"url":"","trigger":"match","enabled":true}');
+
+// ── Nav ──
+function goPage(id, btn) {
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.main > div').forEach(d => d.style.display = 'none');
+  document.getElementById('page-'+id).style.display = '';
+  if (id==='search') renderSearchShops();
+  if (id==='profit') renderProfit();
+  if (id==='sedori') renderSedori();
+}
+
+// ── Tabs ──
+function switchTab(id, btn, page) {
+  const container = document.getElementById('page-'+page);
+  container.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  container.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById(page+'-'+id).classList.add('active');
+}
+
+// ── Keywords ──
+function addKw() { _addKw(document.getElementById('kwIn')); }
+function addKw2() { _addKw(document.getElementById('kwIn2')); }
+function _addKw(inp) {
+  const v = inp.value.trim();
+  if (v && !keywords.includes(v)) keywords.push(v);
+  inp.value = '';
+  renderTags();
+  renderItems();
+  renderSearchShops();
+}
+function removeKw(i) { keywords.splice(i,1); renderTags(); renderItems(); renderSearchShops(); }
+function renderTags() {
+  const html = keywords.length
+    ? keywords.map((k,i) => `<span class="tag">${k}<button onclick="removeKw(${i})">×</button></span>`).join('')
+    : '<span style="font-size:12px;color:var(--text3)">キーワードを追加してください</span>';
+  document.getElementById('tagList').innerHTML = html;
+  const el2 = document.getElementById('tagList2');
+  if (el2) el2.innerHTML = html;
+}
+document.getElementById('kwIn').addEventListener('keydown', e => { if(e.key==='Enter') addKw(); });
+
+// ── Filter ──
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('#watch-feed .chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  renderItems();
+}
+
+// ── Size ──
+function updateSize(dim, val) {
+  sizeFilter[dim] = parseInt(val);
+  document.getElementById(dim+'Val').textContent = val+'cm以下';
+  renderItems();
+}
+function extractSizes(text) {
+  const t = (text||'').replace(/[Ｗｗ幅]/g,'W').replace(/[Ｈｈ高さ]/g,'H').replace(/[Ｄｄ奥行]/g,'D');
+  const pats = [
+    /W\s*(\d+)[^\d]+D\s*(\d+)[^\d]+H\s*(\d+)/i,
+    /W(\d+)[\s×x]+D(\d+)[\s×x]+H(\d+)/i,
+    /幅\s*(\d+)[^\d]*奥行[^\d]*(\d+)[^\d]*高さ[^\d]*(\d+)/,
+    /(\d+)\s*[×x]\s*(\d+)\s*[×x]\s*(\d+)/
+  ];
+  for (const p of pats) { const m=t.match(p); if(m) return {w:+m[1],d:+m[2]||0,h:+m[3]||+m[2]||0}; }
+  return null;
+}
+function passesSize(item) {
+  if (!item.sizes) return true;
+  if (item.sizes.w && item.sizes.w > sizeFilter.w) return false;
+  if (item.sizes.h && item.sizes.h > sizeFilter.h) return false;
+  if (item.sizes.d && item.sizes.d > sizeFilter.d) return false;
+  return true;
+}
+
+// ── RSS ──
+function isMatch(title) {
+  if (!keywords.length) return false;
+  return keywords.some(k => title.toLowerCase().includes(k.toLowerCase()));
+}
+function hl(text) {
+  let out = text;
+  keywords.forEach(k => {
+    const re = new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi');
+    out = out.replace(re, m => `<mark>${m}</mark>`);
+  });
+  return out;
+}
+function parseDate(str) {
+  if (!str) return '—';
+  const d = new Date(str);
+  return isNaN(d) ? str.slice(0,10) : d.toLocaleDateString('ja-JP',{month:'short',day:'numeric'});
+}
+function setStatus(state, txt) {
+  document.getElementById('dot').className = 'status-dot'+(state==='loading'?' loading':state==='err'?' err':'');
+  document.getElementById('statusTxt').textContent = txt;
+}
+
+function renderItems() {
+  let items = allItems;
+  if (currentFilter==='matched') items = items.filter(i=>i.matched);
+  else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
+  items = items.filter(passesSize);
+  const matchCount = allItems.filter(i=>i.matched).length;
+  document.getElementById('sMatch').textContent = matchCount;
+  document.getElementById('sTotal').textContent = allItems.length;
+  document.getElementById('navMatch').textContent = matchCount;
+  const el = document.getElementById('itemsList');
+  if (!items.length) { el.innerHTML='<div class="empty">該当するアイテムがありません<br>キーワードやサイズ条件を調整してみてください</div>'; return; }
+  el.innerHTML = items.map(item => {
+    const feed = RSS_FEEDS.find(f=>f.id===item.source);
+    const thumb = item.thumbnail
+      ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : `<div class="item-thumb-ph">🛋</div>`;
+    return `<div class="item-card ${item.matched?'matched':''}">
+      ${thumb}
+      <div class="item-body">
+        <div class="item-top">
+          <span class="item-title">${hl(item.title)}${item.isNew?'<span class="badge b-new" style="margin-left:6px">NEW</span>':''}</span>
+          <span class="badge ${feed.badge}">${feed.name}</span>
+          ${item.matched?'<span class="badge b-match">★ 一致</span>':''}
+        </div>
+        <div class="item-meta">
+          ${item.price?`<span>${item.price}</span>`:''}
+          <span>${item.date}</span>
+          <a class="item-link" href="${item.link}" target="_blank" rel="noopener">詳細を見る →</a>
+        </div>
+        ${item.matched?`<div class="item-actions"><button class="btn-sm green" onclick="quickAddSedori('${item.title.replace(/'/g,"\\'")}')">＋ 仕入れ候補に追加</button></div>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function fetchFeed(feed) {
+  const res = await fetch(RSS2JSON + encodeURIComponent(feed.url) + '&count=40');
+  const data = await res.json();
+  if (data.status!=='ok') throw new Error(data.message||'error');
+  return (data.items||[]).map(item => {
+    const full = item.title + ' ' + (item.description||'');
+    const pm = full.match(/[¥￥][\d,]+|[\d,]+円/);
+    return {
+      source: feed.id,
+      title: item.title||'(タイトルなし)',
+      link: item.link||feed.siteUrl,
+      date: parseDate(item.pubDate),
+      thumbnail: item.thumbnail||item.enclosure?.link||null,
+      price: pm?pm[0]:null,
+      sizes: extractSizes(full),
+      matched: isMatch(item.title||''),
+      isNew: false
+    };
+  });
+}
+
+async function loadAll() {
+  setStatus('loading','取得中...');
+  const results = await Promise.allSettled(RSS_FEEDS.map(fetchFeed));
+  let combined = [], errs = [];
+  results.forEach((r,i) => {
+    if (r.status==='fulfilled') combined = combined.concat(r.value);
+    else errs.push(RSS_FEEDS[i].name);
+  });
+  const newLinks = new Set(combined.map(i=>i.link));
+  let newCount = 0;
+  combined = combined.map(item => {
+    const isNew = prevLinks.size>0 && !prevLinks.has(item.link);
+    if (isNew) newCount++;
+    return {...item, isNew};
+  });
+  prevLinks = newLinks;
+  allItems = combined.sort((a,b) => b.matched-a.matched || b.isNew-a.isNew);
+  document.getElementById('sNew').textContent = newCount>0?`+${newCount}`:'—';
+  if (errs.length && combined.length===0) setStatus('err',`取得失敗`);
+  else if (errs.length) setStatus('err',`一部失敗`);
+  else setStatus('ok', `更新 ${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`);
+  renderItems();
+  // Slack通知
+  if (newCount > 0 && slackSettings.enabled && slackSettings.url) {
+    const toNotify = allItems.filter(i=>i.isNew && (slackSettings.trigger==='all' || (slackSettings.trigger==='match'&&i.matched) || slackSettings.trigger==='new'));
+    if (toNotify.length) sendSlack(toNotify);
+  }
+  startCountdown();
+}
+
+function startCountdown() {
+  if (countRef) clearInterval(countRef);
+  countdown = intervalSec;
+  countRef = setInterval(() => {
+    countdown--;
+    const m = Math.floor(countdown/60), s = countdown%60;
+    document.getElementById('ctDown').textContent = `${m}:${String(s).padStart(2,'0')}`;
+    if (countdown <= 0) { clearInterval(countRef); loadAll(); }
+  }, 1000);
+}
+function manualRefresh() { if(countRef) clearInterval(countRef); loadAll(); }
+function updateInterval() {
+  intervalSec = parseInt(document.getElementById('intervalSelect').value);
+  if(countRef) clearInterval(countRef);
+  startCountdown();
+}
+
+// ── Search Links ──
+function renderSearchShops() {
+  const el = document.getElementById('searchShops');
+  if (!keywords.length) { el.innerHTML='<div class="empty">キーワードを追加してください</div>'; return; }
+  el.innerHTML = SEARCH_SHOPS.map(shop => `
+    <div class="shop-block">
+      <div class="shop-block-header">
+        <div class="shop-block-icon" style="background:${shop.iconBg}">${shop.icon}</div>
+        <div><div class="shop-block-name">${shop.name}</div><div class="shop-block-sub">${shop.sub}</div></div>
+      </div>
+      <div class="link-grid">
+        ${keywords.map(kw=>`<a class="search-link" href="${shop.url(kw)}" target="_blank" rel="noopener">↗ <span>${kw}</span></a>`).join('')}
+      </div>
+    </div>`).join('');
+}
+
+// ── Sedori ──
+function saveSedori() { localStorage.setItem('sedori', JSON.stringify(sedoriList)); }
+function quickAddSedori(title) {
+  sedoriList.unshift({ name:title, buy:0, sell:0, source:'', status:'watching', memo:'', date:new Date().toISOString().slice(0,10), link:'' });
+  saveSedori();
+  updateSedoriNav();
+  alert('仕入れ候補に追加しました。「仕入れ台帳」で詳細を入力してください。');
+}
+function addSedori() {
+  const name = document.getElementById('f-name').value.trim();
+  if (!name) { alert('商品名を入力してください'); return; }
+  const buy = parseInt(document.getElementById('f-buy').value)||0;
+  const sell = parseInt(document.getElementById('f-sell').value)||0;
+  sedoriList.unshift({
+    name, buy, sell,
+    source: document.getElementById('f-source').value,
+    status: document.getElementById('f-status').value,
+    memo: document.getElementById('f-memo').value,
+    date: document.getElementById('f-date').value || new Date().toISOString().slice(0,10),
+    link: document.getElementById('f-link').value
+  });
+  saveSedori();
+  ['f-name','f-buy','f-sell','f-memo','f-link'].forEach(id => document.getElementById(id).value='');
+  document.getElementById('profitPreview').textContent='予想利益: — 円 / 利益率: — %';
+  renderSedori();
+  updateSedoriNav();
+  switchTab('list', document.querySelector('#page-sedori .tab'), 'sedori');
+}
+['f-buy','f-sell'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    const buy = parseInt(document.getElementById('f-buy').value)||0;
+    const sell = parseInt(document.getElementById('f-sell').value)||0;
+    const profit = sell - buy;
+    const rate = buy>0 ? ((profit/buy)*100).toFixed(1) : '—';
+    const color = profit>0?'var(--accent)':profit<0?'var(--red)':'var(--text3)';
+    document.getElementById('profitPreview').innerHTML =
+      `予想利益: <span style="color:${color}">¥${profit.toLocaleString()}</span> / 利益率: <span style="color:${color}">${rate}%</span>`;
+  });
+});
+
+function setSedoriFilter(f, btn) {
+  sedoriFilter = f;
+  document.querySelectorAll('#sedori-list .chip').forEach(c=>c.classList.remove('active'));
+  btn.classList.add('active');
+  renderSedori();
+}
+function renderSedori() {
+  let items = sedoriList;
+  if (sedoriFilter!=='all') items = items.filter(i=>i.status===sedoriFilter);
+  const body = document.getElementById('sedoriBody');
+  const empty = document.getElementById('sedoriEmpty');
+  if (!items.length) { body.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display='none';
+  const statusMap = { watching:'s-watching', purchased:'s-purchased', listed:'s-listed', sold:'s-sold' };
+  const statusLabel = { watching:'検討中', purchased:'仕入済', listed:'出品中', sold:'売却済' };
+  body.innerHTML = items.map((item, i) => {
+    const realIdx = sedoriList.indexOf(item);
+    const profit = (item.sell||0) - (item.buy||0);
+    const rate = item.buy>0 ? ((profit/item.buy)*100).toFixed(1) : '—';
+    const pc = profit>0?'profit-pos':profit<0?'profit-neg':'profit-zero';
+    return `<tr>
+      <td><div style="font-weight:500">${item.name}</div><div style="font-size:11px;color:var(--text3)">${item.source||''} ${item.memo?'/ '+item.memo:''}</div></td>
+      <td style="font-family:var(--mono)">¥${(item.buy||0).toLocaleString()}</td>
+      <td style="font-family:var(--mono)">${item.sell?'¥'+item.sell.toLocaleString():'—'}</td>
+      <td class="${pc}">¥${profit.toLocaleString()}</td>
+      <td class="${pc}">${rate}%</td>
+      <td><span class="status-badge ${statusMap[item.status]}">${statusLabel[item.status]}</span></td>
+      <td style="font-size:12px;color:var(--text3)">${item.date||'—'}</td>
+      <td><button class="btn-sm" onclick="openEdit(${realIdx})">編集</button> <button class="btn-sm" style="color:var(--red);border-color:rgba(255,95,95,.3)" onclick="deleteSedori(${realIdx})">削除</button></td>
+    </tr>`;
+  }).join('');
+}
+function updateSedoriNav() {
+  const active = sedoriList.filter(i=>i.status==='purchased'||i.status==='watching'||i.status==='listed').length;
+  document.getElementById('navActive').textContent = active;
+}
+function openEdit(idx) {
+  editIdx = idx;
+  const item = sedoriList[idx];
+  document.getElementById('e-name').value = item.name||'';
+  document.getElementById('e-buy').value = item.buy||'';
+  document.getElementById('e-sell').value = item.sell||'';
+  document.getElementById('e-status').value = item.status||'watching';
+  document.getElementById('e-source').value = item.source||'';
+  document.getElementById('e-memo').value = item.memo||'';
+  document.getElementById('editModal').style.display='flex';
+}
+function saveEdit() {
+  if (editIdx<0) return;
+  sedoriList[editIdx] = {
+    ...sedoriList[editIdx],
+    name: document.getElementById('e-name').value,
+    buy: parseInt(document.getElementById('e-buy').value)||0,
+    sell: parseInt(document.getElementById('e-sell').value)||0,
+    status: document.getElementById('e-status').value,
+    source: document.getElementById('e-source').value,
+    memo: document.getElementById('e-memo').value
+  };
+  saveSedori(); closeModal(); renderSedori(); renderProfit(); updateSedoriNav();
+}
+function closeModal() { document.getElementById('editModal').style.display='none'; editIdx=-1; }
+function deleteSedori(idx) {
+  if (!confirm('削除しますか？')) return;
+  sedoriList.splice(idx,1); saveSedori(); renderSedori(); renderProfit(); updateSedoriNav();
+}
+
+// ── Profit ──
+function renderProfit() {
+  const sold = sedoriList.filter(i=>i.status==='sold'&&i.sell>0);
+  const allPurchased = sedoriList.filter(i=>i.status!=='watching');
+  const totalRevenue = sold.reduce((s,i)=>s+(i.sell||0),0);
+  const totalCost = sold.reduce((s,i)=>s+(i.buy||0),0);
+  const netProfit = totalRevenue - totalCost;
+  const avgMargin = sold.length>0 ? (sold.reduce((s,i)=>s+(i.buy>0?(i.sell-i.buy)/i.buy:0),0)/sold.length*100).toFixed(1) : 0;
+  document.getElementById('pNetProfit').textContent = '¥'+netProfit.toLocaleString();
+  document.getElementById('pRevenue').textContent = '¥'+totalRevenue.toLocaleString();
+  document.getElementById('pCost').textContent = '¥'+totalCost.toLocaleString();
+  document.getElementById('pMargin').textContent = avgMargin+'%';
+  const el = document.getElementById('profitBody');
+  const empty = document.getElementById('profitEmpty');
+  if (!sold.length) { el.innerHTML=''; empty.style.display=''; return; }
+  empty.style.display='none';
+  el.innerHTML = sold.map(item => {
+    const profit = (item.sell||0)-(item.buy||0);
+    const rate = item.buy>0?((profit/item.buy)*100).toFixed(1):'—';
+    const pc = profit>0?'profit-pos':profit<0?'profit-neg':'profit-zero';
+    return `<tr>
+      <td>${item.name}</td>
+      <td style="font-family:var(--mono)">¥${(item.buy||0).toLocaleString()}</td>
+      <td style="font-family:var(--mono)">¥${(item.sell||0).toLocaleString()}</td>
+      <td class="${pc}">¥${profit.toLocaleString()}</td>
+      <td class="${pc}">${rate}%</td>
+      <td style="font-size:12px;color:var(--text3)">${item.date||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Slack ──
+function saveSlackSettings() {
+  slackSettings = {
+    url: document.getElementById('slackUrl').value.trim(),
+    trigger: document.getElementById('slackTrigger').value,
+    enabled: document.getElementById('slackEnabled').checked
+  };
+  localStorage.setItem('slack', JSON.stringify(slackSettings));
+  alert('設定を保存しました');
+}
+async function testSlack() {
+  const url = document.getElementById('slackUrl').value.trim();
+  const res = document.getElementById('slackTestResult');
+  if (!url) { res.style.display=''; res.className='test-result err'; res.textContent='Webhook URLを入力してください'; return; }
+  try {
+    await fetch(url, { method:'POST', body: JSON.stringify({ text:'🛋 KAGUWATCH テスト通知\nSlack連携が正常に動作しています！' }), headers:{'Content-Type':'application/json'} });
+    res.style.display=''; res.className='test-result ok'; res.textContent='✓ 送信成功！Slackを確認してください';
+  } catch(e) {
+    res.style.display=''; res.className='test-result err'; res.textContent='送信失敗：CORSエラーの可能性あり。Vercelデプロイ後に動作確認を。';
+  }
+}
+async function sendSlack(items) {
+  if (!slackSettings.url) return;
+  const lines = items.slice(0,5).map(i=>`• ${i.matched?'★ ':''}${i.title}${i.price?' ('+i.price+')':''}\n  ${i.link}`);
+  const text = `🛋 *KAGUWATCH 新着情報* (${items.length}件)\n${lines.join('\n')}`;
+  try { await fetch(slackSettings.url, { method:'POST', body:JSON.stringify({text}), headers:{'Content-Type':'application/json'} }); } catch(e){}
+}
+
+// ── Init ──
+function init() {
+  document.getElementById('slackUrl').value = slackSettings.url||'';
+  document.getElementById('slackTrigger').value = slackSettings.trigger||'match';
+  document.getElementById('slackEnabled').checked = slackSettings.enabled!==false;
+  document.getElementById('f-date').value = new Date().toISOString().slice(0,10);
+  renderTags();
+  renderSearchShops();
+  renderSedori();
+  renderProfit();
+  updateSedoriNav();
+  loadAll();
+}
+init();
+</script>
+</body>
+</html>
