@@ -162,6 +162,10 @@ tr:hover td { background: var(--bg3); }
 .s-purchased { background: var(--amber-lt); color: var(--amber); }
 .s-listed { background: var(--accent-lt); color: var(--accent); }
 .s-sold { background: var(--bg3); color: var(--text3); }
+.cond-a { background: var(--accent-lt); color: var(--accent); }
+.cond-b { background: var(--blue-lt); color: var(--blue); }
+.cond-c { background: var(--amber-lt); color: var(--amber); }
+.cond-d { background: var(--red-lt); color: var(--red); }
 .pp { color: var(--accent); font-family: var(--mono); }
 .pn { color: var(--red); font-family: var(--mono); }
 .pz { color: var(--text3); font-family: var(--mono); }
@@ -324,7 +328,7 @@ tr:hover td { background: var(--bg3); }
         <div class="table-wrap">
           <table>
             <thead><tr>
-              <th>商品名</th><th>仕入値</th><th>売値</th><th>利益</th><th>利益率</th><th>状態</th><th>仕入日</th><th>操作</th>
+              <th>商品名</th><th>仕入値</th><th>売値</th><th>純利益</th><th>利益率</th><th>状態</th><th>仕入日</th><th>操作</th>
             </tr></thead>
             <tbody id="sedoriBody"></tbody>
           </table>
@@ -348,6 +352,20 @@ tr:hover td { background: var(--bg3); }
               <select id="f-status">
                 <option value="watching">検討中</option><option value="purchased">仕入済</option>
                 <option value="listed">出品中</option><option value="sold">売却済</option>
+              </select>
+            </div>
+            <div class="form-group"><div class="form-label">コンディション</div>
+              <select id="f-condition">
+                <option value="">未設定</option>
+                <option value="A">A — 美品</option><option value="B">B — 良品</option>
+                <option value="C">C — 並品</option><option value="D">D — ジャンク</option>
+              </select>
+            </div>
+            <div class="form-group"><div class="form-label">出品先</div>
+              <select id="f-platform">
+                <option value="other">その他（手数料なし）</option>
+                <option value="mercari">メルカリ（10%）</option>
+                <option value="yahoo">ヤフオク（8.8%）</option>
               </select>
             </div>
             <div class="form-group full"><div class="form-label">メモ</div><input type="text" id="f-memo" placeholder="状態・傷の有無・サイズなど"></div>
@@ -395,7 +413,7 @@ tr:hover td { background: var(--bg3); }
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>商品名</th><th>仕入値</th><th>売値</th><th>利益</th><th>利益率</th><th>仕入れ元</th></tr></thead>
+          <thead><tr><th>商品名</th><th>仕入値</th><th>売値</th><th>手数料</th><th>純利益</th><th>利益率</th><th>仕入れ元</th></tr></thead>
           <tbody id="profitBody"></tbody>
         </table>
       </div>
@@ -486,6 +504,20 @@ tr:hover td { background: var(--bg3); }
         </select>
       </div>
       <div class="form-group"><div class="form-label">仕入れ元</div><input type="text" id="e-source"></div>
+      <div class="form-group"><div class="form-label">コンディション</div>
+        <select id="e-condition">
+          <option value="">未設定</option>
+          <option value="A">A — 美品</option><option value="B">B — 良品</option>
+          <option value="C">C — 並品</option><option value="D">D — ジャンク</option>
+        </select>
+      </div>
+      <div class="form-group"><div class="form-label">出品先</div>
+        <select id="e-platform">
+          <option value="other">その他（手数料なし）</option>
+          <option value="mercari">メルカリ（10%）</option>
+          <option value="yahoo">ヤフオク（8.8%）</option>
+        </select>
+      </div>
       <div class="form-group full"><div class="form-label">メモ</div><input type="text" id="e-memo"></div>
     </div>
     <button class="btn primary" onclick="saveEdit()" style="width:100%">保存する</button>
@@ -761,28 +793,34 @@ function renderSearch() {
 // Sedori
 function saveSedori() { localStorage.setItem('sedori', JSON.stringify(sedoriList)); }
 function quickAdd(title) {
-  sedoriList.unshift({ name:title, buy:0, sell:0, source:'', status:'watching', memo:'', date:new Date().toISOString().slice(0,10), link:'' });
+  sedoriList.unshift({ name:title, buy:0, sell:0, source:'', status:'watching', memo:'', date:new Date().toISOString().slice(0,10), link:'', condition:'', sellPlatform:'other' });
   saveSedori(); updateNavBadge();
   alert('仕入れ候補に追加しました。台帳で詳細を入力してください。');
 }
 function addSedori() {
   const name = document.getElementById('f-name').value.trim();
   if (!name) { alert('商品名を入力してください'); return; }
-  sedoriList.unshift({ name, buy:parseInt(document.getElementById('f-buy').value)||0, sell:parseInt(document.getElementById('f-sell').value)||0, source:document.getElementById('f-source').value, status:document.getElementById('f-status').value, memo:document.getElementById('f-memo').value, date:document.getElementById('f-date').value||new Date().toISOString().slice(0,10), link:document.getElementById('f-link').value });
+  sedoriList.unshift({ name, buy:parseInt(document.getElementById('f-buy').value)||0, sell:parseInt(document.getElementById('f-sell').value)||0, source:document.getElementById('f-source').value, status:document.getElementById('f-status').value, memo:document.getElementById('f-memo').value, date:document.getElementById('f-date').value||new Date().toISOString().slice(0,10), link:document.getElementById('f-link').value, condition:document.getElementById('f-condition').value, sellPlatform:document.getElementById('f-platform').value });
   saveSedori();
   ['f-name','f-buy','f-sell','f-memo','f-link'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('profitPreview').textContent = '予想利益：— 円　/　利益率：— %';
+  document.getElementById('f-condition').value='';
+  document.getElementById('f-platform').value='other';
+  document.getElementById('profitPreview').textContent = '純利益：— 円　/　利益率：— %';
   renderSedori(); updateNavBadge();
   switchTab('list', document.querySelector('#page-sedori .tab'), 'sedori');
 }
-['f-buy','f-sell'].forEach(id => {
-  document.getElementById(id).addEventListener('input', () => {
-    const b=parseInt(document.getElementById('f-buy').value)||0, s=parseInt(document.getElementById('f-sell').value)||0;
-    const p=s-b, r=b>0?((p/b)*100).toFixed(1):'—';
-    const c=p>0?'var(--accent)':p<0?'var(--red)':'var(--text3)';
-    document.getElementById('profitPreview').innerHTML = `予想利益：<span style="color:${c}">¥${p.toLocaleString()}</span>　/　利益率：<span style="color:${c}">${r}%</span>`;
-  });
-});
+function updatePreview() {
+  const b=parseInt(document.getElementById('f-buy').value)||0;
+  const s=parseInt(document.getElementById('f-sell').value)||0;
+  const plat=document.getElementById('f-platform').value;
+  const fee=Math.floor(s*(FEES[plat]||0));
+  const p=s-b-fee, r=b>0?((p/b)*100).toFixed(1):'—';
+  const c=p>0?'var(--accent)':p<0?'var(--red)':'var(--text3)';
+  const feeStr=fee>0?` <span style="color:var(--text3)">（手数料 −¥${fee.toLocaleString()}）</span>`:'';
+  document.getElementById('profitPreview').innerHTML=`純利益：<span style="color:${c}">¥${p.toLocaleString()}</span>${feeStr}　/　利益率：<span style="color:${c}">${r}%</span>`;
+}
+['f-buy','f-sell'].forEach(id => document.getElementById(id).addEventListener('input', updatePreview));
+document.getElementById('f-platform').addEventListener('change', updatePreview);
 function setSF(f, btn) {
   sedoriFilter = f;
   document.querySelectorAll('#sedori-list .chip').forEach(c=>c.classList.remove('active'));
@@ -791,6 +829,14 @@ function setSF(f, btn) {
 }
 const SL = { watching:'検討中', purchased:'仕入済', listed:'出品中', sold:'売却済' };
 const SC = { watching:'s-watching', purchased:'s-purchased', listed:'s-listed', sold:'s-sold' };
+const FEES = { mercari: 0.10, yahoo: 0.088, other: 0 };
+const COND_LABEL = { A:'A品', B:'B品', C:'C品', D:'D品' };
+const COND_CSS   = { A:'cond-a', B:'cond-b', C:'cond-c', D:'cond-d' };
+function calcNet(item) {
+  const sell = item.sell || 0;
+  const fee = Math.floor(sell * (FEES[item.sellPlatform] || 0));
+  return { fee, net: sell - (item.buy || 0) - fee };
+}
 function renderSedori() {
   let items = sedoriFilter==='all' ? sedoriList : sedoriList.filter(i=>i.status===sedoriFilter);
   const body = document.getElementById('sedoriBody'), empty = document.getElementById('sedoriEmpty');
@@ -798,13 +844,15 @@ function renderSedori() {
   empty.style.display = 'none';
   body.innerHTML = items.map(item => {
     const ri = sedoriList.indexOf(item);
-    const p=(item.sell||0)-(item.buy||0), r=item.buy>0?((p/item.buy)*100).toFixed(1):'—';
-    const pc = p>0?'pp':p<0?'pn':'pz';
+    const {fee, net} = calcNet(item);
+    const r=item.buy>0?((net/item.buy)*100).toFixed(1):'—';
+    const pc=net>0?'pp':net<0?'pn':'pz';
+    const condBadge=item.condition?`<span class="sbadge ${COND_CSS[item.condition]}" style="margin-right:4px">${COND_LABEL[item.condition]}</span>`:'';
     return `<tr>
-      <td><div style="font-weight:400">${item.name}</div><div style="font-size:11px;color:var(--text3)">${item.memo||''}</div></td>
+      <td><div style="font-weight:400;display:flex;align-items:center;flex-wrap:wrap;gap:3px">${condBadge}${item.name}</div><div style="font-size:11px;color:var(--text3)">${item.memo||''}</div></td>
       <td style="font-family:var(--mono)">¥${(item.buy||0).toLocaleString()}</td>
       <td style="font-family:var(--mono)">${item.sell?'¥'+item.sell.toLocaleString():'—'}</td>
-      <td class="${pc}">¥${p.toLocaleString()}</td>
+      <td class="${pc}">¥${net.toLocaleString()}</td>
       <td class="${pc}">${r}%</td>
       <td><span class="sbadge ${SC[item.status]}">${SL[item.status]}</span></td>
       <td style="font-size:11px;color:var(--text3)">${item.date||'—'}</td>
@@ -820,11 +868,13 @@ function openEdit(idx) {
   ['name','source','memo'].forEach(k=>document.getElementById('e-'+k).value=item[k]||'');
   ['buy','sell'].forEach(k=>document.getElementById('e-'+k).value=item[k]||'');
   document.getElementById('e-status').value=item.status||'watching';
+  document.getElementById('e-condition').value=item.condition||'';
+  document.getElementById('e-platform').value=item.sellPlatform||'other';
   document.getElementById('editModal').style.display='flex';
 }
 function saveEdit() {
   if(editIdx<0)return;
-  sedoriList[editIdx]={...sedoriList[editIdx], name:document.getElementById('e-name').value, buy:parseInt(document.getElementById('e-buy').value)||0, sell:parseInt(document.getElementById('e-sell').value)||0, status:document.getElementById('e-status').value, source:document.getElementById('e-source').value, memo:document.getElementById('e-memo').value};
+  sedoriList[editIdx]={...sedoriList[editIdx], name:document.getElementById('e-name').value, buy:parseInt(document.getElementById('e-buy').value)||0, sell:parseInt(document.getElementById('e-sell').value)||0, status:document.getElementById('e-status').value, source:document.getElementById('e-source').value, memo:document.getElementById('e-memo').value, condition:document.getElementById('e-condition').value, sellPlatform:document.getElementById('e-platform').value};
   saveSedori(); closeModal(); renderSedori(); renderProfit(); updateNavBadge();
 }
 function closeModal() { document.getElementById('editModal').style.display='none'; editIdx=-1; }
@@ -833,9 +883,11 @@ function delSedori(idx) { if(!confirm('削除しますか？'))return; sedoriLis
 // Profit
 function renderProfit() {
   const sold = sedoriList.filter(i=>i.status==='sold'&&i.sell>0);
-  const rev=sold.reduce((s,i)=>s+(i.sell||0),0), cost=sold.reduce((s,i)=>s+(i.buy||0),0), net=rev-cost;
-  const avg=sold.length?((sold.reduce((s,i)=>s+(i.buy>0?(i.sell-i.buy)/i.buy:0),0)/sold.length)*100).toFixed(1):0;
-  document.getElementById('pNet').textContent='¥'+net.toLocaleString();
+  const rev=sold.reduce((s,i)=>s+(i.sell||0),0), cost=sold.reduce((s,i)=>s+(i.buy||0),0);
+  const totalFee=sold.reduce((s,i)=>s+calcNet(i).fee,0);
+  const netTotal=rev-cost-totalFee;
+  const avg=sold.length?((sold.reduce((s,i)=>{const{net}=calcNet(i);return s+(i.buy>0?net/i.buy:0);},0)/sold.length)*100).toFixed(1):0;
+  document.getElementById('pNet').textContent='¥'+netTotal.toLocaleString();
   document.getElementById('pRev').textContent='¥'+rev.toLocaleString();
   document.getElementById('pCost').textContent='¥'+cost.toLocaleString();
   document.getElementById('pMargin').textContent=avg+'%';
@@ -843,9 +895,9 @@ function renderProfit() {
   if(!sold.length){el.innerHTML='';em.style.display='';return;}
   em.style.display='none';
   el.innerHTML=sold.map(item=>{
-    const p=(item.sell||0)-(item.buy||0), r=item.buy>0?((p/item.buy)*100).toFixed(1):'—';
-    const pc=p>0?'pp':p<0?'pn':'pz';
-    return `<tr><td>${item.name}</td><td style="font-family:var(--mono)">¥${(item.buy||0).toLocaleString()}</td><td style="font-family:var(--mono)">¥${(item.sell||0).toLocaleString()}</td><td class="${pc}">¥${p.toLocaleString()}</td><td class="${pc}">${r}%</td><td style="font-size:11px;color:var(--text3)">${item.source||'—'}</td></tr>`;
+    const {fee,net}=calcNet(item), r=item.buy>0?((net/item.buy)*100).toFixed(1):'—';
+    const pc=net>0?'pp':net<0?'pn':'pz';
+    return `<tr><td>${item.name}</td><td style="font-family:var(--mono)">¥${(item.buy||0).toLocaleString()}</td><td style="font-family:var(--mono)">¥${(item.sell||0).toLocaleString()}</td><td style="font-family:var(--mono);color:var(--text3)">${fee>0?'−¥'+fee.toLocaleString():'—'}</td><td class="${pc}">¥${net.toLocaleString()}</td><td class="${pc}">${r}%</td><td style="font-size:11px;color:var(--text3)">${item.source||'—'}</td></tr>`;
   }).join('');
 }
 
