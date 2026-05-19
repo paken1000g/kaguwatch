@@ -105,13 +105,12 @@ input::placeholder { color: var(--text3); }
 .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
 
 /* Size filter */
-.size-box { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 14px; margin-bottom: 14px; }
-.size-box-head { font-size: 12px; font-weight: 500; color: var(--text2); margin-bottom: 10px; }
-.size-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; }
-.size-item label { font-size: 11px; color: var(--text3); display: flex; justify-content: space-between; margin-bottom: 4px; }
-.size-item label span { color: var(--text); font-family: var(--mono); }
+.size-bar { display: flex; align-items: center; gap: 10px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.size-bar-label { font-size: 11px; color: var(--text3); white-space: nowrap; font-weight: 500; flex-shrink: 0; }
+.size-dim { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text3); flex: 1; min-width: 100px; }
+.size-dim input[type=range] { flex: 1; accent-color: var(--accent); }
+.size-dim .sv { font-family: var(--mono); font-size: 11px; color: var(--text); min-width: 34px; text-align: right; }
 input[type=range] { width: 100%; accent-color: var(--accent); }
-.size-note { font-size: 11px; color: var(--text3); margin-top: 8px; }
 
 /* Items */
 .items-list { display: flex; flex-direction: column; gap: 6px; }
@@ -163,6 +162,10 @@ tr:hover td { background: var(--bg3); }
 .s-purchased { background: var(--amber-lt); color: var(--amber); }
 .s-listed { background: var(--accent-lt); color: var(--accent); }
 .s-sold { background: var(--bg3); color: var(--text3); }
+.cond-a { background: var(--accent-lt); color: var(--accent); }
+.cond-b { background: var(--blue-lt); color: var(--blue); }
+.cond-c { background: var(--amber-lt); color: var(--amber); }
+.cond-d { background: var(--red-lt); color: var(--red); }
 .pp { color: var(--accent); font-family: var(--mono); }
 .pn { color: var(--red); font-family: var(--mono); }
 .pz { color: var(--text3); font-family: var(--mono); }
@@ -260,28 +263,11 @@ tr:hover td { background: var(--bg3); }
       </div>
       <div class="tag-list" id="tagList"></div>
 
-      <div class="size-box">
-        <div class="size-box-head" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer" onclick="toggleSize()">
-          <span>サイズフィルター（クリックで開閉）</span>
-          <span id="sizeToggleLabel" style="font-size:11px;color:var(--text3)">▼ 開く</span>
-        </div>
-        <div id="sizeBody" style="display:none;margin-top:10px">
-          <div class="size-grid">
-            <div class="size-item">
-              <label>幅 (W) <span id="wVal">200cm</span></label>
-              <input type="range" id="wRange" min="0" max="300" step="10" value="200" oninput="updateSize('w',this.value)">
-            </div>
-            <div class="size-item">
-              <label>高さ (H) <span id="hVal">150cm</span></label>
-              <input type="range" id="hRange" min="0" max="250" step="10" value="150" oninput="updateSize('h',this.value)">
-            </div>
-            <div class="size-item">
-              <label>奥行 (D) <span id="dVal">100cm</span></label>
-              <input type="range" id="dRange" min="0" max="200" step="10" value="100" oninput="updateSize('d',this.value)">
-            </div>
-          </div>
-          <div class="size-note">※ 商品説明に寸法記載がある場合のみ適用。記載なしはすべて表示。</div>
-        </div>
+      <div class="size-bar">
+        <span class="size-bar-label">サイズ上限</span>
+        <span class="size-dim">W <input type="range" id="wRange" min="0" max="300" step="10" value="200" oninput="updateSize('w',this.value)"><span class="sv" id="wVal">200cm</span></span>
+        <span class="size-dim">H <input type="range" id="hRange" min="0" max="250" step="10" value="150" oninput="updateSize('h',this.value)"><span class="sv" id="hVal">150cm</span></span>
+        <span class="size-dim">D <input type="range" id="dRange" min="0" max="200" step="10" value="100" oninput="updateSize('d',this.value)"><span class="sv" id="dVal">100cm</span></span>
       </div>
 
       <div class="stats" style="margin-top:14px">
@@ -342,7 +328,7 @@ tr:hover td { background: var(--bg3); }
         <div class="table-wrap">
           <table>
             <thead><tr>
-              <th>商品名</th><th>仕入値</th><th>売値</th><th>利益</th><th>利益率</th><th>状態</th><th>仕入日</th><th>操作</th>
+              <th>商品名</th><th>仕入値</th><th>売値</th><th>純利益</th><th>利益率</th><th>状態</th><th>仕入日</th><th>操作</th>
             </tr></thead>
             <tbody id="sedoriBody"></tbody>
           </table>
@@ -366,6 +352,20 @@ tr:hover td { background: var(--bg3); }
               <select id="f-status">
                 <option value="watching">検討中</option><option value="purchased">仕入済</option>
                 <option value="listed">出品中</option><option value="sold">売却済</option>
+              </select>
+            </div>
+            <div class="form-group"><div class="form-label">コンディション</div>
+              <select id="f-condition">
+                <option value="">未設定</option>
+                <option value="A">A — 美品</option><option value="B">B — 良品</option>
+                <option value="C">C — 並品</option><option value="D">D — ジャンク</option>
+              </select>
+            </div>
+            <div class="form-group"><div class="form-label">出品先</div>
+              <select id="f-platform">
+                <option value="other">その他（手数料なし）</option>
+                <option value="mercari">メルカリ（10%）</option>
+                <option value="yahoo">ヤフオク（8.8%）</option>
               </select>
             </div>
             <div class="form-group full"><div class="form-label">メモ</div><input type="text" id="f-memo" placeholder="状態・傷の有無・サイズなど"></div>
@@ -413,7 +413,7 @@ tr:hover td { background: var(--bg3); }
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>商品名</th><th>仕入値</th><th>売値</th><th>利益</th><th>利益率</th><th>仕入れ元</th></tr></thead>
+          <thead><tr><th>商品名</th><th>仕入値</th><th>売値</th><th>手数料</th><th>純利益</th><th>利益率</th><th>仕入れ元</th></tr></thead>
           <tbody id="profitBody"></tbody>
         </table>
       </div>
@@ -458,6 +458,24 @@ tr:hover td { background: var(--bg3); }
         </div>
       </div>
       <div class="settings-section">
+        <div class="settings-title">Microsoft Teams通知</div>
+        <div class="settings-row"><label>Webhook URL</label><input type="text" id="teamsUrl" placeholder="https://outlook.office.com/webhook/..."></div>
+        <div class="settings-row"><label>通知タイミング</label>
+          <select id="teamsTrigger">
+            <option value="match">キーワード一致のみ</option>
+            <option value="new">新着すべて</option>
+          </select>
+        </div>
+        <div class="settings-row"><label>通知有効</label>
+          <label class="toggle"><input type="checkbox" id="teamsEnabled" checked><span class="toggle-slider"></span></label>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn primary" onclick="saveTeams()">保存</button>
+          <button class="btn" onclick="testTeams()">テスト送信</button>
+        </div>
+        <div id="teamsTestResult" style="display:none"></div>
+      </div>
+      <div class="settings-section">
         <div class="settings-title">Vercel更新手順</div>
         <div class="deploy-step"><span class="deploy-num">1</span>Claudeで「○○を修正して」と依頼</div>
         <div class="deploy-step"><span class="deploy-num">2</span>新しい index.html をダウンロード</div>
@@ -486,6 +504,20 @@ tr:hover td { background: var(--bg3); }
         </select>
       </div>
       <div class="form-group"><div class="form-label">仕入れ元</div><input type="text" id="e-source"></div>
+      <div class="form-group"><div class="form-label">コンディション</div>
+        <select id="e-condition">
+          <option value="">未設定</option>
+          <option value="A">A — 美品</option><option value="B">B — 良品</option>
+          <option value="C">C — 並品</option><option value="D">D — ジャンク</option>
+        </select>
+      </div>
+      <div class="form-group"><div class="form-label">出品先</div>
+        <select id="e-platform">
+          <option value="other">その他（手数料なし）</option>
+          <option value="mercari">メルカリ（10%）</option>
+          <option value="yahoo">ヤフオク（8.8%）</option>
+        </select>
+      </div>
       <div class="form-group full"><div class="form-label">メモ</div><input type="text" id="e-memo"></div>
     </div>
     <button class="btn primary" onclick="saveEdit()" style="width:100%">保存する</button>
@@ -494,6 +526,7 @@ tr:hover td { background: var(--bg3); }
 
 <script>
 const R2J = 'https://api.rss2json.com/v1/api.json?rss_url=';
+const ALLORIGINS = 'https://api.allorigins.win/get?url=';
 const RSS_FEEDS = [
   { id:'tokyo', name:'東京リサイクル', badge:'b-tokyo', site:'https://tokyo-recycle.net/collections/all', url:'https://tokyo-recycle.net/collections/all.atom' },
   { id:'murata', name:'村田商会', badge:'b-murata', site:'https://muratashokai.theshop.jp/', url:'https://muratashokai.theshop.jp/feeds/items.atom' },
@@ -520,6 +553,8 @@ let sedoriList = JSON.parse(localStorage.getItem('sedori') || '[]');
 let editIdx = -1;
 let intervalSec = 300, countdown = 300, countRef = null;
 let slackCfg = JSON.parse(localStorage.getItem('slack') || '{"url":"","trigger":"match","enabled":true}');
+let teamsCfg = JSON.parse(localStorage.getItem('teams') || '{"url":"","trigger":"match","enabled":true}');
+let shopOrder = JSON.parse(localStorage.getItem('shopOrder') || 'null') || SEARCH_SHOPS.map((_,i)=>i);
 
 // Nav
 function goPage(id, btn) {
@@ -633,15 +668,60 @@ function renderItems() {
     </div>`;
   }).join('');
 }
-async function fetchFeed(feed) {
-  const res = await fetch(R2J + encodeURIComponent(feed.url) + '&count=40');
+function parseXmlFeed(xmlStr, feed) {
+  const doc = new DOMParser().parseFromString(xmlStr, 'text/xml');
+  if (doc.querySelector('parsererror')) throw new Error('XML parse error');
+  const isAtom = !!doc.querySelector('feed');
+  const entries = isAtom ? [...doc.querySelectorAll('entry')] : [...doc.querySelectorAll('item')];
+  return entries.slice(0, 40).map(e => {
+    let title, link, pubDate, desc, thumb;
+    if (isAtom) {
+      title = e.querySelector('title')?.textContent?.trim() || '—';
+      link = e.querySelector('link[rel="alternate"]')?.getAttribute('href') || e.querySelector('link')?.getAttribute('href') || feed.site;
+      pubDate = e.querySelector('published')?.textContent || e.querySelector('updated')?.textContent;
+      desc = e.querySelector('content')?.textContent || e.querySelector('summary')?.textContent || '';
+      thumb = e.querySelector('[url]')?.getAttribute('url') || null;
+    } else {
+      title = e.querySelector('title')?.textContent?.trim() || '—';
+      link = e.querySelector('link')?.textContent?.trim() || feed.site;
+      pubDate = e.querySelector('pubDate')?.textContent;
+      desc = e.querySelector('description')?.textContent || '';
+      thumb = e.querySelector('thumbnail')?.getAttribute('url') || e.querySelector('enclosure[type^="image"]')?.getAttribute('url') || null;
+    }
+    const full = title + ' ' + desc;
+    const pm = full.match(/[¥￥][\d,]+|[\d,]+円/);
+    return { source:feed.id, title, link, date:parseDate(pubDate), thumbnail:thumb, price:pm?pm[0]:null, sizes:extractSizes(full), matched:isMatch(title), isNew:false };
+  });
+}
+function fetchWithTimeout(url, timeoutMs) {
+  const ctrl = new AbortController();
+  const tid = setTimeout(() => ctrl.abort(), timeoutMs);
+  return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(tid));
+}
+async function fetchViaProxy(feed) {
+  const res = await fetchWithTimeout(ALLORIGINS + encodeURIComponent(feed.url), 12000);
+  if (!res.ok) throw new Error('proxy HTTP ' + res.status);
+  const j = await res.json();
+  if (!j.contents) throw new Error('proxy empty response');
+  return parseXmlFeed(j.contents, feed);
+}
+async function fetchViaRss2json(feed) {
+  const res = await fetchWithTimeout(R2J + encodeURIComponent(feed.url) + '&count=40', 10000);
+  if (!res.ok) throw new Error('rss2json HTTP ' + res.status);
   const data = await res.json();
-  if (data.status!=='ok') throw new Error(data.message||'error');
+  if (data.status !== 'ok') throw new Error(data.message || 'rss2json error');
   return (data.items||[]).map(item => {
-    const full = item.title+' '+(item.description||'');
+    const full = item.title + ' ' + (item.description || '');
     const pm = full.match(/[¥￥][\d,]+|[\d,]+円/);
     return { source:feed.id, title:item.title||'—', link:item.link||feed.site, date:parseDate(item.pubDate), thumbnail:item.thumbnail||item.enclosure?.link||null, price:pm?pm[0]:null, sizes:extractSizes(full), matched:isMatch(item.title||''), isNew:false };
   });
+}
+async function fetchFeed(feed) {
+  try {
+    return await fetchViaProxy(feed);
+  } catch(e) {
+    return await fetchViaRss2json(feed);
+  }
 }
 async function loadAll() {
   setStatus('loading','取得中...');
@@ -662,6 +742,10 @@ async function loadAll() {
     const notify = allItems.filter(i=>i.isNew&&(slackCfg.trigger==='new'||i.matched));
     if (notify.length) sendSlack(notify);
   }
+  if (nc>0 && teamsCfg.enabled && teamsCfg.url) {
+    const notify = allItems.filter(i=>i.isNew&&(teamsCfg.trigger==='new'||i.matched));
+    if (notify.length) sendTeams(notify);
+  }
   startCd();
 }
 function startCd() {
@@ -675,25 +759,30 @@ function startCd() {
   }, 1000);
 }
 function manualRefresh() { if(countRef)clearInterval(countRef); loadAll(); }
-function toggleSize() {
-  const body = document.getElementById('sizeBody');
-  const label = document.getElementById('sizeToggleLabel');
-  const open = body.style.display === 'none';
-  body.style.display = open ? '' : 'none';
-  label.textContent = open ? '▲ 閉じる' : '▼ 開く';
-}
 function updateInterval() { intervalSec=parseInt(document.getElementById('intervalSel').value); if(countRef)clearInterval(countRef); startCd(); }
 
 // Search
+function saveShopOrder() { localStorage.setItem('shopOrder', JSON.stringify(shopOrder)); }
+function moveShop(si, dir) {
+  const j = si + dir;
+  if (j < 0 || j >= shopOrder.length) return;
+  [shopOrder[si], shopOrder[j]] = [shopOrder[j], shopOrder[si]];
+  saveShopOrder(); renderSearch();
+}
 function renderSearch() {
   const el = document.getElementById('searchShops');
   if (!keywords.length) { el.innerHTML='<div class="empty">キーワードを追加してください</div>'; return; }
-  el.innerHTML = SEARCH_SHOPS.map((shop,si) => `
+  const shops = shopOrder.map(i => SEARCH_SHOPS[i]);
+  el.innerHTML = shops.map((shop, si) => `
     ${si>0?'<div class="divider"></div>':''}
     <div class="shop-block">
       <div class="shop-head">
         <div class="shop-icon">${shop.icon}</div>
-        <div><div class="shop-name">${shop.name}</div><div class="shop-sub">${shop.sub}</div></div>
+        <div style="flex:1"><div class="shop-name">${shop.name}</div><div class="shop-sub">${shop.sub}</div></div>
+        <div style="display:flex;flex-direction:column;gap:2px;margin-left:8px">
+          <button class="btn-xs" onclick="moveShop(${si},-1)"${si===0?' disabled':''}>↑</button>
+          <button class="btn-xs" onclick="moveShop(${si},1)"${si===shops.length-1?' disabled':''}>↓</button>
+        </div>
       </div>
       <div class="link-grid">
         ${keywords.map(kw=>`<a class="search-link" href="${shop.url(kw)}" target="_blank" rel="noopener">↗ <span>${kw}</span></a>`).join('')}
@@ -704,28 +793,34 @@ function renderSearch() {
 // Sedori
 function saveSedori() { localStorage.setItem('sedori', JSON.stringify(sedoriList)); }
 function quickAdd(title) {
-  sedoriList.unshift({ name:title, buy:0, sell:0, source:'', status:'watching', memo:'', date:new Date().toISOString().slice(0,10), link:'' });
+  sedoriList.unshift({ name:title, buy:0, sell:0, source:'', status:'watching', memo:'', date:new Date().toISOString().slice(0,10), link:'', condition:'', sellPlatform:'other' });
   saveSedori(); updateNavBadge();
   alert('仕入れ候補に追加しました。台帳で詳細を入力してください。');
 }
 function addSedori() {
   const name = document.getElementById('f-name').value.trim();
   if (!name) { alert('商品名を入力してください'); return; }
-  sedoriList.unshift({ name, buy:parseInt(document.getElementById('f-buy').value)||0, sell:parseInt(document.getElementById('f-sell').value)||0, source:document.getElementById('f-source').value, status:document.getElementById('f-status').value, memo:document.getElementById('f-memo').value, date:document.getElementById('f-date').value||new Date().toISOString().slice(0,10), link:document.getElementById('f-link').value });
+  sedoriList.unshift({ name, buy:parseInt(document.getElementById('f-buy').value)||0, sell:parseInt(document.getElementById('f-sell').value)||0, source:document.getElementById('f-source').value, status:document.getElementById('f-status').value, memo:document.getElementById('f-memo').value, date:document.getElementById('f-date').value||new Date().toISOString().slice(0,10), link:document.getElementById('f-link').value, condition:document.getElementById('f-condition').value, sellPlatform:document.getElementById('f-platform').value });
   saveSedori();
   ['f-name','f-buy','f-sell','f-memo','f-link'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('profitPreview').textContent = '予想利益：— 円　/　利益率：— %';
+  document.getElementById('f-condition').value='';
+  document.getElementById('f-platform').value='other';
+  document.getElementById('profitPreview').textContent = '純利益：— 円　/　利益率：— %';
   renderSedori(); updateNavBadge();
   switchTab('list', document.querySelector('#page-sedori .tab'), 'sedori');
 }
-['f-buy','f-sell'].forEach(id => {
-  document.getElementById(id).addEventListener('input', () => {
-    const b=parseInt(document.getElementById('f-buy').value)||0, s=parseInt(document.getElementById('f-sell').value)||0;
-    const p=s-b, r=b>0?((p/b)*100).toFixed(1):'—';
-    const c=p>0?'var(--accent)':p<0?'var(--red)':'var(--text3)';
-    document.getElementById('profitPreview').innerHTML = `予想利益：<span style="color:${c}">¥${p.toLocaleString()}</span>　/　利益率：<span style="color:${c}">${r}%</span>`;
-  });
-});
+function updatePreview() {
+  const b=parseInt(document.getElementById('f-buy').value)||0;
+  const s=parseInt(document.getElementById('f-sell').value)||0;
+  const plat=document.getElementById('f-platform').value;
+  const fee=Math.floor(s*(FEES[plat]||0));
+  const p=s-b-fee, r=b>0?((p/b)*100).toFixed(1):'—';
+  const c=p>0?'var(--accent)':p<0?'var(--red)':'var(--text3)';
+  const feeStr=fee>0?` <span style="color:var(--text3)">（手数料 −¥${fee.toLocaleString()}）</span>`:'';
+  document.getElementById('profitPreview').innerHTML=`純利益：<span style="color:${c}">¥${p.toLocaleString()}</span>${feeStr}　/　利益率：<span style="color:${c}">${r}%</span>`;
+}
+['f-buy','f-sell'].forEach(id => document.getElementById(id).addEventListener('input', updatePreview));
+document.getElementById('f-platform').addEventListener('change', updatePreview);
 function setSF(f, btn) {
   sedoriFilter = f;
   document.querySelectorAll('#sedori-list .chip').forEach(c=>c.classList.remove('active'));
@@ -734,6 +829,14 @@ function setSF(f, btn) {
 }
 const SL = { watching:'検討中', purchased:'仕入済', listed:'出品中', sold:'売却済' };
 const SC = { watching:'s-watching', purchased:'s-purchased', listed:'s-listed', sold:'s-sold' };
+const FEES = { mercari: 0.10, yahoo: 0.088, other: 0 };
+const COND_LABEL = { A:'A品', B:'B品', C:'C品', D:'D品' };
+const COND_CSS   = { A:'cond-a', B:'cond-b', C:'cond-c', D:'cond-d' };
+function calcNet(item) {
+  const sell = item.sell || 0;
+  const fee = Math.floor(sell * (FEES[item.sellPlatform] || 0));
+  return { fee, net: sell - (item.buy || 0) - fee };
+}
 function renderSedori() {
   let items = sedoriFilter==='all' ? sedoriList : sedoriList.filter(i=>i.status===sedoriFilter);
   const body = document.getElementById('sedoriBody'), empty = document.getElementById('sedoriEmpty');
@@ -741,13 +844,15 @@ function renderSedori() {
   empty.style.display = 'none';
   body.innerHTML = items.map(item => {
     const ri = sedoriList.indexOf(item);
-    const p=(item.sell||0)-(item.buy||0), r=item.buy>0?((p/item.buy)*100).toFixed(1):'—';
-    const pc = p>0?'pp':p<0?'pn':'pz';
+    const {fee, net} = calcNet(item);
+    const r=item.buy>0?((net/item.buy)*100).toFixed(1):'—';
+    const pc=net>0?'pp':net<0?'pn':'pz';
+    const condBadge=item.condition?`<span class="sbadge ${COND_CSS[item.condition]}" style="margin-right:4px">${COND_LABEL[item.condition]}</span>`:'';
     return `<tr>
-      <td><div style="font-weight:400">${item.name}</div><div style="font-size:11px;color:var(--text3)">${item.memo||''}</div></td>
+      <td><div style="font-weight:400;display:flex;align-items:center;flex-wrap:wrap;gap:3px">${condBadge}${item.name}</div><div style="font-size:11px;color:var(--text3)">${item.memo||''}</div></td>
       <td style="font-family:var(--mono)">¥${(item.buy||0).toLocaleString()}</td>
       <td style="font-family:var(--mono)">${item.sell?'¥'+item.sell.toLocaleString():'—'}</td>
-      <td class="${pc}">¥${p.toLocaleString()}</td>
+      <td class="${pc}">¥${net.toLocaleString()}</td>
       <td class="${pc}">${r}%</td>
       <td><span class="sbadge ${SC[item.status]}">${SL[item.status]}</span></td>
       <td style="font-size:11px;color:var(--text3)">${item.date||'—'}</td>
@@ -763,11 +868,13 @@ function openEdit(idx) {
   ['name','source','memo'].forEach(k=>document.getElementById('e-'+k).value=item[k]||'');
   ['buy','sell'].forEach(k=>document.getElementById('e-'+k).value=item[k]||'');
   document.getElementById('e-status').value=item.status||'watching';
+  document.getElementById('e-condition').value=item.condition||'';
+  document.getElementById('e-platform').value=item.sellPlatform||'other';
   document.getElementById('editModal').style.display='flex';
 }
 function saveEdit() {
   if(editIdx<0)return;
-  sedoriList[editIdx]={...sedoriList[editIdx], name:document.getElementById('e-name').value, buy:parseInt(document.getElementById('e-buy').value)||0, sell:parseInt(document.getElementById('e-sell').value)||0, status:document.getElementById('e-status').value, source:document.getElementById('e-source').value, memo:document.getElementById('e-memo').value};
+  sedoriList[editIdx]={...sedoriList[editIdx], name:document.getElementById('e-name').value, buy:parseInt(document.getElementById('e-buy').value)||0, sell:parseInt(document.getElementById('e-sell').value)||0, status:document.getElementById('e-status').value, source:document.getElementById('e-source').value, memo:document.getElementById('e-memo').value, condition:document.getElementById('e-condition').value, sellPlatform:document.getElementById('e-platform').value};
   saveSedori(); closeModal(); renderSedori(); renderProfit(); updateNavBadge();
 }
 function closeModal() { document.getElementById('editModal').style.display='none'; editIdx=-1; }
@@ -776,9 +883,11 @@ function delSedori(idx) { if(!confirm('削除しますか？'))return; sedoriLis
 // Profit
 function renderProfit() {
   const sold = sedoriList.filter(i=>i.status==='sold'&&i.sell>0);
-  const rev=sold.reduce((s,i)=>s+(i.sell||0),0), cost=sold.reduce((s,i)=>s+(i.buy||0),0), net=rev-cost;
-  const avg=sold.length?((sold.reduce((s,i)=>s+(i.buy>0?(i.sell-i.buy)/i.buy:0),0)/sold.length)*100).toFixed(1):0;
-  document.getElementById('pNet').textContent='¥'+net.toLocaleString();
+  const rev=sold.reduce((s,i)=>s+(i.sell||0),0), cost=sold.reduce((s,i)=>s+(i.buy||0),0);
+  const totalFee=sold.reduce((s,i)=>s+calcNet(i).fee,0);
+  const netTotal=rev-cost-totalFee;
+  const avg=sold.length?((sold.reduce((s,i)=>{const{net}=calcNet(i);return s+(i.buy>0?net/i.buy:0);},0)/sold.length)*100).toFixed(1):0;
+  document.getElementById('pNet').textContent='¥'+netTotal.toLocaleString();
   document.getElementById('pRev').textContent='¥'+rev.toLocaleString();
   document.getElementById('pCost').textContent='¥'+cost.toLocaleString();
   document.getElementById('pMargin').textContent=avg+'%';
@@ -786,9 +895,9 @@ function renderProfit() {
   if(!sold.length){el.innerHTML='';em.style.display='';return;}
   em.style.display='none';
   el.innerHTML=sold.map(item=>{
-    const p=(item.sell||0)-(item.buy||0), r=item.buy>0?((p/item.buy)*100).toFixed(1):'—';
-    const pc=p>0?'pp':p<0?'pn':'pz';
-    return `<tr><td>${item.name}</td><td style="font-family:var(--mono)">¥${(item.buy||0).toLocaleString()}</td><td style="font-family:var(--mono)">¥${(item.sell||0).toLocaleString()}</td><td class="${pc}">¥${p.toLocaleString()}</td><td class="${pc}">${r}%</td><td style="font-size:11px;color:var(--text3)">${item.source||'—'}</td></tr>`;
+    const {fee,net}=calcNet(item), r=item.buy>0?((net/item.buy)*100).toFixed(1):'—';
+    const pc=net>0?'pp':net<0?'pn':'pz';
+    return `<tr><td>${item.name}</td><td style="font-family:var(--mono)">¥${(item.buy||0).toLocaleString()}</td><td style="font-family:var(--mono)">¥${(item.sell||0).toLocaleString()}</td><td style="font-family:var(--mono);color:var(--text3)">${fee>0?'−¥'+fee.toLocaleString():'—'}</td><td class="${pc}">¥${net.toLocaleString()}</td><td class="${pc}">${r}%</td><td style="font-size:11px;color:var(--text3)">${item.source||'—'}</td></tr>`;
   }).join('');
 }
 
@@ -814,11 +923,36 @@ async function sendSlack(items) {
   try{await fetch(slackCfg.url,{method:'POST',body:JSON.stringify({text:`🛋 *KAGUWATCH 新着* (${items.length}件)\n${lines.join('\n')}`}),headers:{'Content-Type':'application/json'}});}catch(e){}
 }
 
+// Teams
+function saveTeams() {
+  teamsCfg={url:document.getElementById('teamsUrl').value.trim(), trigger:document.getElementById('teamsTrigger').value, enabled:document.getElementById('teamsEnabled').checked};
+  localStorage.setItem('teams',JSON.stringify(teamsCfg)); alert('保存しました');
+}
+async function testTeams() {
+  const url=document.getElementById('teamsUrl').value.trim();
+  const r=document.getElementById('teamsTestResult');
+  if(!url){r.style.display='';r.className='test-result test-err';r.textContent='Webhook URLを入力してください';return;}
+  try {
+    await fetch(url,{method:'POST',body:JSON.stringify({"@type":"MessageCard","@context":"http://schema.org/extensions","text":"🛋 KAGUWATCH テスト通知\nTeams連携が正常に動作しています！"}),headers:{'Content-Type':'application/json'}});
+    r.style.display='';r.className='test-result test-ok';r.textContent='✓ 送信成功！Teamsを確認してください';
+  } catch(e) {
+    r.style.display='';r.className='test-result test-err';r.textContent='送信失敗（CORSエラーの可能性あり。Vercel上では正常に動作します）';
+  }
+}
+async function sendTeams(items) {
+  if(!teamsCfg.url)return;
+  const lines=items.slice(0,5).map(i=>`• ${i.matched?'★ ':''}${i.title}${i.price?' ('+i.price+')':''}  \n${i.link}`);
+  try{await fetch(teamsCfg.url,{method:'POST',body:JSON.stringify({"@type":"MessageCard","@context":"http://schema.org/extensions","themeColor":"2a5c3f","summary":"KAGUWATCH 新着","sections":[{"activityTitle":`🛋 KAGUWATCH 新着 (${items.length}件)`,"activityText":lines.join('\n')}]}),headers:{'Content-Type':'application/json'}});}catch(e){}
+}
+
 // Init
 function init() {
   document.getElementById('slackUrl').value=slackCfg.url||'';
   document.getElementById('slackTrigger').value=slackCfg.trigger||'match';
   document.getElementById('slackEnabled').checked=slackCfg.enabled!==false;
+  document.getElementById('teamsUrl').value=teamsCfg.url||'';
+  document.getElementById('teamsTrigger').value=teamsCfg.trigger||'match';
+  document.getElementById('teamsEnabled').checked=teamsCfg.enabled!==false;
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   renderTags(); renderSedori(); updateNavBadge(); loadAll();
 }
