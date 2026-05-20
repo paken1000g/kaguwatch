@@ -137,6 +137,13 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .b-guide { background: #f3f0e8; color: #7a5c1a; }
 .b-restyle { background: #e8f5e9; color: #1b5e20; }
 .b-kokoelma { background: #fdf0fb; color: #7a1a70; }
+.b-greeniche { background: #e6f4ea; color: #1e6b3a; }
+.b-lloyds { background: #f5f0e8; color: #7a4f1a; }
+.b-malto { background: #f0e8f5; color: #5a1a7a; }
+.b-furuichi { background: #e8f5f0; color: #1a6b5a; }
+.b-haluta { background: #fef5e6; color: #8a5a00; }
+.b-tokyoapt { background: #e8f0ff; color: #1a3a8a; }
+.b-timehype { background: #f5e8e8; color: #7a1a1a; }
 .b-match { background: var(--accent-lt); color: var(--accent); }
 .b-new { background: var(--red-lt); color: var(--red); }
 .item-meta { font-size: 11px; color: var(--text3); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -301,6 +308,13 @@ tr:hover td { background: var(--bg3); }
         <button class="chip" onclick="setFilter('tokyo',this)">東京リサイクル</button>
         <button class="chip" onclick="setFilter('rocca',this)">rocca rocca</button>
         <button class="chip" onclick="setFilter('restyle',this)">リスタイル</button>
+        <button class="chip" onclick="setFilter('greeniche',this)">greeniche</button>
+        <button class="chip" onclick="setFilter('lloyds',this)">Lloyd's</button>
+        <button class="chip" onclick="setFilter('malto',this)">MALTO</button>
+        <button class="chip" onclick="setFilter('furuichi',this)">furuichi</button>
+        <button class="chip" onclick="setFilter('haluta',this)">haluta</button>
+        <button class="chip" onclick="setFilter('tokyoapt',this)">TokyoApt</button>
+        <button class="chip" onclick="setFilter('timehype',this)">TIME HYPE</button>
       </div>
 
       <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
@@ -562,9 +576,16 @@ tr:hover td { background: var(--bg3); }
 const R2J = 'https://api.rss2json.com/v1/api.json?rss_url=';
 const ALLORIGINS = 'https://api.allorigins.win/get?url=';
 const RSS_FEEDS = [
-  { id:'tokyo',     name:'東京リサイクル',  badge:'b-tokyo',   site:'https://tokyo-recycle.net/collections/all', url:'https://tokyo-recycle.net/collections/all.atom' },
-  { id:'rocca',     name:'rocca rocca',     badge:'b-rocca',   site:'https://roccarocca.shop/', url:'https://roccarocca.shop/collections/all.atom' },
-  { id:'restyle',   name:'リスタイル',      badge:'b-restyle', site:'https://www.restyle-net.com/', url:'https://www.restyle-net.com/collections/all.atom' },
+  { id:'tokyo',       name:'東京リサイクル',       badge:'b-tokyo',    site:'https://tokyo-recycle.net/collections/all', url:'https://tokyo-recycle.net/collections/all.atom' },
+  { id:'rocca',       name:'rocca rocca',           badge:'b-rocca',    site:'https://roccarocca.shop/', url:'https://roccarocca.shop/collections/all.atom' },
+  { id:'restyle',     name:'リスタイル',            badge:'b-restyle',  site:'https://www.restyle-net.com/', url:'https://www.restyle-net.com/collections/all.atom' },
+  { id:'greeniche',   name:'greeniche',             badge:'b-greeniche',site:'https://greeniche.jp/', url:'https://greeniche.jp/collections/all.atom' },
+  { id:'lloyds',      name:"Lloyd's Antiques",      badge:'b-lloyds',   site:'https://www.lloyds.co.jp/', url:'https://www.lloyds.co.jp/collections/all.atom' },
+  { id:'malto',       name:'MALTO',                 badge:'b-malto',    site:'https://www.salhouse.com/', url:'https://www.salhouse.com/collections/all.atom' },
+  { id:'furuichi',    name:'furuichi',              badge:'b-furuichi', site:'https://furuichic.com/', url:'https://furuichic.com/collections/all.atom' },
+  { id:'haluta',      name:'haluta',                badge:'b-haluta',   site:'https://www.haluta-shop.jp/', url:'https://www.haluta-shop.jp/collections/all.atom' },
+  { id:'tokyoapt',    name:'TokyoApartmentStore',   badge:'b-tokyoapt', site:'https://tokyoapartmentstore.com/', url:'https://tokyoapartmentstore.com/collections/all.atom' },
+  { id:'timehype',    name:'TIME HYPE',             badge:'b-timehype', site:'https://time-hype.com/', url:'https://time-hype.com/collections/all.atom' },
 ];
 const SEARCH_SHOPS = [
   { name:'IKEA公式', icon:'🏠', sub:'新品参考価格・品番確認用', url:kw=>`https://www.ikea.com/jp/ja/search/?q=${encodeURIComponent(kw)}` },
