@@ -246,8 +246,11 @@ tr:hover td { background: var(--bg3); }
       <span class="nav-dot"></span>損益サマリ
     </button>
     <div class="nav-label">設定</div>
+    <button class="nav-item" onclick="goPage('cfworker',this)">
+      <span class="nav-dot"></span>Cloudflare Worker
+    </button>
     <button class="nav-item" onclick="goPage('settings',this)">
-      <span class="nav-dot"></span>Slack通知設定
+      <span class="nav-dot"></span>通知設定
     </button>
   </nav>
   <div class="sidebar-foot">
@@ -425,15 +428,14 @@ tr:hover td { background: var(--bg3); }
     </div>
   </div>
 
-  <!-- Slack設定 -->
-  <div id="page-settings" style="display:none">
+  <!-- Cloudflare Worker設定 -->
+  <div id="page-cfworker" style="display:none">
     <div class="page-head">
-      <div class="page-title">Slack通知設定</div>
-      <div class="page-sub">キーワード一致時に指定チャンネルへ自動通知</div>
+      <div class="page-title">Cloudflare Worker</div>
+      <div class="page-sub">RSS取得を安定化するプロキシの設定</div>
     </div>
     <div class="content">
       <div class="settings-section">
-        <div class="settings-title">Cloudflare Worker（推奨・無料）</div>
         <div class="guide-box" style="margin-bottom:10px">
           <div class="guide-title">設定するとRSS取得が安定します（10万回/日 無料）</div>
           <div class="guide-body">
@@ -449,6 +451,16 @@ tr:hover td { background: var(--bg3); }
         </div>
         <div id="cfWorkerResult" style="display:none"></div>
       </div>
+    </div>
+  </div>
+
+  <!-- 通知設定 -->
+  <div id="page-settings" style="display:none">
+    <div class="page-head">
+      <div class="page-title">通知設定</div>
+      <div class="page-sub">キーワード一致時に自動通知</div>
+    </div>
+    <div class="content">
       <div class="settings-section">
         <div class="settings-title">Slack Webhook</div>
         <div class="settings-row"><label>Webhook URL</label><input type="text" id="slackUrl" placeholder="https://hooks.slack.com/services/..."></div>
