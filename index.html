@@ -291,9 +291,6 @@ tr:hover td { background: var(--bg3); }
         <button class="chip" onclick="setFilter('furuichi',this)">furuichi</button>
         <button class="chip" onclick="setFilter('tokyoapt',this)">TokyoApt</button>
         <button class="chip" onclick="setFilter('timehype',this)">TIME HYPE</button>
-        <label style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--text2);margin-left:4px;cursor:pointer">
-          <input type="checkbox" id="hideSoldOut" onchange="renderItems()"> 在庫あり
-        </label>
       </div>
 
       <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
@@ -604,8 +601,17 @@ function switchTab(id, btn, page) {
 }
 
 // Keywords
-function addKw() { _kw(document.getElementById('kwIn')); }
-function addKw2() { _kw(document.getElementById('kwIn2')); }
+function addKw() {
+  const inp = document.getElementById('kwIn');
+  const v = inp.value.trim();
+  inp.value = '';
+  inp.focus();
+  if (v && !keywords.includes(v)) {
+    keywords.push(v);
+    localStorage.setItem('keywords', JSON.stringify(keywords));
+    renderTags(); renderSearch();
+  }
+}
 function _kw(inp) {
   const v = inp.value.trim();
   inp.value = '';
@@ -683,7 +689,6 @@ function renderItems() {
   if (watchQuery) items = items.filter(i => i.title.toLowerCase().includes(watchQuery));
   if (currentFilter==='matched') items = items.filter(i=>i.matched);
   else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
-  if (document.getElementById('hideSoldOut')?.checked) items = items.filter(i=>!i.soldOut);
   const mc = allItems.filter(i=>i.matched).length;
   document.getElementById('sMatch').textContent = mc;
   document.getElementById('sTotal').textContent = allItems.length;
