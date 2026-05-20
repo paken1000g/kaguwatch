@@ -136,6 +136,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .b-match { background: var(--accent-lt); color: var(--accent); }
 .b-new { background: var(--red-lt); color: var(--red); }
 .item-meta { font-size: 11px; color: var(--text3); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.item-price { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); }
 .item-link { color: var(--blue); text-decoration: none; font-size: 11px; }
 .item-link:hover { text-decoration: underline; }
 .item-actions { margin-top: 5px; }
@@ -571,7 +572,7 @@ const SEARCH_SHOPS = [
   { name:'Roundabout', icon:'🌀', sub:'ヴィンテージ家具専門', url:kw=>`https://roundabout.co.jp/?s=${encodeURIComponent(kw)}` }
 ];
 
-let keywords = ['IKEAソファ','USMハラー','カリモク'];
+let keywords = [];
 let allItems = [], prevLinks = new Set();
 let currentFilter = 'all', sedoriFilter = 'all';
 let sizeFilter = { w:200, h:150, d:100 };
@@ -700,7 +701,7 @@ function renderItems() {
           ${item.matched?'<span class="badge b-match">一致</span>':''}
         </div>
         <div class="item-meta">
-          ${item.price?`<span>${item.price}</span>`:''}
+          ${item.price?`<span class="item-price">${item.price}</span>`:''}
           <span>${item.date}</span>
           <a class="item-link" href="${item.link}" target="_blank" rel="noopener">詳細 →</a>
         </div>
