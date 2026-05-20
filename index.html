@@ -739,8 +739,9 @@ function parseXmlFeed(xmlStr, feed) {
            || null;
     }
     const full = title + ' ' + desc;
-    const pm = full.match(/[¥￥][\d,]+|[\d,]+円/);
-    return { source:feed.id, title, link, date:parseDate(pubDate), thumbnail:thumb, price:pm?pm[0]:null, sizes:extractSizes(full), matched:isMatch(full), isNew:false };
+    const pm = full.match(/[¥￥]\s*[\d,]+|[\d,]+\s*円/);
+    const ts = pubDate ? (new Date(pubDate).getTime() || 0) : 0;
+    return { source:feed.id, title, link, date:parseDate(pubDate), ts, thumbnail:thumb, price:pm?pm[0]:null, sizes:extractSizes(full), matched:isMatch(full), isNew:false };
   });
 }
 function fetchWithTimeout(url, timeoutMs) {
@@ -777,8 +778,9 @@ async function fetchViaRss2json(feed) {
   if (data.status !== 'ok') throw new Error(data.message || 'rss2json error');
   return (data.items||[]).map(item => {
     const full = item.title + ' ' + (item.description || '');
-    const pm = full.match(/[¥￥][\d,]+|[\d,]+円/);
-    return { source:feed.id, title:item.title||'—', link:item.link||feed.site, date:parseDate(item.pubDate), thumbnail:item.thumbnail||item.enclosure?.link||null, price:pm?pm[0]:null, sizes:extractSizes(full), matched:isMatch(full), isNew:false };
+    const pm = full.match(/[¥￥]\s*[\d,]+|[\d,]+\s*円/);
+    const ts = item.pubDate ? (new Date(item.pubDate).getTime() || 0) : 0;
+    return { source:feed.id, title:item.title||'—', link:item.link||feed.site, date:parseDate(item.pubDate), ts, thumbnail:item.thumbnail||item.enclosure?.link||null, price:pm?pm[0]:null, sizes:extractSizes(full), matched:isMatch(full), isNew:false };
   });
 }
 async function fetchFeed(feed) {
@@ -799,7 +801,7 @@ async function loadAll() {
   let nc = 0;
   combined = combined.map(item => { const n=prevLinks.size>0&&!prevLinks.has(item.link); if(n)nc++; return {...item,isNew:n}; });
   prevLinks = newLinks;
-  allItems = combined.sort((a,b)=>b.matched-a.matched||b.isNew-a.isNew);
+  allItems = combined.sort((a,b)=>b.ts-a.ts);
   document.getElementById('sNew').textContent = nc>0?`+${nc}`:'—';
   if (errs.length && !combined.length) setStatus('err','取得失敗: ' + errs.join(' / '));
   else if (errs.length) setStatus('err','一部失敗: ' + errs.join(' / '));
