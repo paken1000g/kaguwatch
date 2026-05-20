@@ -128,6 +128,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .b-jmty { background: var(--amber-lt); color: var(--amber); }
 .b-shark { background: #f0edf8; color: #5b2d8a; }
 .b-kagutone { background: #fef3e8; color: #b5521e; }
+.b-clapp { background: #e8f5f5; color: #1a7a7a; }
+.b-rocca { background: #fce8f0; color: #8c2a4e; }
 .b-match { background: var(--accent-lt); color: var(--accent); }
 .b-new { background: var(--red-lt); color: var(--red); }
 .item-meta { font-size: 11px; color: var(--text3); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -275,7 +277,7 @@ tr:hover td { background: var(--bg3); }
         <div class="stat"><div class="stat-n g" id="sMatch">—</div><div class="stat-l">キーワード一致</div></div>
         <div class="stat"><div class="stat-n" id="sTotal">—</div><div class="stat-l">取得件数</div></div>
         <div class="stat"><div class="stat-n r" id="sNew">—</div><div class="stat-l">新着（前回比）</div></div>
-        <div class="stat"><div class="stat-n b" id="sShops">5</div><div class="stat-l">RSS対応店舗</div></div>
+        <div class="stat"><div class="stat-n b" id="sShops">7</div><div class="stat-l">RSS対応店舗</div></div>
       </div>
 
       <div class="chips" id="filterChips">
@@ -286,6 +288,8 @@ tr:hover td { background: var(--bg3); }
         <button class="chip" onclick="setFilter('bello',this)">Bellointeri</button>
         <button class="chip" onclick="setFilter('mobel',this)">Mobelman</button>
         <button class="chip" onclick="setFilter('kagutone',this)">家具トーン</button>
+        <button class="chip" onclick="setFilter('clapp',this)">Clapp</button>
+        <button class="chip" onclick="setFilter('rocca',this)">rocca rocca</button>
       </div>
 
       <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
@@ -551,7 +555,9 @@ const RSS_FEEDS = [
   { id:'concept',  name:'コンセプトデザイン', badge:'b-murata',   site:'https://store-conceptdesign.com/', url:'https://store-conceptdesign.com/collections/all.atom' },
   { id:'bello',    name:'Bellointeri',         badge:'b-jmty',     site:'https://bellointeri.base.shop/', url:'https://bellointeri.base.shop/feeds/items.atom' },
   { id:'mobel',    name:'Mobelman',            badge:'b-shark',    site:'https://mobelman.official.ec/', url:'https://mobelman.official.ec/feeds/items.atom' },
-  { id:'kagutone', name:'家具トーン',           badge:'b-kagutone', site:'https://kagutone.theshop.jp/', url:'https://kagutone.theshop.jp/feeds/items.atom' },
+  { id:'kagutone', name:'家具トーン',  badge:'b-kagutone', site:'https://kagutone.theshop.jp/', url:'https://kagutone.theshop.jp/feeds/items.atom' },
+  { id:'clapp',    name:'Clapp',      badge:'b-clapp',    site:'https://clapp.theshop.jp/', url:'https://clapp.theshop.jp/feeds/items.atom' },
+  { id:'rocca',    name:'rocca rocca',badge:'b-rocca',    site:'https://roccarocca.shop/', url:'https://roccarocca.shop/collections/all.atom' },
 ];
 const SEARCH_SHOPS = [
   { name:'IKEA公式', icon:'🏠', sub:'新品参考価格・品番確認用', url:kw=>`https://www.ikea.com/jp/ja/search/?q=${encodeURIComponent(kw)}` },
