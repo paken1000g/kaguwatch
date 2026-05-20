@@ -695,31 +695,31 @@ function renderItems() {
     </div>`;
   }).join('');
 }
+function gbt(el, tag) { return [...el.getElementsByTagNameNS('*', tag)]; }
+function gbt1(el, tag) { return el.getElementsByTagNameNS('*', tag)[0]; }
 function parseXmlFeed(xmlStr, feed) {
-  // Strip XML namespace declarations so querySelector works regardless of xmlns
-  const clean = xmlStr.replace(/ xmlns(:\w+)?="[^"]*"/g, '');
-  const doc = new DOMParser().parseFromString(clean, 'text/xml');
+  const doc = new DOMParser().parseFromString(xmlStr, 'text/xml');
   if (doc.querySelector('parsererror')) throw new Error('XML parse error');
-  const isAtom = !!doc.querySelector('feed');
-  const entries = isAtom ? [...doc.querySelectorAll('entry')] : [...doc.querySelectorAll('item')];
+  const isAtom = gbt(doc, 'feed').length > 0;
+  const entries = gbt(doc, isAtom ? 'entry' : 'item');
   return entries.slice(0, 40).map(e => {
     let title, link, pubDate, desc, thumb;
     if (isAtom) {
-      title = e.querySelector('title')?.textContent?.trim() || '—';
-      link = e.querySelector('link[rel="alternate"]')?.getAttribute('href') || e.querySelector('link')?.getAttribute('href') || feed.site;
-      pubDate = e.querySelector('published')?.textContent || e.querySelector('updated')?.textContent;
-      desc = e.querySelector('content')?.textContent || e.querySelector('summary')?.textContent || '';
-      thumb = e.querySelector('thumbnail')?.getAttribute('url')
-           || e.querySelector('[url]')?.getAttribute('url')
+      title = gbt1(e, 'title')?.textContent?.trim() || '—';
+      const links = gbt(e, 'link');
+      link = (links.find(l => l.getAttribute('rel') === 'alternate') || links[0])?.getAttribute('href') || feed.site;
+      pubDate = gbt1(e, 'published')?.textContent || gbt1(e, 'updated')?.textContent;
+      desc = gbt1(e, 'content')?.textContent || gbt1(e, 'summary')?.textContent || '';
+      thumb = gbt1(e, 'thumbnail')?.getAttribute('url')
            || desc.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1]
            || null;
     } else {
-      title = e.querySelector('title')?.textContent?.trim() || '—';
-      link = e.querySelector('link')?.textContent?.trim() || feed.site;
-      pubDate = e.querySelector('pubDate')?.textContent;
-      desc = e.querySelector('description')?.textContent || '';
-      thumb = e.querySelector('thumbnail')?.getAttribute('url')
-           || e.querySelector('enclosure[type^="image"]')?.getAttribute('url')
+      title = gbt1(e, 'title')?.textContent?.trim() || '—';
+      link = gbt1(e, 'link')?.textContent?.trim() || feed.site;
+      pubDate = gbt1(e, 'pubDate')?.textContent;
+      desc = gbt1(e, 'description')?.textContent || '';
+      thumb = gbt1(e, 'thumbnail')?.getAttribute('url')
+           || gbt(e, 'enclosure').find(el => el.getAttribute('type')?.startsWith('image'))?.getAttribute('url')
            || desc.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1]
            || null;
     }
