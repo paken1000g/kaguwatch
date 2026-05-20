@@ -696,7 +696,9 @@ function renderItems() {
   }).join('');
 }
 function parseXmlFeed(xmlStr, feed) {
-  const doc = new DOMParser().parseFromString(xmlStr, 'text/xml');
+  // Strip XML namespace declarations so querySelector works regardless of xmlns
+  const clean = xmlStr.replace(/ xmlns(:\w+)?="[^"]*"/g, '');
+  const doc = new DOMParser().parseFromString(clean, 'text/xml');
   if (doc.querySelector('parsererror')) throw new Error('XML parse error');
   const isAtom = !!doc.querySelector('feed');
   const entries = isAtom ? [...doc.querySelectorAll('entry')] : [...doc.querySelectorAll('item')];
