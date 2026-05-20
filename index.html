@@ -429,6 +429,23 @@ tr:hover td { background: var(--bg3); }
     </div>
     <div class="content">
       <div class="settings-section">
+        <div class="settings-title">Cloudflare Worker（推奨・無料）</div>
+        <div class="guide-box" style="margin-bottom:10px">
+          <div class="guide-title">設定するとRSS取得が安定します（10万回/日 無料）</div>
+          <div class="guide-body">
+            <b>① </b><a href="https://dash.cloudflare.com" target="_blank" rel="noopener" style="color:var(--accent)">Cloudflareダッシュボード</a> → Workers &amp; Pages → Create application → Create Worker<br>
+            <b>② </b>リポジトリの <b>worker.js</b> の中身をエディタに貼り付けて Deploy<br>
+            <b>③ </b>発行された <b>xxxxx.workers.dev</b> のURLを下に入力して保存
+          </div>
+        </div>
+        <div class="settings-row"><label>Worker URL</label><input type="text" id="cfWorkerUrl" placeholder="https://kaguwatch-rss-proxy.xxxxx.workers.dev"></div>
+        <div style="display:flex;gap:8px;margin-top:10px">
+          <button class="btn primary" onclick="saveCfWorker()">保存</button>
+          <button class="btn" onclick="testCfWorker()">接続テスト</button>
+        </div>
+        <div id="cfWorkerResult" style="display:none"></div>
+      </div>
+      <div class="settings-section">
         <div class="settings-title">Slack Webhook</div>
         <div class="settings-row"><label>Webhook URL</label><input type="text" id="slackUrl" placeholder="https://hooks.slack.com/services/..."></div>
         <div class="settings-row"><label>通知タイミング</label>
@@ -552,6 +569,7 @@ let sizeFilter = { w:200, h:150, d:100 };
 let sedoriList = JSON.parse(localStorage.getItem('sedori') || '[]');
 let editIdx = -1;
 let intervalSec = 300, countdown = 300, countRef = null;
+let cfWorkerUrl = localStorage.getItem('cfWorkerUrl') || '';
 let slackCfg = JSON.parse(localStorage.getItem('slack') || '{"url":"","trigger":"match","enabled":true}');
 let teamsCfg = JSON.parse(localStorage.getItem('teams') || '{"url":"","trigger":"match","enabled":true}');
 let shopOrder = JSON.parse(localStorage.getItem('shopOrder') || 'null') || SEARCH_SHOPS.map((_,i)=>i);
@@ -698,6 +716,14 @@ function fetchWithTimeout(url, timeoutMs) {
   const tid = setTimeout(() => ctrl.abort(), timeoutMs);
   return fetch(url, { signal: ctrl.signal }).finally(() => clearTimeout(tid));
 }
+async function fetchViaCfWorker(feed) {
+  if (!cfWorkerUrl) throw new Error('no worker configured');
+  const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(feed.url), 12000);
+  if (!res.ok) throw new Error('worker HTTP ' + res.status);
+  const xml = await res.text();
+  if (!xml || xml.trim().length < 30) throw new Error('empty');
+  return parseXmlFeed(xml, feed);
+}
 async function fetchViaCorsproxy(feed) {
   const res = await fetchWithTimeout('https://corsproxy.io/?' + encodeURIComponent(feed.url), 12000);
   if (!res.ok) throw new Error('HTTP ' + res.status);
@@ -724,7 +750,10 @@ async function fetchViaRss2json(feed) {
   });
 }
 async function fetchFeed(feed) {
-  for (const fn of [fetchViaCorsproxy, fetchViaAllOrigins, fetchViaRss2json]) {
+  const fns = cfWorkerUrl
+    ? [fetchViaCfWorker, fetchViaCorsproxy, fetchViaAllOrigins, fetchViaRss2json]
+    : [fetchViaCorsproxy, fetchViaAllOrigins, fetchViaRss2json];
+  for (const fn of fns) {
     try { return await fn(feed); } catch(e) {}
   }
   throw new Error(feed.name + ': 全プロキシ失敗');
@@ -945,6 +974,25 @@ async function testTeams() {
     r.style.display='';r.className='test-result test-err';r.textContent='送信失敗（CORSエラーの可能性あり。Vercel上では正常に動作します）';
   }
 }
+function saveCfWorker() {
+  cfWorkerUrl = document.getElementById('cfWorkerUrl').value.trim().replace(/\/$/, '');
+  localStorage.setItem('cfWorkerUrl', cfWorkerUrl);
+  alert('保存しました');
+}
+async function testCfWorker() {
+  const url = document.getElementById('cfWorkerUrl').value.trim().replace(/\/$/, '');
+  const r = document.getElementById('cfWorkerResult');
+  if (!url) { r.style.display=''; r.className='test-result test-err'; r.textContent='Worker URLを入力してください'; return; }
+  try {
+    const res = await fetchWithTimeout(url + '?url=' + encodeURIComponent(RSS_FEEDS[0].url), 10000);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const text = await res.text();
+    if (text.trim().length < 30) throw new Error('empty response');
+    r.style.display=''; r.className='test-result test-ok'; r.textContent='✓ 接続成功！RSS取得を確認しました';
+  } catch(e) {
+    r.style.display=''; r.className='test-result test-err'; r.textContent='接続失敗: ' + e.message;
+  }
+}
 async function sendTeams(items) {
   if(!teamsCfg.url)return;
   const lines=items.slice(0,5).map(i=>`• ${i.matched?'★ ':''}${i.title}${i.price?' ('+i.price+')':''}  \n${i.link}`);
@@ -953,6 +1001,7 @@ async function sendTeams(items) {
 
 // Init
 function init() {
+  document.getElementById('cfWorkerUrl').value=cfWorkerUrl;
   document.getElementById('slackUrl').value=slackCfg.url||'';
   document.getElementById('slackTrigger').value=slackCfg.trigger||'match';
   document.getElementById('slackEnabled').checked=slackCfg.enabled!==false;
