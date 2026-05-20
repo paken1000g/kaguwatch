@@ -108,8 +108,8 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 
 /* Items */
 .items-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-.item-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; transition: border-color .12s; }
-.item-card:hover { border-color: var(--border2); }
+.item-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; display: flex; flex-direction: column; transition: border-color .12s; text-decoration: none; color: inherit; cursor: pointer; }
+.item-card:hover { border-color: var(--border2); box-shadow: 0 2px 8px rgba(0,0,0,.06); }
 .item-card.matched { border-color: rgba(42,92,63,.3); background: var(--accent-lt); }
 .item-thumb { width: 100%; height: 180px; object-fit: cover; display: block; background: var(--bg3); }
 .item-thumb-ph { width: 100%; height: 180px; background: var(--bg3); display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 40px; }
@@ -285,11 +285,7 @@ tr:hover td { background: var(--bg3); }
         <button class="chip active" onclick="setFilter('all',this)">すべて</button>
         <button class="chip" onclick="setFilter('tokyo',this)">imption</button>
         <button class="chip" onclick="setFilter('rocca',this)">rocca rocca</button>
-        <button class="chip" onclick="setFilter('restyle',this)">リスタイル</button>
-        <button class="chip" onclick="setFilter('greeniche',this)">greeniche</button>
-        <button class="chip" onclick="setFilter('lloyds',this)">Lloyd's</button>
         <button class="chip" onclick="setFilter('furuichi',this)">furuichi</button>
-        <button class="chip" onclick="setFilter('tokyoapt',this)">TokyoApt</button>
         <button class="chip" onclick="setFilter('timehype',this)">TIME HYPE</button>
       </div>
 
@@ -553,14 +549,10 @@ tr:hover td { background: var(--bg3); }
 const R2J = 'https://api.rss2json.com/v1/api.json?rss_url=';
 const ALLORIGINS = 'https://api.allorigins.win/get?url=';
 const RSS_FEEDS = [
-  { id:'tokyo',       name:'imption',       badge:'b-tokyo',    site:'https://tokyo-recycle.net/collections/all', url:'https://tokyo-recycle.net/collections/all.atom' },
-  { id:'rocca',       name:'rocca rocca',           badge:'b-rocca',    site:'https://roccarocca.shop/', url:'https://roccarocca.shop/collections/all.atom' },
-  { id:'restyle',     name:'リスタイル',            badge:'b-restyle',  site:'https://www.restyle-net.com/', url:'https://www.restyle-net.com/collections/all.atom' },
-  { id:'greeniche',   name:'greeniche',             badge:'b-greeniche',site:'https://greeniche.jp/', url:'https://greeniche.jp/collections/all.atom' },
-  { id:'lloyds',      name:"Lloyd's Antiques",      badge:'b-lloyds',   site:'https://www.lloyds.co.jp/', url:'https://www.lloyds.co.jp/collections/all.atom' },
-  { id:'furuichi',    name:'furuichi',              badge:'b-furuichi', site:'https://furuichic.com/', url:'https://furuichic.com/collections/all.atom' },
-  { id:'tokyoapt',    name:'TokyoApartmentStore',   badge:'b-tokyoapt', site:'https://tokyoapartmentstore.com/', url:'https://tokyoapartmentstore.com/collections/all.atom' },
-  { id:'timehype',    name:'TIME HYPE',             badge:'b-timehype', site:'https://time-hype.com/', url:'https://time-hype.com/collections/all.atom' },
+  { id:'tokyo',     name:'imption',   badge:'b-tokyo',    site:'https://tokyo-recycle.net/collections/all', url:'https://tokyo-recycle.net/collections/all.atom' },
+  { id:'rocca',     name:'rocca rocca',badge:'b-rocca',   site:'https://roccarocca.shop/', url:'https://roccarocca.shop/collections/all.atom' },
+  { id:'furuichi',  name:'furuichi',  badge:'b-furuichi', site:'https://furuichic.com/', url:'https://furuichic.com/collections/all.atom' },
+  { id:'timehype',  name:'TIME HYPE', badge:'b-timehype', site:'https://time-hype.com/', url:'https://time-hype.com/collections/all.atom' },
 ];
 const SEARCH_SHOPS = [
   { name:'ヤフオク', icon:'🔨', url:kw=>`https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(kw)}&auccat=0` },
@@ -701,7 +693,7 @@ function renderItems() {
     const thumb = item.thumbnail
       ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
       : `<div class="item-thumb-ph">🛋</div>`;
-    return `<div class="item-card${item.matched?' matched':''}${item.soldOut?' soldout':''}">
+    return `<a class="item-card${item.matched?' matched':''}${item.soldOut?' soldout':''}" href="${item.link}" target="_blank" rel="noopener">
       ${thumb}
       <div class="item-body">
         <div class="item-top">
@@ -717,11 +709,10 @@ function renderItems() {
         </div>
         <div class="item-meta" style="margin-top:auto;padding-top:4px">
           <span>${item.date}</span>
-          <a class="item-link" href="${item.link}" target="_blank" rel="noopener">詳細 →</a>
-          ${item.matched?`<button class="btn-xs" onclick="quickAdd('${item.title.replace(/'/g,"\\'")}')">＋追加</button>`:''}
+          ${item.matched?`<button class="btn-xs" onclick="event.preventDefault();event.stopPropagation();quickAdd('${item.title.replace(/'/g,"\\'")}')">＋追加</button>`:''}
         </div>
       </div>
-    </div>`;
+    </a>`;
   }).join('');
 }
 function gbt(el, tag) { return [...el.getElementsByTagNameNS('*', tag)]; }
