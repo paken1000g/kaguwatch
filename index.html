@@ -105,8 +105,11 @@ input::placeholder { color: var(--text3); }
 .toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
 
 /* Size filter */
-.size-bar { display: flex; align-items: center; gap: 10px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 12px; margin-bottom: 14px; flex-wrap: wrap; }
-.size-bar-label { font-size: 11px; color: var(--text3); white-space: nowrap; font-weight: 500; flex-shrink: 0; }
+.size-section { margin-bottom: 14px; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+.size-header { display: flex; align-items: center; justify-content: space-between; padding: 7px 12px; background: var(--bg2); cursor: pointer; user-select: none; font-size: 11px; color: var(--text3); font-weight: 500; }
+.size-header:hover { background: var(--bg3); }
+.size-toggle-label { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text2); cursor: pointer; }
+.size-bar { display: flex; align-items: center; gap: 10px; padding: 8px 12px; flex-wrap: wrap; background: var(--bg); border-top: 1px solid var(--border); }
 .size-dim { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--text3); flex: 1; min-width: 100px; }
 .size-dim input[type=range] { flex: 1; accent-color: var(--accent); }
 .size-dim .sv { font-family: var(--mono); font-size: 11px; color: var(--text); min-width: 34px; text-align: right; }
@@ -266,29 +269,31 @@ tr:hover td { background: var(--bg3); }
       </div>
       <div class="tag-list" id="tagList"></div>
 
-      <div class="size-bar">
-        <span class="size-bar-label">サイズ上限</span>
-        <span class="size-dim">W <input type="range" id="wRange" min="0" max="300" step="10" value="200" oninput="updateSize('w',this.value)"><span class="sv" id="wVal">200cm</span></span>
-        <span class="size-dim">H <input type="range" id="hRange" min="0" max="250" step="10" value="150" oninput="updateSize('h',this.value)"><span class="sv" id="hVal">150cm</span></span>
-        <span class="size-dim">D <input type="range" id="dRange" min="0" max="200" step="10" value="100" oninput="updateSize('d',this.value)"><span class="sv" id="dVal">100cm</span></span>
+      <div class="size-section">
+        <div class="size-header" onclick="toggleSizePanel()">
+          <span id="sizeArrow">▶</span>&nbsp;サイズ上限フィルター
+          <label class="size-toggle-label" onclick="event.stopPropagation()">
+            <input type="checkbox" id="sizeEnabled" onchange="onSizeEnabledChange()"> 有効
+          </label>
+        </div>
+        <div class="size-bar" id="sizePanel" style="display:none">
+          <span class="size-dim">W <input type="range" id="wRange" min="0" max="300" step="10" value="200" oninput="updateSize('w',this.value)"><span class="sv" id="wVal">200cm</span></span>
+          <span class="size-dim">H <input type="range" id="hRange" min="0" max="250" step="10" value="150" oninput="updateSize('h',this.value)"><span class="sv" id="hVal">150cm</span></span>
+          <span class="size-dim">D <input type="range" id="dRange" min="0" max="200" step="10" value="100" oninput="updateSize('d',this.value)"><span class="sv" id="dVal">100cm</span></span>
+        </div>
       </div>
 
       <div class="stats" style="margin-top:14px">
         <div class="stat"><div class="stat-n g" id="sMatch">—</div><div class="stat-l">キーワード一致</div></div>
         <div class="stat"><div class="stat-n" id="sTotal">—</div><div class="stat-l">取得件数</div></div>
         <div class="stat"><div class="stat-n r" id="sNew">—</div><div class="stat-l">新着（前回比）</div></div>
-        <div class="stat"><div class="stat-n b" id="sShops">7</div><div class="stat-l">RSS対応店舗</div></div>
+        <div class="stat"><div class="stat-n b" id="sShops">—</div><div class="stat-l">RSS対応店舗</div></div>
       </div>
 
       <div class="chips" id="filterChips">
         <button class="chip active" onclick="setFilter('all',this)">すべて</button>
         <button class="chip" onclick="setFilter('matched',this)">一致のみ</button>
         <button class="chip" onclick="setFilter('tokyo',this)">東京リサイクル</button>
-        <button class="chip" onclick="setFilter('concept',this)">コンセプトD</button>
-        <button class="chip" onclick="setFilter('bello',this)">Bellointeri</button>
-        <button class="chip" onclick="setFilter('mobel',this)">Mobelman</button>
-        <button class="chip" onclick="setFilter('kagutone',this)">家具トーン</button>
-        <button class="chip" onclick="setFilter('clapp',this)">Clapp</button>
         <button class="chip" onclick="setFilter('rocca',this)">rocca rocca</button>
       </div>
 
@@ -570,6 +575,7 @@ let keywords = ['IKEAソファ','USMハラー','カリモク'];
 let allItems = [], prevLinks = new Set();
 let currentFilter = 'all', sedoriFilter = 'all';
 let sizeFilter = { w:200, h:150, d:100 };
+let sizeEnabled = false;
 let sedoriList = JSON.parse(localStorage.getItem('sedori') || '[]');
 let editIdx = -1;
 let intervalSec = 300, countdown = 300, countRef = null;
@@ -619,6 +625,17 @@ function setFilter(f, btn) {
   btn.classList.add('active');
   renderItems();
 }
+function toggleSizePanel() {
+  const panel = document.getElementById('sizePanel');
+  const arrow = document.getElementById('sizeArrow');
+  const open = panel.style.display === 'none';
+  panel.style.display = open ? '' : 'none';
+  arrow.textContent = open ? '▼' : '▶';
+}
+function onSizeEnabledChange() {
+  sizeEnabled = document.getElementById('sizeEnabled').checked;
+  renderItems();
+}
 function updateSize(dim, val) {
   sizeFilter[dim] = parseInt(val);
   document.getElementById(dim+'Val').textContent = val+'cm';
@@ -631,6 +648,7 @@ function extractSizes(text) {
   return null;
 }
 function passesSize(item) {
+  if (!sizeEnabled) return true;
   if (!item.sizes) return true;
   if (item.sizes.w && item.sizes.w > sizeFilter.w) return false;
   if (item.sizes.h && item.sizes.h > sizeFilter.h) return false;
@@ -664,6 +682,7 @@ function renderItems() {
   const mc = allItems.filter(i=>i.matched).length;
   document.getElementById('sMatch').textContent = mc;
   document.getElementById('sTotal').textContent = allItems.length;
+  document.getElementById('sShops').textContent = RSS_FEEDS.length;
   document.getElementById('navMatch').textContent = mc;
   const el = document.getElementById('itemsList');
   if (!items.length) { el.innerHTML='<div class="empty">該当するアイテムがありません<br>キーワードやサイズ条件を調整してみてください</div>'; return; }
