@@ -274,15 +274,13 @@ tr:hover td { background: var(--bg3); }
   <div id="page-watch">
     <div class="page-head">
       <div class="page-title">入荷監視</div>
-      <div class="page-sub">複数店舗のRSSを自動取得。キーワードなしでも全件表示されます。</div>
+      <div class="page-sub">複数店舗のRSSを自動取得。検索窓でリアルタイム絞り込みができます。</div>
     </div>
     <div class="content">
       <div class="row">
-        <input type="text" id="kwIn" placeholder="キーワード（任意）例：USMハラー、カリモク">
-        <button class="btn primary" onclick="addKw()">＋ 追加</button>
+        <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル、カリモク" oninput="renderItems()">
         <button class="btn" onclick="manualRefresh()">↺ 更新</button>
       </div>
-      <div class="tag-list" id="tagList"></div>
 
       <div class="size-section">
         <div class="size-header" onclick="toggleSizePanel()">
@@ -332,10 +330,11 @@ tr:hover td { background: var(--bg3); }
       <div class="page-sub">登録キーワードで各サイトへ直接ジャンプ</div>
     </div>
     <div class="content">
-      <div class="guide-box">
-        <div class="guide-title">使い方</div>
-        <div class="guide-body">入荷監視でキーワードを追加すると、各サイトの検索ページへのリンクが自動生成されます。リンクをクリックするとそのサイトで該当キーワードの検索結果が開きます。RSSに対応していないサイト（ヤフオク・メルカリ等）はこちらから手動確認できます。</div>
+      <div class="row">
+        <input type="text" id="kwIn" placeholder="キーワードを追加　例：USMハラー、カリモク">
+        <button class="btn primary" onclick="addKw()">＋ 追加</button>
       </div>
+      <div class="tag-list" id="tagList"></div>
       <div id="searchShops"></div>
     </div>
   </div>
@@ -647,6 +646,7 @@ function renderTags() {
   document.getElementById('tagList').innerHTML = h;
 }
 document.getElementById('kwIn').addEventListener('keydown', e => { if(e.key==='Enter') addKw(); });
+document.getElementById('watchSearch').addEventListener('keydown', e => { if(e.key==='Escape') { e.target.value=''; renderItems(); } });
 
 // Filter
 function setFilter(f, btn) {
@@ -722,6 +722,8 @@ function setStatus(s, txt) {
 }
 function renderItems() {
   let items = allItems;
+  const q = (document.getElementById('watchSearch')?.value || '').trim().toLowerCase();
+  if (q) items = items.filter(i => i.title.toLowerCase().includes(q));
   if (currentFilter==='matched') items = items.filter(i=>i.matched);
   else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
   items = items.filter(passesSize);
