@@ -127,6 +127,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .b-murata { background: var(--accent-lt); color: var(--accent); }
 .b-jmty { background: var(--amber-lt); color: var(--amber); }
 .b-shark { background: #f0edf8; color: #5b2d8a; }
+.b-kagutone { background: #fef3e8; color: #b5521e; }
 .b-match { background: var(--accent-lt); color: var(--accent); }
 .b-new { background: var(--red-lt); color: var(--red); }
 .item-meta { font-size: 11px; color: var(--text3); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
@@ -274,16 +275,17 @@ tr:hover td { background: var(--bg3); }
         <div class="stat"><div class="stat-n g" id="sMatch">—</div><div class="stat-l">キーワード一致</div></div>
         <div class="stat"><div class="stat-n" id="sTotal">—</div><div class="stat-l">取得件数</div></div>
         <div class="stat"><div class="stat-n r" id="sNew">—</div><div class="stat-l">新着（前回比）</div></div>
-        <div class="stat"><div class="stat-n b" id="sShops">4</div><div class="stat-l">RSS対応店舗</div></div>
+        <div class="stat"><div class="stat-n b" id="sShops">5</div><div class="stat-l">RSS対応店舗</div></div>
       </div>
 
       <div class="chips" id="filterChips">
         <button class="chip active" onclick="setFilter('all',this)">すべて</button>
         <button class="chip" onclick="setFilter('matched',this)">一致のみ</button>
         <button class="chip" onclick="setFilter('tokyo',this)">東京リサイクル</button>
-        <button class="chip" onclick="setFilter('murata',this)">村田商会</button>
-        <button class="chip" onclick="setFilter('jmty',this)">ジモティー</button>
-        <button class="chip" onclick="setFilter('shark',this)">シャークアタック</button>
+        <button class="chip" onclick="setFilter('concept',this)">コンセプトD</button>
+        <button class="chip" onclick="setFilter('bello',this)">Bellointeri</button>
+        <button class="chip" onclick="setFilter('mobel',this)">Mobelman</button>
+        <button class="chip" onclick="setFilter('kagutone',this)">家具トーン</button>
       </div>
 
       <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
@@ -545,10 +547,11 @@ tr:hover td { background: var(--bg3); }
 const R2J = 'https://api.rss2json.com/v1/api.json?rss_url=';
 const ALLORIGINS = 'https://api.allorigins.win/get?url=';
 const RSS_FEEDS = [
-  { id:'tokyo', name:'東京リサイクル', badge:'b-tokyo', site:'https://tokyo-recycle.net/collections/all', url:'https://tokyo-recycle.net/collections/all.atom' },
-  { id:'murata', name:'村田商会', badge:'b-murata', site:'https://muratashokai.theshop.jp/', url:'https://muratashokai.theshop.jp/feeds/items.atom' },
-  { id:'jmty', name:'ジモティー', badge:'b-jmty', site:'https://jmty.jp/all/furn', url:'https://jmty.jp/all/furn/rss' },
-  { id:'shark', name:'シャークアタック', badge:'b-shark', site:'https://sharkattack.jp/', url:'https://sharkattack.jp/feeds/items.atom' }
+  { id:'tokyo',    name:'東京リサイクル',     badge:'b-tokyo',    site:'https://tokyo-recycle.net/collections/all', url:'https://tokyo-recycle.net/collections/all.atom' },
+  { id:'concept',  name:'コンセプトデザイン', badge:'b-murata',   site:'https://store-conceptdesign.com/', url:'https://store-conceptdesign.com/collections/all.atom' },
+  { id:'bello',    name:'Bellointeri',         badge:'b-jmty',     site:'https://bellointeri.base.shop/', url:'https://bellointeri.base.shop/feeds/items.atom' },
+  { id:'mobel',    name:'Mobelman',            badge:'b-shark',    site:'https://mobelman.official.ec/', url:'https://mobelman.official.ec/feeds/items.atom' },
+  { id:'kagutone', name:'家具トーン',           badge:'b-kagutone', site:'https://kagutone.theshop.jp/', url:'https://kagutone.theshop.jp/feeds/items.atom' },
 ];
 const SEARCH_SHOPS = [
   { name:'IKEA公式', icon:'🏠', sub:'新品参考価格・品番確認用', url:kw=>`https://www.ikea.com/jp/ja/search/?q=${encodeURIComponent(kw)}` },
