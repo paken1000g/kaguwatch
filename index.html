@@ -630,7 +630,7 @@ function applyWatchSearch() {
   watchQuery = document.getElementById('watchSearch').value.trim().toLowerCase();
   renderItems();
 }
-document.getElementById('kwIn').addEventListener('keydown', e => { if(e.key==='Enter') addKw(); });
+document.getElementById('kwIn').addEventListener('keydown', e => { if(e.key==='Enter' && !e.isComposing) addKw(); });
 document.getElementById('watchSearch').addEventListener('keydown', e => {
   if(e.key==='Enter') applyWatchSearch();
   if(e.key==='Escape') { e.target.value=''; watchQuery=''; renderItems(); }
