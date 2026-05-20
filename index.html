@@ -691,6 +691,17 @@ function extractListPrice(text) {
   const m = (text||'').match(/(?:定価|参考価格|参考小売価格|メーカー希望価格|新品定価|希望小売価格|通常価格|新品価格)[：:\s]*([¥￥]?\s*[\d,]+\s*円?)/);
   return m ? m[1].trim() : null;
 }
+function extractPrice(text) {
+  const t = text || '';
+  // 送料・配送料の金額を除去
+  const clean = t.replace(/(?:送料|配送料|運送料|配送費)[^\n¥￥\d]{0,15}[¥￥]?\s*[\d,]+\s*円?/gi, '')
+                  .replace(/(?:定価|参考価格|希望小売価格|メーカー希望価格|通常価格|新品定価)[^\n¥￥\d]{0,15}[¥￥]?\s*[\d,]+\s*円?/gi, '');
+  // 販売価格の明示マーカーを優先
+  const ex = clean.match(/(?:販売価格|売価|本体価格|商品価格|価格)[：:\s]*([¥￥]\s*[\d,]+|[\d,]+\s*円)/);
+  if (ex) return ex[1].replace(/\s/g, '');
+  const m = clean.match(/[¥￥]\s*[\d,]+|[\d,]+\s*円/);
+  return m ? m[0].replace(/\s/g, '') : null;
+}
 function isSoldOut(text) { return /sold[\s-]?out|在庫切れ|売り切れ|売切れ|完売|ソールドアウト/i.test(text||''); }
 function isMatch(t) { return keywords.length > 0 && keywords.some(k=>t.toLowerCase().includes(k.toLowerCase())); }
 function hl(text) {
@@ -775,9 +786,8 @@ function parseXmlFeed(xmlStr, feed) {
            || null;
     }
     const full = title + ' ' + desc;
-    const pm = full.match(/[¥￥]\s*[\d,]+|[\d,]+\s*円/);
     const ts = pubDate ? (new Date(pubDate).getTime() || 0) : 0;
-    return { source:feed.id, title, link, date:parseDate(pubDate), ts, thumbnail:thumb, price:pm?pm[0]:null, listPrice:extractListPrice(full), sizes:extractSizes(full), matched:isMatch(full), soldOut:isSoldOut(full), isNew:false };
+    return { source:feed.id, title, link, date:parseDate(pubDate), ts, thumbnail:thumb, price:extractPrice(full), listPrice:extractListPrice(full), sizes:extractSizes(full), matched:isMatch(full), soldOut:isSoldOut(full), isNew:false };
   });
 }
 function fetchWithTimeout(url, timeoutMs) {
@@ -814,9 +824,8 @@ async function fetchViaRss2json(feed) {
   if (data.status !== 'ok') throw new Error(data.message || 'rss2json error');
   return (data.items||[]).map(item => {
     const full = item.title + ' ' + (item.description || '');
-    const pm = full.match(/[¥￥]\s*[\d,]+|[\d,]+\s*円/);
     const ts = item.pubDate ? (new Date(item.pubDate).getTime() || 0) : 0;
-    return { source:feed.id, title:item.title||'—', link:item.link||feed.site, date:parseDate(item.pubDate), ts, thumbnail:item.thumbnail||item.enclosure?.link||null, price:pm?pm[0]:null, listPrice:extractListPrice(full), sizes:extractSizes(full), matched:isMatch(full), soldOut:isSoldOut(full), isNew:false };
+    return { source:feed.id, title:item.title||'—', link:item.link||feed.site, date:parseDate(item.pubDate), ts, thumbnail:item.thumbnail||item.enclosure?.link||null, price:extractPrice(full), listPrice:extractListPrice(full), sizes:extractSizes(full), matched:isMatch(full), soldOut:isSoldOut(full), isNew:false };
   });
 }
 async function fetchFeed(feed) {
