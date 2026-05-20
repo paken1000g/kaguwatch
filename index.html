@@ -277,12 +277,13 @@ tr:hover td { background: var(--bg3); }
       <div class="page-sub">複数店舗のRSSを自動取得。検索窓でリアルタイム絞り込みができます。</div>
     </div>
     <div class="content">
-      <div class="row">
-        <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル、カリモク" oninput="renderItems()">
+      <div style="display:flex;gap:6px;max-width:480px;margin-bottom:10px">
+        <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル" style="flex:1">
+        <button class="btn primary" onclick="applyWatchSearch()">検索</button>
         <button class="btn" onclick="manualRefresh()">↺ 更新</button>
       </div>
 
-      <div class="size-section">
+      <div class="size-section" style="max-width:480px">
         <div class="size-header" onclick="toggleSizePanel()">
           <span id="sizeArrow">▶</span>&nbsp;サイズ上限フィルター
           <label class="size-toggle-label" onclick="event.stopPropagation()">
@@ -305,7 +306,6 @@ tr:hover td { background: var(--bg3); }
 
       <div class="chips" id="filterChips">
         <button class="chip active" onclick="setFilter('all',this)">すべて</button>
-        <button class="chip" onclick="setFilter('matched',this)">一致のみ</button>
         <button class="chip" onclick="setFilter('tokyo',this)">imption</button>
         <button class="chip" onclick="setFilter('rocca',this)">rocca rocca</button>
         <button class="chip" onclick="setFilter('restyle',this)">リスタイル</button>
@@ -589,15 +589,12 @@ const RSS_FEEDS = [
   { id:'timehype',    name:'TIME HYPE',             badge:'b-timehype', site:'https://time-hype.com/', url:'https://time-hype.com/collections/all.atom' },
 ];
 const SEARCH_SHOPS = [
-  { name:'IKEA公式', icon:'🏠', sub:'新品参考価格・品番確認用', url:kw=>`https://www.ikea.com/jp/ja/search/?q=${encodeURIComponent(kw)}` },
-  { name:'ヤフオク', icon:'🔨', sub:'オークション・中古全般', url:kw=>`https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(kw)}&auccat=0` },
-  { name:'メルカリ', icon:'🏷', sub:'個人売買・即購入OK', url:kw=>`https://jp.mercari.com/search/?keyword=${encodeURIComponent(kw)}&category_id=715` },
-  { name:'セカンドストリート', icon:'🔁', sub:'全国チェーン・家具コーナーあり', url:kw=>`https://www.2ndstreet.jp/search/result?keyword=${encodeURIComponent(kw)}&categoryId=5` },
-  { name:'ハードオフ / オフハウス', icon:'🏬', sub:'家具・インテリア', url:kw=>`https://www.hardoff.co.jp/ec/product/list/?keyword=${encodeURIComponent(kw)}&category=030000` },
-  { name:'ジモティー', icon:'📍', sub:'地元の無料〜格安出品', url:kw=>`https://jmty.jp/all/furn?keyword=${encodeURIComponent(kw)}` },
-  { name:'シャークアタック', icon:'🦈', sub:'ミドル〜ハイエンド中古家具', url:kw=>`https://sharkattack.jp/search?q=${encodeURIComponent(kw)}` },
-  { name:'Selby', icon:'🪑', sub:'ヴィンテージ・デザイナーズ', url:kw=>`https://selby.jp/search?q=${encodeURIComponent(kw)}` },
-  { name:'Roundabout', icon:'🌀', sub:'ヴィンテージ家具専門', url:kw=>`https://roundabout.co.jp/?s=${encodeURIComponent(kw)}` }
+  { name:'ヤフオク', icon:'🔨', url:kw=>`https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(kw)}&auccat=0` },
+  { name:'メルカリ', icon:'🏷', url:kw=>`https://jp.mercari.com/search/?keyword=${encodeURIComponent(kw)}&category_id=715` },
+  { name:'セカンドストリート', icon:'🔁', url:kw=>`https://www.2ndstreet.jp/search/result?keyword=${encodeURIComponent(kw)}&categoryId=5` },
+  { name:'ハードオフ', icon:'🏬', url:kw=>`https://www.hardoff.co.jp/ec/product/list/?keyword=${encodeURIComponent(kw)}&category=030000` },
+  { name:'ジモティー', icon:'📍', url:kw=>`https://jmty.jp/all/furn?keyword=${encodeURIComponent(kw)}` },
+  { name:'シャークアタック', icon:'🦈', url:kw=>`https://sharkattack.jp/search?q=${encodeURIComponent(kw)}` }
 ];
 
 let keywords = [];
@@ -605,6 +602,7 @@ let allItems = [], prevLinks = new Set();
 let currentFilter = 'all', sedoriFilter = 'all';
 let sizeFilter = { w:200, h:150, d:100 };
 let sizeEnabled = false;
+let watchQuery = '';
 let sedoriList = JSON.parse(localStorage.getItem('sedori') || '[]');
 let editIdx = -1;
 let intervalSec = 300, countdown = 300, countRef = null;
@@ -645,8 +643,15 @@ function renderTags() {
     : '<span style="font-size:11px;color:var(--text3)">キーワードなし（全件表示中）</span>';
   document.getElementById('tagList').innerHTML = h;
 }
+function applyWatchSearch() {
+  watchQuery = document.getElementById('watchSearch').value.trim().toLowerCase();
+  renderItems();
+}
 document.getElementById('kwIn').addEventListener('keydown', e => { if(e.key==='Enter') addKw(); });
-document.getElementById('watchSearch').addEventListener('keydown', e => { if(e.key==='Escape') { e.target.value=''; renderItems(); } });
+document.getElementById('watchSearch').addEventListener('keydown', e => {
+  if(e.key==='Enter') applyWatchSearch();
+  if(e.key==='Escape') { e.target.value=''; watchQuery=''; renderItems(); }
+});
 
 // Filter
 function setFilter(f, btn) {
@@ -722,8 +727,7 @@ function setStatus(s, txt) {
 }
 function renderItems() {
   let items = allItems;
-  const q = (document.getElementById('watchSearch')?.value || '').trim().toLowerCase();
-  if (q) items = items.filter(i => i.title.toLowerCase().includes(q));
+  if (watchQuery) items = items.filter(i => i.title.toLowerCase().includes(watchQuery));
   if (currentFilter==='matched') items = items.filter(i=>i.matched);
   else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
   items = items.filter(passesSize);
@@ -888,22 +892,13 @@ function moveShop(si, dir) {
 function renderSearch() {
   const el = document.getElementById('searchShops');
   if (!keywords.length) { el.innerHTML='<div class="empty">キーワードを追加してください</div>'; return; }
-  const shops = shopOrder.map(i => SEARCH_SHOPS[i]);
-  el.innerHTML = shops.map((shop, si) => `
-    ${si>0?'<div class="divider"></div>':''}
-    <div class="shop-block">
-      <div class="shop-head">
-        <div class="shop-icon">${shop.icon}</div>
-        <div style="flex:1"><div class="shop-name">${shop.name}</div><div class="shop-sub">${shop.sub}</div></div>
-        <div style="display:flex;flex-direction:column;gap:2px;margin-left:8px">
-          <button class="btn-xs" onclick="moveShop(${si},-1)"${si===0?' disabled':''}>↑</button>
-          <button class="btn-xs" onclick="moveShop(${si},1)"${si===shops.length-1?' disabled':''}>↓</button>
-        </div>
+  el.innerHTML = keywords.map(kw => `
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px">${kw}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
+        ${SEARCH_SHOPS.map(s=>`<a class="search-link" href="${s.url(kw)}" target="_blank" rel="noopener">${s.icon} ${s.name}</a>`).join('')}
       </div>
-      <div class="link-grid">
-        ${keywords.map(kw=>`<a class="search-link" href="${shop.url(kw)}" target="_blank" rel="noopener">↗ <span>${kw}</span></a>`).join('')}
-      </div>
-    </div>`).join('');
+    </div>`).join('<div class="divider"></div>');
 }
 
 // Sedori
