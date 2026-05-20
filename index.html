@@ -658,6 +658,10 @@ function passesSize(item) {
 }
 
 // RSS
+function extractListPrice(text) {
+  const m = (text||'').match(/(?:定価|参考価格|参考小売価格|メーカー希望価格|新品定価|希望小売価格|通常価格|新品価格)[：:\s]*([¥￥]?\s*[\d,]+\s*円?)/);
+  return m ? m[1].trim() : null;
+}
 function isMatch(t) { return keywords.length > 0 && keywords.some(k=>t.toLowerCase().includes(k.toLowerCase())); }
 function hl(text) {
   let out = text;
@@ -702,6 +706,7 @@ function renderItems() {
         </div>
         <div class="item-meta">
           ${item.price?`<span class="item-price">${item.price}</span>`:''}
+          ${item.listPrice?`<span style="font-size:11px;color:var(--text3)">定価 ${item.listPrice}</span>`:''}
           <span>${item.date}</span>
           <a class="item-link" href="${item.link}" target="_blank" rel="noopener">詳細 →</a>
         </div>
@@ -741,7 +746,7 @@ function parseXmlFeed(xmlStr, feed) {
     const full = title + ' ' + desc;
     const pm = full.match(/[¥￥]\s*[\d,]+|[\d,]+\s*円/);
     const ts = pubDate ? (new Date(pubDate).getTime() || 0) : 0;
-    return { source:feed.id, title, link, date:parseDate(pubDate), ts, thumbnail:thumb, price:pm?pm[0]:null, sizes:extractSizes(full), matched:isMatch(full), isNew:false };
+    return { source:feed.id, title, link, date:parseDate(pubDate), ts, thumbnail:thumb, price:pm?pm[0]:null, listPrice:extractListPrice(full), sizes:extractSizes(full), matched:isMatch(full), isNew:false };
   });
 }
 function fetchWithTimeout(url, timeoutMs) {
@@ -780,7 +785,7 @@ async function fetchViaRss2json(feed) {
     const full = item.title + ' ' + (item.description || '');
     const pm = full.match(/[¥￥]\s*[\d,]+|[\d,]+\s*円/);
     const ts = item.pubDate ? (new Date(item.pubDate).getTime() || 0) : 0;
-    return { source:feed.id, title:item.title||'—', link:item.link||feed.site, date:parseDate(item.pubDate), ts, thumbnail:item.thumbnail||item.enclosure?.link||null, price:pm?pm[0]:null, sizes:extractSizes(full), matched:isMatch(full), isNew:false };
+    return { source:feed.id, title:item.title||'—', link:item.link||feed.site, date:parseDate(item.pubDate), ts, thumbnail:item.thumbnail||item.enclosure?.link||null, price:pm?pm[0]:null, listPrice:extractListPrice(full), sizes:extractSizes(full), matched:isMatch(full), isNew:false };
   });
 }
 async function fetchFeed(feed) {
