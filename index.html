@@ -142,6 +142,10 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .b-new { background: var(--red-lt); color: var(--red); }
 .item-meta { font-size: 11px; color: var(--text3); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .item-price { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--text); }
+.item-price-loading { font-size: 11px; color: var(--text3); font-family: var(--mono); }
+.item-shipping { font-size: 10px; padding: 1px 5px; border-radius: 3px; background: var(--accent-lt); color: var(--accent); font-weight: 500; }
+.item-shipping.paid { background: var(--amber-lt); color: var(--amber); }
+.item-shipping.unknown { background: var(--bg3); color: var(--text3); }
 .item-link { color: var(--blue); text-decoration: none; font-size: 11px; }
 .item-link:hover { text-decoration: underline; }
 .item-actions { margin-top: 5px; }
@@ -670,6 +674,101 @@ function extractPrice(text) {
   return m ? m[0].replace(/\s/g, '') : null;
 }
 function isSoldOut(text) { return /sold[\s-]?out|在庫切れ|売り切れ|売切れ|完売|ソールドアウト/i.test(text||''); }
+
+// ─── 商品ページ エンリッチメント ──────────────────────────────────────────
+const enrichCache = {};
+
+function findLdOffers(obj) {
+  if (!obj || typeof obj !== 'object') return null;
+  if (Array.isArray(obj)) {
+    for (const x of obj) { const r = findLdOffers(x); if (r) return r; }
+    return null;
+  }
+  if (obj.offers) {
+    const o = Array.isArray(obj.offers) ? obj.offers[0] : obj.offers;
+    if (o?.price != null) return o;
+  }
+  if (obj['@graph']) return findLdOffers(obj['@graph']);
+  return null;
+}
+
+function parsePriceFromHtml(html) {
+  // 1) JSON-LD
+  const ldRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = ldRe.exec(html)) !== null) {
+    try {
+      const offers = findLdOffers(JSON.parse(m[1]));
+      if (offers?.price) {
+        const p = String(offers.price).replace(/[^\d]/g, '');
+        if (p && +p > 0) return '¥' + (+p).toLocaleString();
+      }
+    } catch(e) {}
+  }
+  // 2) OGP meta
+  const metaPatterns = [
+    /<meta[^>]+property=["']product:price:amount["'][^>]+content=["']([^"']+)["']/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']product:price:amount["']/i,
+  ];
+  for (const re of metaPatterns) {
+    const mm = html.match(re);
+    if (mm?.[1]) { const p = mm[1].replace(/[^\d]/g, ''); if (p && +p > 0) return '¥' + (+p).toLocaleString(); }
+  }
+  return null;
+}
+
+function parseShippingFromHtml(html) {
+  // Strip scripts/styles then plain-text search
+  const text = html
+    .replace(/<style[\s\S]*?<\/style>/gi, '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<[^>]+>/g, ' ');
+  if (/送料無料|送料込み?|free[\s-]?shipping/i.test(text)) return '送料無料';
+  const am = text.match(/送料[^\d¥￥\n]{0,10}[¥￥]\s*([\d,]+)|送料[^\d¥￥\n]{0,10}([\d,]+)\s*円/);
+  if (am) return '送料 ¥' + (am[1] || am[2]).replace(/,/g, '');
+  if (/送料別|送料別途/i.test(text)) return '送料別';
+  return null;
+}
+
+let enrichRunning = false;
+let enrichQueue = [];
+
+async function enrichItems(items) {
+  if (!cfWorkerUrl) return;
+  // Apply already-cached results immediately
+  items.forEach(i => {
+    if (enrichCache[i.link]) {
+      i.pagePrice = enrichCache[i.link].pagePrice;
+      i.shipping  = enrichCache[i.link].shipping;
+    }
+  });
+  // Queue items not yet cached (cap at 60 per refresh)
+  const toEnrich = items.filter(i => !enrichCache[i.link]).slice(0, 60);
+  enrichQueue = [...toEnrich];
+  if (!enrichRunning) runEnrich();
+}
+
+async function runEnrich() {
+  enrichRunning = true;
+  while (enrichQueue.length > 0) {
+    const batch = enrichQueue.splice(0, 4);
+    await Promise.all(batch.map(async item => {
+      try {
+        const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(item.link), 10000);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const html = await res.text();
+        item.pagePrice = parsePriceFromHtml(html);
+        item.shipping  = parseShippingFromHtml(html);
+        enrichCache[item.link] = { pagePrice: item.pagePrice, shipping: item.shipping };
+      } catch(e) {
+        enrichCache[item.link] = { pagePrice: null, shipping: null };
+      }
+    }));
+    renderItems();
+  }
+  enrichRunning = false;
+}
+// ─────────────────────────────────────────────────────────────────────────────
 function isMatch(t) { return keywords.length > 0 && keywords.some(k=>t.toLowerCase().includes(k.toLowerCase())); }
 function hl(text) {
   let out = text;
@@ -715,8 +814,15 @@ function renderItems() {
         </div>
         <div class="item-title">${hl(item.title)}</div>
         <div class="item-meta">
-          ${item.price?`<span class="item-price">${item.price}</span>`:''}
-          ${item.listPrice?`<span style="font-size:10px;color:var(--text3)">定価 ${item.listPrice}</span>`:''}
+          ${(()=>{
+            const displayPrice = item.pagePrice || item.price;
+            const loadingPrice = !enrichCache[item.link] && cfWorkerUrl;
+            if (displayPrice) return `<span class="item-price">${displayPrice}</span>`;
+            if (loadingPrice) return `<span class="item-price-loading">価格取得中…</span>`;
+            return '';
+          })()}
+          ${item.listPrice && !item.pagePrice?`<span style="font-size:10px;color:var(--text3)">定価 ${item.listPrice}</span>`:''}
+          ${item.shipping ? `<span class="item-shipping${item.shipping==='送料無料'?'':' paid'}">${item.shipping}</span>` : ''}
         </div>
         <div class="item-meta" style="margin-top:auto;padding-top:4px">
           <span>${item.date}</span>
@@ -821,6 +927,7 @@ async function loadAll() {
   else if (errs.length) setStatus('err','一部失敗: ' + errs.join(' / '));
   else setStatus('ok', `更新 ${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`);
   renderItems();
+  enrichItems(allItems);
   if (nc>0 && slackCfg.enabled && slackCfg.url) {
     const notify = allItems.filter(i=>i.isNew&&(slackCfg.trigger==='new'||i.matched));
     if (notify.length) sendSlack(notify);
