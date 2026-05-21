@@ -854,7 +854,7 @@ function parseXmlFeed(xmlStr, feed) {
     const full = title + ' ' + desc;
     const ts = pubDate ? (new Date(pubDate).getTime() || 0) : 0;
     return { source:feed.id, title, link, date:parseDate(pubDate), ts, thumbnail:thumb, price:extractPrice(full), listPrice:extractListPrice(full), sizes:extractSizes(full), matched:isMatch(full), soldOut:isSoldOut(full), isNew:false };
-  });
+  }).filter(item => !/様専用|専用決済/.test(item.title));
 }
 function fetchWithTimeout(url, timeoutMs) {
   const ctrl = new AbortController();
@@ -892,7 +892,7 @@ async function fetchViaRss2json(feed) {
     const full = item.title + ' ' + (item.description || '');
     const ts = item.pubDate ? (new Date(item.pubDate).getTime() || 0) : 0;
     return { source:feed.id, title:item.title||'—', link:item.link||feed.site, date:parseDate(item.pubDate), ts, thumbnail:item.thumbnail||item.enclosure?.link||null, price:extractPrice(full), listPrice:extractListPrice(full), sizes:extractSizes(full), matched:isMatch(full), soldOut:isSoldOut(full), isNew:false };
-  });
+  }).filter(item => !/様専用|専用決済/.test(item.title));
 }
 async function fetchFeed(feed) {
   const fns = cfWorkerUrl
