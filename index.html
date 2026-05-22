@@ -252,7 +252,7 @@ tr:hover td { background: var(--bg3); }
     <button class="nav-item" onclick="goPage('search',this)">
       <span class="nav-dot"></span>検索リンク集
     </button>
-    <button class="nav-item" onclick="goPage('market',this)">
+    <button class="nav-item" onclick="goPage('market',this)" style="display:none">
       <span class="nav-dot"></span>市場相場
     </button>
     <div class="nav-label">せどり</div>
@@ -836,7 +836,6 @@ function renderItems() {
           ${item.isNew?'<span class="badge b-new">NEW</span>':''}
           ${item.soldOut?'<span class="badge b-sold">SOLD</span>':''}
           ${item.matched?'<span class="badge b-match">一致</span>':''}
-          ${marketBadgeHtml(item)}
         </div>
         <div class="item-title">${hl(item.title)}</div>
         <div class="item-meta">
@@ -1117,7 +1116,7 @@ async function loadAll() {
   else setStatus('ok', `更新 ${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`);
   renderItems();
   enrichItems(allItems);
-  recordPrices(allItems); // 相場DB蓄積
+  // recordPrices(allItems); // 市場相場：非表示中
   if (nc>0 && slackCfg.enabled && slackCfg.url) {
     const notify = allItems.filter(i=>i.isNew&&(slackCfg.trigger==='new'||i.matched));
     if (notify.length) sendSlack(notify);
