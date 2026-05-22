@@ -138,6 +138,19 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .b-shark { background: #e8f0ff; color: #1a3a8c; }
 .b-match { background: var(--accent-lt); color: var(--accent); }
 .b-sold { background: #f5f5f5; color: #999; }
+.b-market-low  { background: #d4edda; color: #1a5c2a; font-weight:500; }
+.b-market-mid  { background: var(--bg3); color: var(--text3); }
+.b-market-high { background: var(--amber-lt); color: var(--amber); font-weight:500; }
+/* 市場相場ページ */
+.market-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:12px; margin-top:16px; }
+.market-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; }
+.market-kw { font-size:14px; font-weight:500; margin-bottom:10px; }
+.market-median { font-family:var(--mono); font-size:22px; font-weight:500; color:var(--accent); }
+.market-sub { font-size:11px; color:var(--text3); margin-top:2px; }
+.market-bar-wrap { margin-top:10px; height:6px; background:var(--bg3); border-radius:3px; overflow:hidden; }
+.market-bar { height:100%; background:var(--accent); border-radius:3px; transition:width .4s; }
+.market-badge-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; font-size:11px; }
+.market-no-data { text-align:center; padding:2rem; color:var(--text3); font-size:13px; }
 .item-card.soldout { opacity: 0.5; }
 .item-card.soldout .item-title { text-decoration: line-through; color: var(--text3); }
 .b-new { background: var(--red-lt); color: var(--red); }
@@ -238,6 +251,9 @@ tr:hover td { background: var(--bg3); }
     </button>
     <button class="nav-item" onclick="goPage('search',this)">
       <span class="nav-dot"></span>検索リンク集
+    </button>
+    <button class="nav-item" onclick="goPage('market',this)">
+      <span class="nav-dot"></span>市場相場
     </button>
     <div class="nav-label">せどり</div>
     <button class="nav-item" onclick="goPage('sedori',this)">
@@ -404,6 +420,22 @@ tr:hover td { background: var(--bg3); }
   </div>
 
   <!-- 損益サマリ -->
+  <!-- 市場相場 -->
+  <div id="page-market" style="display:none">
+    <div class="page-head">
+      <div class="page-title">市場相場</div>
+      <div class="page-sub">登録キーワードの価格分布から中央値を算出し「買うべきか」を判定します</div>
+    </div>
+    <div class="content">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <button class="btn primary" onclick="fetchMarketData()">📊 相場を更新（Mercari参照）</button>
+        <button class="btn" onclick="clearMarketDB()">リセット</button>
+        <span style="font-size:11px;color:var(--text3)" id="marketStatus"></span>
+      </div>
+      <div id="marketGrid" class="market-grid"></div>
+    </div>
+  </div>
+
   <div id="page-profit" style="display:none">
     <div class="page-head">
       <div class="page-title">損益サマリ</div>
@@ -599,6 +631,7 @@ function goPage(id, btn) {
   if (id==='search') renderSearch();
   if (id==='profit') renderProfit();
   if (id==='sedori') renderSedori();
+  if (id==='market') renderMarket();
 }
 function switchTab(id, btn, page) {
   document.getElementById('page-'+page).querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -803,6 +836,7 @@ function renderItems() {
           ${item.isNew?'<span class="badge b-new">NEW</span>':''}
           ${item.soldOut?'<span class="badge b-sold">SOLD</span>':''}
           ${item.matched?'<span class="badge b-match">一致</span>':''}
+          ${marketBadgeHtml(item)}
         </div>
         <div class="item-title">${hl(item.title)}</div>
         <div class="item-meta">
@@ -903,6 +937,170 @@ async function fetchFeed(feed) {
   }
   throw new Error(feed.name + ': 全プロキシ失敗');
 }
+// ═══════════════════════════════════════════════════════════
+//  市場相場エンジン
+// ═══════════════════════════════════════════════════════════
+let marketDB = JSON.parse(localStorage.getItem('marketDB') || '{}');
+
+function parseNum(priceStr) {
+  if (!priceStr) return 0;
+  const n = parseInt(String(priceStr).replace(/[^\d]/g, ''), 10);
+  return isNaN(n) ? 0 : n;
+}
+
+// 取得済みアイテムの価格をキーワード別に蓄積
+function recordPrices(items) {
+  let changed = false;
+  items.forEach(item => {
+    const p = parseNum(item.pagePrice || item.price);
+    if (!p || p < 1000 || p > 5000000) return;
+    keywords.forEach(kw => {
+      if (!item.title.toLowerCase().includes(kw.toLowerCase())) return;
+      if (!marketDB[kw]) marketDB[kw] = [];
+      if (marketDB[kw].some(d => d.lnk === item.link)) return; // 重複スキップ
+      marketDB[kw].push({ p, ts: Date.now(), src: item.source, lnk: item.link });
+      if (marketDB[kw].length > 400) marketDB[kw] = marketDB[kw].slice(-400);
+      changed = true;
+    });
+  });
+  if (changed) { localStorage.setItem('marketDB', JSON.stringify(marketDB)); renderMarket(); }
+}
+
+// Mercari 検索ページから価格を抽出
+async function fetchMercariPrices(kw) {
+  if (!cfWorkerUrl) return [];
+  try {
+    const url = 'https://jp.mercari.com/search?keyword=' + encodeURIComponent(kw) + '&status=on_sale';
+    const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(url), 14000);
+    if (!res.ok) return [];
+    const html = await res.text();
+    const prices = [];
+    // __NEXT_DATA__ 内の price フィールドを探す
+    const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
+    if (m) {
+      try {
+        const findPrices = (obj, depth) => {
+          if (!obj || typeof obj !== 'object' || depth > 10) return;
+          if (Array.isArray(obj)) { obj.forEach(x => findPrices(x, depth + 1)); return; }
+          if (obj.price != null && typeof obj.price === 'number' && obj.name) prices.push(obj.price);
+          if (obj.price != null && typeof obj.price === 'string' && obj.name) prices.push(parseNum(obj.price));
+          Object.values(obj).forEach(v => findPrices(v, depth + 1));
+        };
+        findPrices(JSON.parse(m[1]), 0);
+      } catch(e) {}
+    }
+    // フォールバック: HTML 内の ¥価格パターン（重複排除）
+    if (prices.length === 0) {
+      const re = /["']price["']\s*:\s*(\d+)/g;
+      let mm;
+      while ((mm = re.exec(html)) !== null) { const v = +mm[1]; if (v >= 1000) prices.push(v); }
+    }
+    return prices.filter(p => p >= 1000 && p <= 5000000);
+  } catch(e) { return []; }
+}
+
+// Mercari 価格を marketDB へ保存
+async function fetchMarketData() {
+  if (!keywords.length) { document.getElementById('marketStatus').textContent = 'キーワードを先に登録してください'; return; }
+  document.getElementById('marketStatus').textContent = '取得中…';
+  let total = 0;
+  for (const kw of keywords) {
+    const prices = await fetchMercariPrices(kw);
+    if (!prices.length) continue;
+    if (!marketDB[kw]) marketDB[kw] = [];
+    prices.forEach(p => {
+      if (!marketDB[kw].some(d => d.p === p && d.src === 'mercari' && Date.now() - d.ts < 86400000)) {
+        marketDB[kw].push({ p, ts: Date.now(), src: 'mercari' });
+        total++;
+      }
+    });
+    if (marketDB[kw].length > 400) marketDB[kw] = marketDB[kw].slice(-400);
+  }
+  localStorage.setItem('marketDB', JSON.stringify(marketDB));
+  document.getElementById('marketStatus').textContent = `+${total} 件追加（${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}）`;
+  renderMarket();
+  renderItems(); // バッジ更新
+}
+
+function clearMarketDB() {
+  if (!confirm('相場データをリセットしますか？')) return;
+  marketDB = {};
+  localStorage.removeItem('marketDB');
+  document.getElementById('marketStatus').textContent = 'リセット完了';
+  renderMarket(); renderItems();
+}
+
+// 統計計算
+function calcStats(kw) {
+  const data = (marketDB[kw] || []).filter(d => d.p > 0);
+  if (data.length < 3) return null;
+  const prices = data.map(d => d.p).sort((a, b) => a - b);
+  const n = prices.length;
+  const median = prices[Math.floor(n / 2)];
+  const p25 = prices[Math.floor(n * 0.25)];
+  const p75 = prices[Math.floor(n * 0.75)];
+  const srcCount = {};
+  data.forEach(d => { srcCount[d.src] = (srcCount[d.src] || 0) + 1; });
+  return { median, p25, p75, min: prices[0], max: prices[n - 1], count: n, srcCount };
+}
+
+// カードに表示するバッジ HTML
+function marketBadgeHtml(item) {
+  const p = parseNum(item.pagePrice || item.price);
+  if (!p) return '';
+  for (const kw of keywords) {
+    if (!item.title.toLowerCase().includes(kw.toLowerCase())) continue;
+    const s = calcStats(kw);
+    if (!s) continue;
+    const ratio = p / s.median;
+    const pct = Math.round(Math.abs(ratio - 1) * 100);
+    if (ratio <= 0.85) return `<span class="badge b-market-low">↓ 相場比 -${pct}%</span>`;
+    if (ratio <= 1.15) return `<span class="badge b-market-mid">相場並</span>`;
+    return `<span class="badge b-market-high">↑ 相場超 +${pct}%</span>`;
+  }
+  return '';
+}
+
+// 市場相場ページ描画
+function renderMarket() {
+  const el = document.getElementById('marketGrid');
+  if (!el) return;
+  if (!keywords.length) {
+    el.innerHTML = '<div class="market-no-data">検索リンク集にキーワードを登録すると相場データが蓄積されます</div>';
+    return;
+  }
+  const cards = keywords.map(kw => {
+    const s = calcStats(kw);
+    const data = marketDB[kw] || [];
+    const mercariN = data.filter(d => d.src === 'mercari').length;
+    const storeN = data.filter(d => d.src !== 'mercari').length;
+    if (!s) {
+      return `<div class="market-card">
+        <div class="market-kw">${kw}</div>
+        <div class="market-sub">データ収集中… (${data.length}件)</div>
+        <div class="market-sub" style="margin-top:4px">監視店舗: ${storeN} / Mercari: ${mercariN}</div>
+      </div>`;
+    }
+    const barW = Math.min(100, Math.round(((s.median - s.min) / (s.max - s.min || 1)) * 100));
+    return `<div class="market-card">
+      <div class="market-kw">${kw}</div>
+      <div class="market-median">¥${s.median.toLocaleString()}</div>
+      <div class="market-sub">中央値（n=${s.count}）</div>
+      <div class="market-bar-wrap"><div class="market-bar" style="width:${barW}%"></div></div>
+      <div class="market-badge-row">
+        <span class="badge b-market-low">下限 ¥${s.p25.toLocaleString()}</span>
+        <span class="badge b-market-high">上限 ¥${s.p75.toLocaleString()}</span>
+      </div>
+      <div class="market-sub" style="margin-top:6px">
+        最小 ¥${s.min.toLocaleString()} — 最大 ¥${s.max.toLocaleString()}
+      </div>
+      <div class="market-sub" style="margin-top:2px">監視店舗: ${storeN} / Mercari: ${mercariN}</div>
+    </div>`;
+  });
+  el.innerHTML = cards.join('');
+}
+// ═══════════════════════════════════════════════════════════
+
 async function loadAll() {
   setStatus('loading','取得中...');
   const results = await Promise.allSettled(RSS_FEEDS.filter(f=>!f.disabled).map(fetchFeed));
@@ -919,6 +1117,7 @@ async function loadAll() {
   else setStatus('ok', `更新 ${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`);
   renderItems();
   enrichItems(allItems);
+  recordPrices(allItems); // 相場DB蓄積
   if (nc>0 && slackCfg.enabled && slackCfg.url) {
     const notify = allItems.filter(i=>i.isNew&&(slackCfg.trigger==='new'||i.matched));
     if (notify.length) sendSlack(notify);
