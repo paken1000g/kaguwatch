@@ -218,6 +218,16 @@ tr:hover td { background: var(--bg3); }
 .guide-title { font-size: 12px; font-weight: 500; color: var(--accent); margin-bottom: 6px; }
 .guide-body { font-size: 13px; color: var(--text2); line-height: 1.8; font-weight: 300; }
 .guide-body b { font-weight: 500; color: var(--text); }
+
+/* Price filter */
+.price-bar { display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:8px 12px; background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius); margin-bottom:12px; }
+.pf-label { font-family:var(--mono); font-size:10px; color:var(--text3); letter-spacing:.08em; white-space:nowrap; }
+.pf-inputs { display:flex; align-items:center; gap:5px; }
+.pf-inputs input { width:100px; }
+.pf-sep { color:var(--text3); }
+.pf-presets { display:flex; gap:4px; flex-wrap:wrap; }
+.pf-toggle { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--text2); margin-left:auto; cursor:pointer; white-space:nowrap; }
+.pf-toggle input[type=checkbox] { width:auto; accent-color:var(--accent); }
 </style>
 </head>
 <body>
@@ -289,6 +299,26 @@ tr:hover td { background: var(--bg3); }
         <button class="chip" onclick="setFilter('tokyo',this)">imption</button>
         <button class="chip" onclick="setFilter('furuichi',this)">furuichi</button>
         <button class="chip" onclick="setFilter('timehype',this)">TIME HYPE</button>
+      </div>
+
+      <div class="price-bar">
+        <span class="pf-label">価格</span>
+        <div class="pf-inputs">
+          <input type="number" id="priceMin" placeholder="下限（円）" step="1000" min="0" oninput="onPriceInput()">
+          <span class="pf-sep">〜</span>
+          <input type="number" id="priceMax" placeholder="上限（円）" step="1000" min="0" oninput="onPriceInput()">
+        </div>
+        <div class="pf-presets" id="pfPresets">
+          <button class="chip" data-min="0" data-max="10000" onclick="setPP(this)">〜1万</button>
+          <button class="chip" data-min="0" data-max="30000" onclick="setPP(this)">〜3万</button>
+          <button class="chip" data-min="0" data-max="50000" onclick="setPP(this)">〜5万</button>
+          <button class="chip" data-min="50000" data-max="0" onclick="setPP(this)">5万〜</button>
+          <button class="chip" id="pfClr" onclick="clrPP()" style="display:none;color:var(--red)">× クリア</button>
+        </div>
+        <label class="pf-toggle">
+          <input type="checkbox" id="showNoPrice" checked onchange="renderItems()">
+          <span>価格なし含む</span>
+        </label>
       </div>
 
       <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
@@ -687,11 +717,49 @@ function setStatus(s, txt) {
   document.getElementById('dot').className = 'sdot'+(s==='loading'?' loading':s==='err'?' err':'');
   document.getElementById('statusTxt').textContent = txt;
 }
+function parseItemPrice(s) {
+  if (!s) return null;
+  const n = parseInt(s.replace(/[¥￥,円\s]/g, ''));
+  return isNaN(n) ? null : n;
+}
+function setPP(btn) {
+  document.getElementById('priceMin').value = +btn.dataset.min || '';
+  document.getElementById('priceMax').value = +btn.dataset.max || '';
+  document.querySelectorAll('#pfPresets .chip').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('pfClr').style.display = '';
+  renderItems();
+}
+function clrPP() {
+  document.getElementById('priceMin').value = '';
+  document.getElementById('priceMax').value = '';
+  document.querySelectorAll('#pfPresets .chip').forEach(c => c.classList.remove('active'));
+  document.getElementById('pfClr').style.display = 'none';
+  renderItems();
+}
+function onPriceInput() {
+  const hasFilter = document.getElementById('priceMin').value || document.getElementById('priceMax').value;
+  document.getElementById('pfClr').style.display = hasFilter ? '' : 'none';
+  document.querySelectorAll('#pfPresets .chip[data-min]').forEach(c => c.classList.remove('active'));
+  renderItems();
+}
 function renderItems() {
   let items = allItems;
   if (watchQuery) items = items.filter(i => i.title.toLowerCase().includes(watchQuery));
   if (currentFilter==='matched') items = items.filter(i=>i.matched);
   else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
+  const pMin = parseInt(document.getElementById('priceMin').value) || 0;
+  const pMax = parseInt(document.getElementById('priceMax').value) || 0;
+  if (pMin || pMax) {
+    const showNP = document.getElementById('showNoPrice').checked;
+    items = items.filter(item => {
+      const p = parseItemPrice(item.price);
+      if (p === null) return showNP;
+      if (pMin && p < pMin) return false;
+      if (pMax && p > pMax) return false;
+      return true;
+    });
+  }
   const mc = allItems.filter(i=>i.matched).length;
   document.getElementById('sMatch').textContent = mc;
   document.getElementById('sTotal').textContent = allItems.length;
