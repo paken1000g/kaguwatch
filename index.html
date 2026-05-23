@@ -703,21 +703,34 @@ function extractSizes(text) {
   return null;
 }
 // RSS
-function extractListPrice(text) {
-  const m = (text||'').match(/(?:定価|参考価格|参考小売価格|メーカー希望価格|新品定価|希望小売価格|通常価格|新品価格)[：:\s]*([¥￥]?\s*[\d,]+\s*円?)/);
-  return m ? m[1].trim() : null;
+function extractListPrice(raw) {
+  if (!raw) return null;
+  const text = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
+  const m = text.match(/(?:定価|参考価格|参考小売価格|メーカー希望価格|新品定価|希望小売価格)[^\d¥￥]{0,10}([¥￥][\d,]+|[\d,]+円)/);
+  return m ? m[1] : null;
 }
-function extractPrice(text) {
-  const t = text || '';
-  // 送料のみ除去（通常価格は販売価格として扱うため除去しない）
-  const noShip = t.replace(/(?:送料|配送料|運送料|配送費)[^\n¥￥\d]{0,15}[¥￥]?\s*[\d,]+\s*円?/gi, '');
-  // 売価ラベル付き（通常価格を含む）を優先
-  const ex = noShip.match(/(?:販売価格|売価|本体価格|商品価格|価格|通常価格)[：:\s]*([¥￥]\s*[\d,]+|[\d,]+\s*円)/);
-  if (ex) return ex[1].replace(/\s/g, '');
-  // メーカー希望価格等を除去してから残りの金額を取得
-  const clean = noShip.replace(/(?:定価|参考価格|参考小売価格|希望小売価格|メーカー希望価格|新品定価)[^\n¥￥\d]{0,15}[¥￥]?\s*[\d,]+\s*円?/gi, '');
-  const m = clean.match(/[¥￥]\s*[\d,]+|[\d,]+\s*円/);
-  return m ? m[0].replace(/\s/g, '') : null;
+function extractPrice(raw) {
+  if (!raw) return null;
+  // HTMLタグ・エンティティを除去してプレーンテキスト化
+  const text = raw
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&[a-z#][a-z0-9]*;/gi, ' ')
+    .replace(/\s+/g, ' ');
+  // 送料・配送料の金額を除去（「無料」「込」の後は商品価格なので除去しない）
+  const noShip = text
+    .replace(/(?:送料|配送料|運送料)(?!無料|込)[^\d¥￥\n]{0,8}[¥￥][\d,]+/g, '')
+    .replace(/(?:送料|配送料|運送料)(?!無料|込)[^\d¥￥\n]{0,8}[\d,]+円/g, '');
+  // 優先①: 価格ラベル付き（通常価格は中古店では販売価格）
+  const m1 = noShip.match(/(?:販売価格|売価|本体価格|商品価格|価格|通常価格)[^\d¥￥]{0,15}([¥￥][\d,]+|[\d,]+円)/);
+  if (m1) return m1[1];
+  // 定価・参考価格を除去してから検索
+  const noPub = noShip.replace(/(?:定価|参考価格|参考小売価格|希望小売価格|メーカー希望価格)[^\d¥￥]{0,10}[¥￥][\d,]+/g, '');
+  // 優先②: ¥XX,XXX形式（Shopify money filterの標準出力）
+  const m2 = noPub.match(/[¥￥][\d,]+/);
+  if (m2) return m2[0];
+  // 優先③: XXXXX円形式
+  const m3 = noPub.match(/[\d,]+円/);
+  return m3 ? m3[0] : null;
 }
 function isSoldOut(text) { return /sold[\s-]?out|在庫切れ|売り切れ|売切れ|完売|ソールドアウト/i.test(text||''); }
 function isMatch(t) { return keywords.length > 0 && keywords.some(k=>t.toLowerCase().includes(k.toLowerCase())); }
