@@ -709,12 +709,13 @@ function extractListPrice(text) {
 }
 function extractPrice(text) {
   const t = text || '';
-  // 送料・配送料の金額を除去
-  const clean = t.replace(/(?:送料|配送料|運送料|配送費)[^\n¥￥\d]{0,15}[¥￥]?\s*[\d,]+\s*円?/gi, '')
-                  .replace(/(?:定価|参考価格|希望小売価格|メーカー希望価格|通常価格|新品定価)[^\n¥￥\d]{0,15}[¥￥]?\s*[\d,]+\s*円?/gi, '');
-  // 販売価格の明示マーカーを優先
-  const ex = clean.match(/(?:販売価格|売価|本体価格|商品価格|価格)[：:\s]*([¥￥]\s*[\d,]+|[\d,]+\s*円)/);
+  // 送料のみ除去（通常価格は販売価格として扱うため除去しない）
+  const noShip = t.replace(/(?:送料|配送料|運送料|配送費)[^\n¥￥\d]{0,15}[¥￥]?\s*[\d,]+\s*円?/gi, '');
+  // 売価ラベル付き（通常価格を含む）を優先
+  const ex = noShip.match(/(?:販売価格|売価|本体価格|商品価格|価格|通常価格)[：:\s]*([¥￥]\s*[\d,]+|[\d,]+\s*円)/);
   if (ex) return ex[1].replace(/\s/g, '');
+  // メーカー希望価格等を除去してから残りの金額を取得
+  const clean = noShip.replace(/(?:定価|参考価格|参考小売価格|希望小売価格|メーカー希望価格|新品定価)[^\n¥￥\d]{0,15}[¥￥]?\s*[\d,]+\s*円?/gi, '');
   const m = clean.match(/[¥￥]\s*[\d,]+|[\d,]+\s*円/);
   return m ? m[0].replace(/\s/g, '') : null;
 }
