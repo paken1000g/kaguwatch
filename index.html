@@ -969,13 +969,23 @@ async function enrichShopifyPrices(items, feed) {
         }
         if (!Object.keys(priceMap).length) continue;
         const via = fetchUrl.includes('?url=') ? 'proxy' : 'direct';
+        // サンプルハンドルと item.link を照合確認
+        const sampleHandle = Object.keys(priceMap)[0];
+        const sampleLink = items[0]?.link || '';
+        const sampleExtracted = sampleLink.match(/\/products\/([^/?#]+)/)?.[1] || '—';
         dbgLog('ok', feed.id + ': ' + Object.keys(priceMap).length + '件取得 (' + via + ')');
-        return items.map(item => {
+        dbgLog('ok', 'map例: ' + sampleHandle);
+        dbgLog('ok', 'link例: ' + sampleExtracted);
+        let matched = 0;
+        const result = items.map(item => {
           const m = item.link.match(/\/products\/([^/?#]+)/);
           const entry = m && priceMap[m[1]];
           if (!entry) return item;
+          matched++;
           return { ...item, price: entry.price, listPrice: item.listPrice || entry.listPrice };
         });
+        dbgLog(matched > 0 ? 'ok' : 'err', 'マッチ: ' + matched + '/' + items.length + '件');
+        return result;
       } catch(e) {
         dbgLog('warn', feed.id + ' 試行失敗: ' + e.message);
       }
