@@ -715,12 +715,22 @@ function extractPrice(raw) {
     .replace(/<[^>]+>/g, ' ')
     .replace(/&[a-z#][a-z0-9]*;/gi, ' ')
     .replace(/\s+/g, ' ');
-  // 送料・配送料の金額のみ除去（定価等は除去しない）
+  // 送料・配送料の金額を除去（無料・込み は除去しない）
   const noShip = text
     .replace(/(?:送料|配送料|運送料)(?!無料|込)[^\d¥￥]{0,10}[¥￥]\s*[\d,]+/g, '')
     .replace(/(?:送料|配送料|運送料)(?!無料|込)[^\d¥￥]{0,10}[\d,]+円/g, '');
-  const m = noShip.match(/[¥￥]\s*[\d,]+|[\d,]+円/);
-  return m ? m[0].replace(/\s/g, '') : null;
+  // 優先①: 販売価格ラベル付き
+  const m1 = noShip.match(/(?:販売価格|売価|本体価格|商品価格|価格|通常価格)[^\d¥￥]{0,15}([¥￥]\s*[\d,]+|[\d,]+円)/);
+  if (m1) return m1[1].replace(/\s/g, '');
+  // 優先②: 定価・参考価格を除去した残りの価格
+  const noPub = noShip.replace(/(?:定価|参考価格|参考小売価格|希望小売価格|メーカー希望価格)[^\d¥￥]{0,10}[¥￥]\s*[\d,]+/g, '');
+  const m2 = noPub.match(/[¥￥]\s*[\d,]+/);
+  if (m2) return m2[0].replace(/\s/g, '');
+  const m3 = noPub.match(/[\d,]+円/);
+  if (m3) return m3[0];
+  // フォールバック: 定価しかない場合もそれを返す（null より有用）
+  const mf = noShip.match(/[¥￥]\s*[\d,]+|[\d,]+円/);
+  return mf ? mf[0].replace(/\s/g, '') : null;
 }
 function isSoldOut(text) { return /sold[\s-]?out|在庫切れ|売り切れ|売切れ|完売|ソールドアウト/i.test(text||''); }
 function isMatch(t) { return keywords.length > 0 && keywords.some(k=>t.toLowerCase().includes(k.toLowerCase())); }
