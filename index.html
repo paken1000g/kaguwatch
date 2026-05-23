@@ -706,8 +706,8 @@ function extractSizes(text) {
 function extractListPrice(raw) {
   if (!raw) return null;
   const text = raw.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ');
-  const m = text.match(/(?:定価|参考価格|参考小売価格|メーカー希望価格|新品定価|希望小売価格)[^\d¥￥]{0,10}([¥￥][\d,]+|[\d,]+円)/);
-  return m ? m[1] : null;
+  const m = text.match(/(?:定価|参考価格|参考小売価格|メーカー希望価格|新品定価|希望小売価格)[^\d¥￥]{0,10}([¥￥]\s*[\d,]+|[\d,]+円)/);
+  return m ? m[1].replace(/\s/g, '') : null;
 }
 function extractPrice(raw) {
   if (!raw) return null;
@@ -718,16 +718,16 @@ function extractPrice(raw) {
     .replace(/\s+/g, ' ');
   // 送料・配送料の金額を除去（「無料」「込」の後は商品価格なので除去しない）
   const noShip = text
-    .replace(/(?:送料|配送料|運送料)(?!無料|込)[^\d¥￥\n]{0,8}[¥￥][\d,]+/g, '')
+    .replace(/(?:送料|配送料|運送料)(?!無料|込)[^\d¥￥\n]{0,8}[¥￥]\s*[\d,]+/g, '')
     .replace(/(?:送料|配送料|運送料)(?!無料|込)[^\d¥￥\n]{0,8}[\d,]+円/g, '');
   // 優先①: 価格ラベル付き（通常価格は中古店では販売価格）
-  const m1 = noShip.match(/(?:販売価格|売価|本体価格|商品価格|価格|通常価格)[^\d¥￥]{0,15}([¥￥][\d,]+|[\d,]+円)/);
-  if (m1) return m1[1];
+  const m1 = noShip.match(/(?:販売価格|売価|本体価格|商品価格|価格|通常価格)[^\d¥￥]{0,15}([¥￥]\s*[\d,]+|[\d,]+円)/);
+  if (m1) return m1[1].replace(/\s/g, '');
   // 定価・参考価格を除去してから検索
-  const noPub = noShip.replace(/(?:定価|参考価格|参考小売価格|希望小売価格|メーカー希望価格)[^\d¥￥]{0,10}[¥￥][\d,]+/g, '');
+  const noPub = noShip.replace(/(?:定価|参考価格|参考小売価格|希望小売価格|メーカー希望価格)[^\d¥￥]{0,10}[¥￥]\s*[\d,]+/g, '');
   // 優先②: ¥XX,XXX形式（Shopify money filterの標準出力）
-  const m2 = noPub.match(/[¥￥][\d,]+/);
-  if (m2) return m2[0];
+  const m2 = noPub.match(/[¥￥]\s*[\d,]+/);
+  if (m2) return m2[0].replace(/\s/g, '');
   // 優先③: XXXXX円形式
   const m3 = noPub.match(/[\d,]+円/);
   return m3 ? m3[0] : null;
