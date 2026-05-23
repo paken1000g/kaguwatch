@@ -940,16 +940,23 @@ async function fetchFeed(feed) {
 async function enrichShopifyPrices(items, feed) {
   const base = new URL(feed.url).origin;
   const fmt = n => '¥' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+  // Step 1: bulk products.json (fast, but may miss items due to pagination or handle mismatch)
+  let result = items.slice();
+  const unmatchedIndices = new Set(items.map((_, i) => i));
+
   const jsonUrls = [
     base + '/collections/all/products.json?limit=250',
     base + '/products.json?limit=250',
   ];
+  let bulkDone = false;
   for (const jsonUrl of jsonUrls) {
-    // プロキシ経由→直接 の順で試みる
+    if (bulkDone) break;
     const fetchUrls = cfWorkerUrl
       ? [cfWorkerUrl + '?url=' + encodeURIComponent(jsonUrl), jsonUrl]
       : [jsonUrl];
     for (const fetchUrl of fetchUrls) {
+      if (bulkDone) break;
       try {
         const res = await fetchWithTimeout(fetchUrl, 10000);
         if (!res.ok) continue;
@@ -969,30 +976,61 @@ async function enrichShopifyPrices(items, feed) {
         }
         if (!Object.keys(priceMap).length) continue;
         const via = fetchUrl.includes('?url=') ? 'proxy' : 'direct';
-        // サンプルハンドルと item.link を照合確認
-        const sampleHandle = Object.keys(priceMap)[0];
-        const sampleLink = items[0]?.link || '';
-        const sampleExtracted = sampleLink.match(/\/products\/([^/?#]+)/)?.[1] || '—';
-        dbgLog('ok', feed.id + ': ' + Object.keys(priceMap).length + '件取得 (' + via + ')');
-        dbgLog('ok', 'map例: ' + sampleHandle);
-        dbgLog('ok', 'link例: ' + sampleExtracted);
+        dbgLog('ok', feed.id + ': bulk ' + Object.keys(priceMap).length + '件 (' + via + ')');
         let matched = 0;
-        const result = items.map(item => {
+        result = items.map((item, idx) => {
           const m = item.link.match(/\/products\/([^/?#]+)/);
           const entry = m && priceMap[m[1]];
           if (!entry) return item;
           matched++;
+          unmatchedIndices.delete(idx);
           return { ...item, price: entry.price, listPrice: item.listPrice || entry.listPrice };
         });
-        dbgLog(matched > 0 ? 'ok' : 'err', 'マッチ: ' + matched + '/' + items.length + '件');
-        return result;
+        dbgLog(matched > 0 ? 'ok' : 'warn', 'bulk マッチ: ' + matched + '/' + items.length + '件');
+        bulkDone = true;
       } catch(e) {
-        dbgLog('warn', feed.id + ' 試行失敗: ' + e.message);
+        dbgLog('warn', feed.id + ' bulk失敗: ' + e.message);
       }
     }
   }
-  dbgLog('err', feed.id + ': 全取得失敗（価格補完なし）');
-  return items;
+
+  // Step 2: per-product fallback for items not matched by bulk
+  const toFetch = [...unmatchedIndices].filter(idx =>
+    /\/products\//.test(result[idx]?.link || '')
+  );
+  if (toFetch.length > 0) {
+    dbgLog('ok', feed.id + ': 個別取得 ' + toFetch.length + '件');
+    const fetched = await Promise.all(toFetch.map(async idx => {
+      const item = result[idx];
+      const handle = item.link.match(/\/products\/([^/?#]+)/)?.[1];
+      if (!handle) return { idx, item };
+      const productUrl = base + '/products/' + handle + '.json';
+      const fetchUrl = cfWorkerUrl
+        ? cfWorkerUrl + '?url=' + encodeURIComponent(productUrl)
+        : productUrl;
+      try {
+        const res = await fetchWithTimeout(fetchUrl, 8000);
+        if (!res.ok) return { idx, item };
+        const text = await res.text();
+        const data = JSON.parse(text);
+        const v = data?.product?.variants?.[0];
+        if (!v?.price) return { idx, item };
+        return { idx, item: {
+          ...item,
+          price: fmt(parseFloat(v.price)),
+          listPrice: v.compare_at_price ? fmt(parseFloat(v.compare_at_price)) : item.listPrice,
+        }};
+      } catch { return { idx, item }; }
+    }));
+    let indMatched = 0;
+    for (const { idx, item } of fetched) {
+      if (item.price !== result[idx].price) indMatched++;
+      result[idx] = item;
+    }
+    dbgLog(indMatched > 0 ? 'ok' : 'err', '個別マッチ: ' + indMatched + '/' + toFetch.length + '件');
+  }
+
+  return result;
 }
 async function loadAll() {
   document.getElementById('dbgLines').innerHTML = '';
