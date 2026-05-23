@@ -907,34 +907,53 @@ async function fetchFeed(feed) {
     try { items = await fn(feed); break; } catch(e) {}
   }
   if (!items) throw new Error(feed.name + ': 全プロキシ失敗');
-  if (cfWorkerUrl && feed.url.endsWith('.atom') && items.some(i => !i.price)) {
-    try { items = await enrichShopifyPrices(items, feed); } catch(e) {}
+  if (feed.url.includes('.atom') && items.some(i => !i.price)) {
+    items = await enrichShopifyPrices(items, feed);
   }
   return items;
 }
 async function enrichShopifyPrices(items, feed) {
   const base = new URL(feed.url).origin;
-  const jsonUrl = base + '/collections/all/products.json?limit=250';
-  const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(jsonUrl), 10000);
-  if (!res.ok) return items;
-  const data = await res.json();
-  if (!Array.isArray(data.products)) return items;
-  const priceMap = {};
-  for (const p of data.products) {
-    const v = p.variants?.[0];
-    if (!p.handle || !v?.price) continue;
-    priceMap[p.handle] = {
-      price: '¥' + Math.round(parseFloat(v.price)).toLocaleString('ja-JP'),
-      listPrice: v.compare_at_price ? '¥' + Math.round(parseFloat(v.compare_at_price)).toLocaleString('ja-JP') : null,
-    };
+  const fmt = n => '¥' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  // Try collection-specific then store-wide products.json
+  const candidates = [
+    base + '/collections/all/products.json?limit=250',
+    base + '/products.json?limit=250',
+  ];
+  const proxyBase = cfWorkerUrl || '';
+  for (const jsonUrl of candidates) {
+    try {
+      const fetchUrl = proxyBase ? proxyBase + '?url=' + encodeURIComponent(jsonUrl) : jsonUrl;
+      const res = await fetchWithTimeout(fetchUrl, 12000);
+      if (!res.ok) continue;
+      // Use text+parse instead of res.json() to avoid Content-Type mismatch from proxy
+      const text = await res.text();
+      let data;
+      try { data = JSON.parse(text); } catch { continue; }
+      const products = data?.products;
+      if (!Array.isArray(products) || !products.length) continue;
+      const priceMap = {};
+      for (const p of products) {
+        const v = p.variants?.[0];
+        if (!p.handle || !v?.price) continue;
+        priceMap[p.handle] = {
+          price: fmt(parseFloat(v.price)),
+          listPrice: v.compare_at_price ? fmt(parseFloat(v.compare_at_price)) : null,
+        };
+      }
+      if (!Object.keys(priceMap).length) continue;
+      return items.map(item => {
+        if (item.price) return item;
+        const m = item.link.match(/\/products\/([^/?#]+)/);
+        const entry = m && priceMap[m[1]];
+        if (!entry) return item;
+        return { ...item, price: entry.price, listPrice: item.listPrice || entry.listPrice };
+      });
+    } catch(e) {
+      console.warn('[kaguwatch] price enrich failed:', feed.id, e.message);
+    }
   }
-  return items.map(item => {
-    if (item.price) return item;
-    const handle = item.link.replace(/^.*\/products\//, '').replace(/[?#].*/, '');
-    const p = priceMap[handle];
-    if (!p) return item;
-    return { ...item, price: p.price, listPrice: item.listPrice || p.listPrice };
-  });
+  return items;
 }
 async function loadAll() {
   setStatus('loading','取得中...');
