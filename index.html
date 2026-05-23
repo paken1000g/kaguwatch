@@ -902,10 +902,39 @@ async function fetchFeed(feed) {
   const fns = cfWorkerUrl
     ? [fetchViaCfWorker, fetchViaCorsproxy, fetchViaAllOrigins, fetchViaRss2json]
     : [fetchViaCorsproxy, fetchViaAllOrigins, fetchViaRss2json];
+  let items;
   for (const fn of fns) {
-    try { return await fn(feed); } catch(e) {}
+    try { items = await fn(feed); break; } catch(e) {}
   }
-  throw new Error(feed.name + ': 全プロキシ失敗');
+  if (!items) throw new Error(feed.name + ': 全プロキシ失敗');
+  if (cfWorkerUrl && feed.url.endsWith('.atom') && items.some(i => !i.price)) {
+    try { items = await enrichShopifyPrices(items, feed); } catch(e) {}
+  }
+  return items;
+}
+async function enrichShopifyPrices(items, feed) {
+  const base = new URL(feed.url).origin;
+  const jsonUrl = base + '/collections/all/products.json?limit=250';
+  const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(jsonUrl), 10000);
+  if (!res.ok) return items;
+  const data = await res.json();
+  if (!Array.isArray(data.products)) return items;
+  const priceMap = {};
+  for (const p of data.products) {
+    const v = p.variants?.[0];
+    if (!p.handle || !v?.price) continue;
+    priceMap[p.handle] = {
+      price: '¥' + Math.round(parseFloat(v.price)).toLocaleString('ja-JP'),
+      listPrice: v.compare_at_price ? '¥' + Math.round(parseFloat(v.compare_at_price)).toLocaleString('ja-JP') : null,
+    };
+  }
+  return items.map(item => {
+    if (item.price) return item;
+    const handle = item.link.replace(/^.*\/products\//, '').replace(/[?#].*/, '');
+    const p = priceMap[handle];
+    if (!p) return item;
+    return { ...item, price: p.price, listPrice: item.listPrice || p.listPrice };
+  });
 }
 async function loadAll() {
   setStatus('loading','取得中...');
