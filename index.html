@@ -228,6 +228,13 @@ tr:hover td { background: var(--bg3); }
 .pf-presets { display:flex; gap:4px; flex-wrap:wrap; }
 .pf-toggle { display:flex; align-items:center; gap:5px; font-size:12px; color:var(--text2); margin-left:auto; cursor:pointer; white-space:nowrap; }
 .pf-toggle input[type=checkbox] { width:auto; accent-color:var(--accent); }
+#dbgPanel { position:fixed; bottom:16px; right:16px; z-index:9999; background:rgba(20,20,20,.93); color:#e0e0e0; font-size:11px; font-family:monospace; border-radius:8px; padding:10px 12px; max-width:320px; min-width:200px; box-shadow:0 4px 16px rgba(0,0,0,.4); display:none; }
+#dbgPanel .dbg-title { font-size:10px; color:#888; margin-bottom:6px; display:flex; justify-content:space-between; align-items:center; }
+#dbgPanel .dbg-close { cursor:pointer; color:#888; font-size:14px; line-height:1; padding:0 2px; }
+#dbgPanel .dbg-line { margin:2px 0; line-height:1.5; }
+#dbgPanel .dbg-ok   { color:#6fcf6f; }
+#dbgPanel .dbg-warn { color:#f0b840; }
+#dbgPanel .dbg-err  { color:#ff6b6b; }
 </style>
 </head>
 <body>
@@ -750,6 +757,23 @@ function setStatus(s, txt) {
   document.getElementById('dot').className = 'sdot'+(s==='loading'?' loading':s==='err'?' err':'');
   document.getElementById('statusTxt').textContent = txt;
 }
+let _dbgTimer = null;
+function dbgLog(type, msg) {
+  const panel = document.getElementById('dbgPanel');
+  const lines = document.getElementById('dbgLines');
+  const el = document.createElement('div');
+  el.className = 'dbg-line dbg-' + type;
+  el.textContent = (type === 'ok' ? '✓ ' : type === 'warn' ? '⚠ ' : '✗ ') + msg;
+  lines.appendChild(el);
+  panel.style.display = 'block';
+  clearTimeout(_dbgTimer);
+  _dbgTimer = setTimeout(() => { panel.style.display = 'none'; lines.innerHTML = ''; }, 15000);
+}
+function closeDbg() {
+  document.getElementById('dbgPanel').style.display = 'none';
+  document.getElementById('dbgLines').innerHTML = '';
+  clearTimeout(_dbgTimer);
+}
 function parseItemPrice(s) {
   if (!s) return null;
   const n = parseInt(s.replace(/[¥￥,円\s]/g, ''));
@@ -944,7 +968,8 @@ async function enrichShopifyPrices(items, feed) {
           };
         }
         if (!Object.keys(priceMap).length) continue;
-        console.log('[kaguwatch] price enrich OK:', feed.id, Object.keys(priceMap).length, 'products via', fetchUrl.includes('?url=') ? 'proxy' : 'direct');
+        const via = fetchUrl.includes('?url=') ? 'proxy' : 'direct';
+        dbgLog('ok', feed.id + ': ' + Object.keys(priceMap).length + '件取得 (' + via + ')');
         return items.map(item => {
           const m = item.link.match(/\/products\/([^/?#]+)/);
           const entry = m && priceMap[m[1]];
@@ -952,14 +977,15 @@ async function enrichShopifyPrices(items, feed) {
           return { ...item, price: entry.price, listPrice: item.listPrice || entry.listPrice };
         });
       } catch(e) {
-        console.warn('[kaguwatch] price enrich attempt failed:', feed.id, e.message);
+        dbgLog('warn', feed.id + ' 試行失敗: ' + e.message);
       }
     }
   }
-  console.warn('[kaguwatch] price enrich: all attempts failed for', feed.id);
+  dbgLog('err', feed.id + ': 全取得失敗（価格補完なし）');
   return items;
 }
 async function loadAll() {
+  document.getElementById('dbgLines').innerHTML = '';
   setStatus('loading','取得中...');
   const results = await Promise.allSettled(RSS_FEEDS.filter(f=>!f.disabled).map(fetchFeed));
   let combined = [], errs = [];
@@ -1327,5 +1353,12 @@ async function init() {
 }
 init();
 </script>
+<div id="dbgPanel">
+  <div class="dbg-title">
+    <span>🔍 デバッグログ</span>
+    <span class="dbg-close" onclick="closeDbg()">✕</span>
+  </div>
+  <div id="dbgLines"></div>
+</div>
 </body>
 </html>
