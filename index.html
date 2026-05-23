@@ -269,6 +269,10 @@ tr:hover td { background: var(--bg3); }
       <span id="statusTxt" style="font-size:11px">接続中...</span>
       <span class="ct" id="ctDown">5:00</span>
     </div>
+    <div class="status-row" id="syncRow" style="display:none">
+      <span class="sdot" id="syncDot"></span>
+      <span id="syncTxt" style="font-size:11px"></span>
+    </div>
   </div>
 </aside>
 
@@ -434,26 +438,41 @@ tr:hover td { background: var(--bg3); }
   <div id="page-profit" style="display:none">
     <div class="page-head">
       <div class="page-title">損益サマリ</div>
-      <div class="page-sub">売却済み商品の累計実績</div>
+      <div class="page-sub">売却済み商品の累計実績と価格帯分析</div>
+      <div class="tab-bar">
+        <button class="tab active" onclick="switchTab('actual',this,'profit')">実績</button>
+        <button class="tab" onclick="switchTab('dist',this,'profit');renderPriceDist()">価格帯分析</button>
+      </div>
     </div>
     <div class="content">
-      <div class="guide-box" style="margin-bottom:16px">
-        <div class="guide-title">使い方</div>
-        <div class="guide-body">仕入れ台帳でステータスを「売却済」に変更した商品の累計が表示されます。利益率が高い仕入れ元・商品カテゴリを分析して、次の仕入れ判断に活用してください。</div>
+      <div id="profit-actual" class="panel active">
+        <div class="stats" style="margin-bottom:16px">
+          <div class="stat"><div class="stat-n g" id="pNet">¥0</div><div class="stat-l">累計純利益</div></div>
+          <div class="stat"><div class="stat-n" id="pRev">¥0</div><div class="stat-l">累計売上</div></div>
+          <div class="stat"><div class="stat-n r" id="pCost">¥0</div><div class="stat-l">累計仕入れ</div></div>
+          <div class="stat"><div class="stat-n b" id="pMargin">0%</div><div class="stat-l">平均利益率</div></div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>商品名</th><th>仕入値</th><th>売値</th><th>手数料</th><th>純利益</th><th>利益率</th><th>仕入れ元</th></tr></thead>
+            <tbody id="profitBody"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="profitEmpty">売却済みの商品がありません</div>
       </div>
-      <div class="stats">
-        <div class="stat"><div class="stat-n g" id="pNet">¥0</div><div class="stat-l">累計純利益</div></div>
-        <div class="stat"><div class="stat-n" id="pRev">¥0</div><div class="stat-l">累計売上</div></div>
-        <div class="stat"><div class="stat-n r" id="pCost">¥0</div><div class="stat-l">累計仕入れ</div></div>
-        <div class="stat"><div class="stat-n b" id="pMargin">0%</div><div class="stat-l">平均利益率</div></div>
+      <div id="profit-dist" class="panel">
+        <div class="guide-box" style="margin-bottom:16px">
+          <div class="guide-title">仕入価格帯別 利益分布</div>
+          <div class="guide-body">売却済み商品を仕入値の価格帯で集計。<b>平均利益率が高い価格帯</b>が次の仕入れ方針の参考になります。</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>仕入価格帯</th><th>件数</th><th>平均利益率</th><th>累計純利益</th></tr></thead>
+            <tbody id="priceDistBody"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="priceDistEmpty">売却済みの商品がありません</div>
       </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>商品名</th><th>仕入値</th><th>売値</th><th>手数料</th><th>純利益</th><th>利益率</th><th>仕入れ元</th></tr></thead>
-          <tbody id="profitBody"></tbody>
-        </table>
-      </div>
-      <div class="empty" id="profitEmpty">売却済みの商品がありません</div>
     </div>
   </div>
 
@@ -897,6 +916,7 @@ async function loadAll() {
     const notify = allItems.filter(i=>i.isNew&&(teamsCfg.trigger==='new'||i.matched));
     if (notify.length) sendTeams(notify);
   }
+  syncItemsToDB(allItems);
   startCd();
 }
 function startCd() {
@@ -933,7 +953,7 @@ function renderSearch() {
 }
 
 // Sedori
-function saveSedori() { localStorage.setItem('sedori', JSON.stringify(sedoriList)); }
+function saveSedori() { localStorage.setItem('sedori', JSON.stringify(sedoriList)); syncSedoriToDB(); }
 function quickAdd(title) {
   sedoriList.unshift({ name:title, buy:0, sell:0, source:'', status:'watching', memo:'', date:new Date().toISOString().slice(0,10), link:'', condition:'', sellPlatform:'other' });
   saveSedori(); updateNavBadge();
@@ -1085,6 +1105,7 @@ function saveCfWorker() {
   cfWorkerUrl = document.getElementById('cfWorkerUrl').value.trim().replace(/\/$/, '');
   localStorage.setItem('cfWorkerUrl', cfWorkerUrl);
   alert('保存しました');
+  syncSedoriToDB();
 }
 async function testCfWorker() {
   const url = document.getElementById('cfWorkerUrl').value.trim().replace(/\/$/, '');
@@ -1106,8 +1127,125 @@ async function sendTeams(items) {
   try{await fetch(teamsCfg.url,{method:'POST',body:JSON.stringify({"@type":"MessageCard","@context":"http://schema.org/extensions","themeColor":"2a5c3f","summary":"KAGUWATCH 新着","sections":[{"activityTitle":`🛋 KAGUWATCH 新着 (${items.length}件)`,"activityText":lines.join('\n')}]}),headers:{'Content-Type':'application/json'}});}catch(e){}
 }
 
+// ── D1 sync ────────────────────────────────────────────────────────────────
+let syncTimer = null;
+function syncSedoriToDB() {
+  if (!cfWorkerUrl) return;
+  clearTimeout(syncTimer);
+  syncTimer = setTimeout(async () => {
+    setSyncStatus('syncing');
+    try {
+      const res = await fetch(cfWorkerUrl + '/api/sedori', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sedoriList),
+      });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      setSyncStatus('ok');
+    } catch(e) {
+      setSyncStatus('err');
+    }
+  }, 1500);
+}
+async function syncItemsToDB(items) {
+  if (!cfWorkerUrl || !items.length) return;
+  try {
+    await fetch(cfWorkerUrl + '/api/items/sync', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(items.map(i => ({ source:i.source, title:i.title, link:i.link, price:i.price, soldOut:i.soldOut }))),
+    });
+  } catch(e) {}
+}
+async function loadSedoriFromDB() {
+  if (!cfWorkerUrl) return;
+  try {
+    const res = await fetch(cfWorkerUrl + '/api/sedori');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (!Array.isArray(data)) return;
+    if (data.length === 0 && sedoriList.length > 0) {
+      syncSedoriToDB();
+      return;
+    }
+    if (data.length > 0) {
+      sedoriList = data.map(r => ({
+        name: r.name, buy: r.buy_price, sell: r.sell_price,
+        source: r.source, status: r.status, condition: r.condition_grade,
+        sellPlatform: r.sell_platform, memo: r.memo,
+        date: r.purchase_date, link: r.link,
+      }));
+      localStorage.setItem('sedori', JSON.stringify(sedoriList));
+    }
+  } catch(e) {}
+}
+function setSyncStatus(state) {
+  const row = document.getElementById('syncRow');
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncTxt');
+  if (!row) return;
+  row.style.display = '';
+  if (state === 'syncing') {
+    dot.className = 'sdot loading'; txt.textContent = 'DB同期中...';
+  } else if (state === 'ok') {
+    dot.className = 'sdot'; txt.textContent = 'DB同期済 ' + new Date().toLocaleTimeString('ja-JP', {hour:'2-digit',minute:'2-digit'});
+  } else {
+    dot.className = 'sdot err'; txt.textContent = 'DB同期失敗';
+  }
+}
+
+// ── 価格帯分析 ─────────────────────────────────────────────────────────────
+const PRICE_RANGES = [
+  { label:'〜1万',   min:0,      max:10000   },
+  { label:'1〜3万',  min:10000,  max:30000   },
+  { label:'3〜5万',  min:30000,  max:50000   },
+  { label:'5〜10万', min:50000,  max:100000  },
+  { label:'10万〜',  min:100000, max:Infinity},
+];
+function computePriceDist() {
+  const sold = sedoriList.filter(i => i.status === 'sold' && (i.buy||0) > 0 && (i.sell||0) > 0);
+  return PRICE_RANGES.map(r => {
+    const items = sold.filter(i => (i.buy||0) >= r.min && (i.buy||0) < r.max);
+    if (!items.length) return { label:r.label, count:0, avgMargin:null, totalProfit:0 };
+    let sumMargin = 0, sumProfit = 0;
+    items.forEach(i => {
+      const { net } = calcNet(i);
+      sumProfit += net;
+      sumMargin += i.buy > 0 ? net / i.buy * 100 : 0;
+    });
+    return { label:r.label, count:items.length, avgMargin:sumMargin/items.length, totalProfit:sumProfit };
+  });
+}
+function renderPriceDist() {
+  const dist = computePriceDist();
+  const hasData = dist.some(d => d.count > 0);
+  document.getElementById('priceDistEmpty').style.display = hasData ? 'none' : '';
+  if (!hasData) { document.getElementById('priceDistBody').innerHTML = ''; return; }
+  const maxAbs = Math.max(...dist.filter(d=>d.count>0).map(d => Math.abs(d.avgMargin||0)));
+  document.getElementById('priceDistBody').innerHTML = dist.map(d => {
+    if (!d.count) return `<tr><td><strong>${d.label}</strong></td><td style="color:var(--text3)">—</td><td style="color:var(--text3)">—</td><td style="color:var(--text3)">—</td></tr>`;
+    const barW = maxAbs > 0 ? Math.round(Math.abs(d.avgMargin) / maxAbs * 100) : 0;
+    const barColor = d.avgMargin >= 0 ? 'var(--accent)' : 'var(--red)';
+    const mc = d.avgMargin > 0 ? 'pp' : d.avgMargin < 0 ? 'pn' : 'pz';
+    const pc = d.totalProfit > 0 ? 'pp' : d.totalProfit < 0 ? 'pn' : 'pz';
+    return `<tr>
+      <td><strong>${d.label}</strong></td>
+      <td style="font-family:var(--mono)">${d.count}件</td>
+      <td>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:80px;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden;flex-shrink:0">
+            <div style="width:${barW}%;height:100%;background:${barColor};border-radius:3px"></div>
+          </div>
+          <span class="${mc}" style="font-family:var(--mono);font-size:12px">${d.avgMargin.toFixed(1)}%</span>
+        </div>
+      </td>
+      <td class="${pc}" style="font-family:var(--mono)">¥${d.totalProfit.toLocaleString()}</td>
+    </tr>`;
+  }).join('');
+}
+
 // Init
-function init() {
+async function init() {
   document.getElementById('cfWorkerUrl').value=cfWorkerUrl;
   document.getElementById('slackUrl').value=slackCfg.url||'';
   document.getElementById('slackTrigger').value=slackCfg.trigger||'match';
@@ -1116,7 +1254,10 @@ function init() {
   document.getElementById('teamsTrigger').value=teamsCfg.trigger||'match';
   document.getElementById('teamsEnabled').checked=teamsCfg.enabled!==false;
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
-  renderTags(); renderSedori(); updateNavBadge(); loadAll();
+  renderTags(); updateNavBadge();
+  await loadSedoriFromDB();
+  renderSedori();
+  loadAll();
 }
 init();
 </script>
