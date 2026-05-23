@@ -37,10 +37,11 @@ async function handleRssProxy(url) {
     });
     clearTimeout(tid);
     if (!res.ok) throw new Error(`upstream HTTP ${res.status}`);
-    const xml = await res.text();
-    return new Response(xml, {
+    const body = await res.text();
+    const ct = res.headers.get('Content-Type') || 'text/xml; charset=utf-8';
+    return new Response(body, {
       headers: {
-        'Content-Type': 'text/xml; charset=utf-8',
+        'Content-Type': ct,
         'Access-Control-Allow-Origin': '*',
         'Cache-Control': 'public, max-age=300',
       },
