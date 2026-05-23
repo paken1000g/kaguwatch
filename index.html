@@ -136,7 +136,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .b-tokyoapt { background: #e8f0ff; color: #1a3a8a; }
 .b-timehype { background: #f5e8e8; color: #7a1a1a; }
 .b-match { background: var(--accent-lt); color: var(--accent); }
-.b-sold { background: #f5f5f5; color: #999; }
+.b-sold { background: #fdecea; color: #c0392b; font-weight:600; }
 .item-card.soldout { opacity: 0.5; }
 .item-card.soldout .item-title { text-decoration: line-through; color: var(--text3); }
 .b-new { background: var(--red-lt); color: var(--red); }
@@ -840,8 +840,12 @@ function renderItems() {
         </div>
         <div class="item-title">${hl(item.title)}</div>
         <div class="item-meta">
-          ${item.price?`<span class="item-price">${item.price}</span>`:''}
-          ${item.listPrice && item.listPrice !== item.price?`<span style="font-size:10px;color:var(--text3)">定価 ${item.listPrice}</span>`:''}
+          ${item.soldOut
+            ? `<span style="font-size:11px;font-weight:600;color:#c0392b;letter-spacing:.04em">SOLD OUT</span>`
+            : item.price && item.price !== '¥0'
+              ? `<span class="item-price">${item.price}</span>`
+              : ''}
+          ${!item.soldOut && item.listPrice && item.listPrice !== item.price?`<span style="font-size:10px;color:var(--text3)">定価 ${item.listPrice}</span>`:''}
         </div>
         <div class="item-meta" style="margin-top:auto;padding-top:4px">
           <span>${item.date}</span>
@@ -968,9 +972,10 @@ async function enrichShopifyPrices(items, feed) {
         const priceMap = {};
         for (const p of products) {
           const v = p.variants?.[0];
-          if (!p.handle || !v?.price) continue;
+          const pv = parseFloat(v?.price);
+          if (!p.handle || !pv) continue;
           priceMap[p.handle] = {
-            price: fmt(parseFloat(v.price)),
+            price: fmt(pv),
             listPrice: v.compare_at_price ? fmt(parseFloat(v.compare_at_price)) : null,
           };
         }
@@ -1014,10 +1019,11 @@ async function enrichShopifyPrices(items, feed) {
         const text = await res.text();
         const data = JSON.parse(text);
         const v = data?.product?.variants?.[0];
-        if (!v?.price) return { idx, item };
+        const pv = parseFloat(v?.price);
+        if (!pv) return { idx, item };
         return { idx, item: {
           ...item,
-          price: fmt(parseFloat(v.price)),
+          price: fmt(pv),
           listPrice: v.compare_at_price ? fmt(parseFloat(v.compare_at_price)) : item.listPrice,
         }};
       } catch { return { idx, item }; }
