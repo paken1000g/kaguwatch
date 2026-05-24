@@ -147,6 +147,25 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .item-actions { margin-top: 5px; }
 .btn-xs { padding: 3px 9px; font-size: 11px; border-radius: 5px; border: 1px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer; font-family: var(--sans); transition: all .12s; }
 .btn-xs:hover { border-color: var(--accent); color: var(--accent); }
+.item-actions-row { display:flex; gap:5px; margin-top:5px; flex-wrap:wrap; }
+.btn-mkt { font-size:10px; padding:2px 7px; border-radius:4px; border:1px solid var(--border2); background:var(--bg2); color:var(--text3); cursor:pointer; text-decoration:none; font-family:var(--sans); transition:all .12s; white-space:nowrap; line-height:1.8; }
+.btn-mkt:hover { color:var(--accent); border-color:var(--accent); background:var(--accent-lt); }
+.sort-row { display:flex; align-items:center; gap:8px; padding:6px 0 0; }
+.sort-row select { font-size:12px; padding:4px 8px; border:1px solid var(--border2); border-radius:var(--radius); background:var(--bg); color:var(--text); font-family:var(--sans); cursor:pointer; }
+#profitModal { position:fixed; inset:0; z-index:2000; display:none; align-items:center; justify-content:center; background:rgba(0,0,0,.5); padding:16px; }
+#profitModal.open { display:flex; }
+.profit-card { background:var(--bg); border-radius:var(--radius-lg); padding:20px; width:100%; max-width:340px; box-shadow:0 8px 32px rgba(0,0,0,.3); }
+.profit-card-title { font-size:12px; font-weight:600; margin-bottom:12px; line-height:1.5; color:var(--text); max-height:2.4em; overflow:hidden; }
+.profit-inputs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px; }
+.profit-inputs label { font-size:11px; color:var(--text3); display:flex; flex-direction:column; gap:3px; }
+.profit-inputs input { font-size:14px; font-family:var(--mono); padding:6px 8px; border:1px solid var(--border2); border-radius:var(--radius); background:var(--bg2); color:var(--text); width:100%; box-sizing:border-box; }
+.profit-tbl { width:100%; font-size:12px; border-collapse:collapse; }
+.profit-tbl th { text-align:left; color:var(--text3); font-weight:400; padding:4px 4px 4px 0; border-bottom:1px solid var(--border); }
+.profit-tbl td { padding:6px 4px 6px 0; border-bottom:1px solid var(--border); }
+.profit-tbl .pnet { font-family:var(--mono); font-weight:600; }
+.profit-tbl .pos { color:var(--accent); }
+.profit-tbl .neg { color:var(--red); }
+.profit-close { margin-top:12px; width:100%; padding:9px; border:none; border-radius:var(--radius); background:var(--bg3); color:var(--text2); font-size:13px; cursor:pointer; font-family:var(--sans); }
 mark { background: rgba(42,92,63,.15); color: var(--accent); border-radius: 2px; padding: 0 1px; }
 .empty { text-align: center; padding: 3rem; color: var(--text3); font-size: 13px; line-height: 2.2; }
 .divider { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
@@ -330,6 +349,14 @@ tr:hover td { background: var(--bg3); }
           <input type="checkbox" id="showNoPrice" checked onchange="renderItems()">
           <span>価格なし含む</span>
         </label>
+        <div class="sort-row">
+          <span class="pf-label">並び替え</span>
+          <select id="sortSelect" onchange="renderItems()">
+            <option value="date">新着順</option>
+            <option value="price_asc">価格 安い順</option>
+            <option value="price_desc">価格 高い順</option>
+          </select>
+        </div>
       </div>
 
       <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
@@ -779,6 +806,35 @@ function parseItemPrice(s) {
   const n = parseInt(s.replace(/[¥￥,円\s]/g, ''));
   return isNaN(n) ? null : n;
 }
+function openProfitModal(title, priceStr) {
+  document.getElementById('profitItemTitle').textContent = title;
+  const buy = parseItemPrice(priceStr) || 0;
+  document.getElementById('profitBuy').value = buy || '';
+  document.getElementById('profitSell').value = '';
+  document.getElementById('profitBody').innerHTML = '';
+  document.getElementById('profitModal').classList.add('open');
+  setTimeout(() => document.getElementById(buy ? 'profitSell' : 'profitBuy').focus(), 50);
+}
+function closeProfitModal() {
+  document.getElementById('profitModal').classList.remove('open');
+}
+function calcProfit() {
+  const buy  = parseInt(document.getElementById('profitBuy').value)  || 0;
+  const sell = parseInt(document.getElementById('profitSell').value) || 0;
+  const platforms = [
+    { name:'メルカリ', fee:0.10 },
+    { name:'ヤフオク', fee:0.088 },
+    { name:'直接販売', fee:0 },
+  ];
+  document.getElementById('profitBody').innerHTML = platforms.map(p => {
+    const net = sell > 0 ? sell - buy - Math.floor(sell * p.fee) : null;
+    const margin = net !== null && buy > 0 ? Math.round(net / buy * 100) : null;
+    const cls = net === null ? '' : net > 0 ? 'pos' : net < 0 ? 'neg' : '';
+    const netStr = net === null ? '—' : (net >= 0 ? '+¥' : '−¥') + Math.abs(net).toLocaleString();
+    const mStr  = margin === null ? '—' : (margin >= 0 ? '+' : '') + margin + '%';
+    return `<tr><td>${p.name}</td><td>${Math.round(p.fee*100)}%</td><td class="pnet ${cls}">${netStr}</td><td class="pnet ${cls}">${mStr}</td></tr>`;
+  }).join('');
+}
 function setPP(btn) {
   document.getElementById('priceMin').value = +btn.dataset.min || '';
   document.getElementById('priceMax').value = +btn.dataset.max || '';
@@ -817,6 +873,9 @@ function renderItems() {
       return true;
     });
   }
+  const sort = document.getElementById('sortSelect')?.value || 'date';
+  if (sort === 'price_asc') items = [...items].sort((a,b) => (parseItemPrice(a.price) ?? Infinity) - (parseItemPrice(b.price) ?? Infinity));
+  else if (sort === 'price_desc') items = [...items].sort((a,b) => (parseItemPrice(b.price) ?? -1) - (parseItemPrice(a.price) ?? -1));
   const mc = allItems.filter(i=>i.matched).length;
   document.getElementById('sMatch').textContent = mc;
   document.getElementById('sTotal').textContent = allItems.length;
@@ -850,6 +909,11 @@ function renderItems() {
         <div class="item-meta" style="margin-top:auto;padding-top:4px">
           <span>${item.date}</span>
           ${item.matched?`<button class="btn-xs" onclick="event.preventDefault();event.stopPropagation();quickAdd('${item.title.replace(/'/g,"\\'")}')">＋追加</button>`:''}
+        </div>
+        <div class="item-actions-row">
+          <a class="btn-mkt" href="https://www.mercari.com/jp/search/?keyword=${encodeURIComponent(item.title)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">メルカリ</a>
+          <a class="btn-mkt" href="https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(item.title)}" target="_blank" rel="noopener" onclick="event.stopPropagation()">ヤフオク</a>
+          ${!item.soldOut?`<button class="btn-mkt" onclick="event.preventDefault();event.stopPropagation();openProfitModal(${JSON.stringify(item.title)},${JSON.stringify(item.price||'')})">¥ 計算</button>`:''}
         </div>
       </div>
     </a>`;
@@ -1413,6 +1477,21 @@ init();
     <span class="dbg-close" onclick="closeDbg()">✕</span>
   </div>
   <div id="dbgLines"></div>
+</div>
+
+<div id="profitModal" onclick="if(event.target===this)closeProfitModal()">
+  <div class="profit-card">
+    <div class="profit-card-title" id="profitItemTitle"></div>
+    <div class="profit-inputs">
+      <label>仕入れ値（円）<input type="number" id="profitBuy" placeholder="0" oninput="calcProfit()" min="0" step="1000"></label>
+      <label>売値（円）<input type="number" id="profitSell" placeholder="0" oninput="calcProfit()" min="0" step="1000"></label>
+    </div>
+    <table class="profit-tbl">
+      <thead><tr><th>プラットフォーム</th><th>手数料</th><th>純利益</th><th>利益率</th></tr></thead>
+      <tbody id="profitBody"></tbody>
+    </table>
+    <button class="profit-close" onclick="closeProfitModal()">閉じる</button>
+  </div>
 </div>
 </body>
 </html>
