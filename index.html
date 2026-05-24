@@ -815,8 +815,9 @@ function openProfitModal(title, priceStr) {
   const buy = parseItemPrice(priceStr) || 0;
   document.getElementById('profitBuy').value = buy || '';
   document.getElementById('profitSell').value = '';
-  document.getElementById('profitBody').innerHTML = '';
   document.querySelectorAll('.btn-quick').forEach(b => b.classList.remove('active'));
+  document.getElementById('profitBody').innerHTML =
+    '<tr><td colspan="4" style="text-align:center;padding:12px;color:var(--text3);font-size:12px">② 売値を入力するか<br>倍率ボタンを選択してください</td></tr>';
   document.getElementById('profitModal').classList.add('open');
   setTimeout(() => document.getElementById(buy ? 'profitSell' : 'profitBuy').focus(), 50);
 }
@@ -839,7 +840,11 @@ function onSellInput() {
 function calcProfit() {
   const buy  = parseInt(document.getElementById('profitBuy').value)  || 0;
   const sell = parseInt(document.getElementById('profitSell').value) || 0;
-  if (!sell) { document.getElementById('profitBody').innerHTML = ''; return; }
+  if (!sell) {
+    document.getElementById('profitBody').innerHTML =
+      '<tr><td colspan="4" style="text-align:center;padding:12px;color:var(--text3);font-size:12px">② 売値を入力するか<br>倍率ボタンを選択してください</td></tr>';
+    return;
+  }
   const platforms = [
     { name:'メルカリ', fee:0.10 },
     { name:'ヤフオク', fee:0.088 },
