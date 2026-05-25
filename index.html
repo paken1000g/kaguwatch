@@ -289,10 +289,14 @@ tr:hover td { background: var(--bg3); }
       <div class="page-sub">複数店舗のRSSを自動取得。検索窓でリアルタイム絞り込みができます。</div>
     </div>
     <div class="content">
-      <div style="display:flex;gap:6px;max-width:480px;margin-bottom:10px">
-        <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル" style="flex:1">
+      <div style="display:flex;gap:6px;align-items:center;margin-bottom:10px;flex-wrap:wrap">
+        <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル" style="flex:1;min-width:180px">
         <button class="btn primary" onclick="applyWatchSearch()">検索</button>
         <button class="btn" onclick="manualRefresh()">↺ 更新</button>
+        <div style="display:flex;gap:2px;margin-left:auto">
+          <button id="col2btn" class="btn" onclick="setColCount(2)" title="2列表示">▋▋</button>
+          <button id="col3btn" class="btn" onclick="setColCount(3)" title="3列表示">▋▋▋</button>
+        </div>
       </div>
 
       <div class="stats" style="margin-top:10px">
@@ -618,11 +622,19 @@ let sedoriList = JSON.parse(localStorage.getItem('sedori') || '[]');
 let editIdx = -1;
 let intervalSec = 300, countdown = 300, countRef = null;
 let cfWorkerUrl = localStorage.getItem('cfWorkerUrl') || 'https://old-water-8b37kaguwatch-rss-proxy.renentremors.workers.dev';
+let colCount = parseInt(localStorage.getItem('colCount') || '3');
 let slackCfg = JSON.parse(localStorage.getItem('slack') || '{"url":"","trigger":"match","enabled":true}');
 let teamsCfg = JSON.parse(localStorage.getItem('teams') || '{"url":"","trigger":"match","enabled":true}');
 let shopOrder = JSON.parse(localStorage.getItem('shopOrder') || 'null') || SEARCH_SHOPS.map((_,i)=>i);
 
 // Nav
+function setColCount(n) {
+  colCount = n;
+  localStorage.setItem('colCount', n);
+  document.getElementById('itemsList').style.gridTemplateColumns = `repeat(${n}, 1fr)`;
+  document.getElementById('col2btn').classList.toggle('primary', n === 2);
+  document.getElementById('col3btn').classList.toggle('primary', n === 3);
+}
 function goPage(id, btn) {
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -1344,7 +1356,7 @@ function init() {
   document.getElementById('teamsTrigger').value=teamsCfg.trigger||'match';
   document.getElementById('teamsEnabled').checked=teamsCfg.enabled!==false;
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
-  renderTags(); renderSedori(); updateNavBadge(); loadAll();
+  renderTags(); renderSedori(); updateNavBadge(); loadAll(); setColCount(colCount);
 }
 init();
 </script>
