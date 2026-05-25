@@ -301,9 +301,10 @@ tr:hover td { background: var(--bg3); }
         </div>
       </div>
 
-      <div class="stats" style="margin-top:10px">
+      <div class="stats" style="margin-top:10px;grid-template-columns:repeat(5,1fr)">
         <div class="stat"><div class="stat-n g" id="sMatch">—</div><div class="stat-l">キーワード一致</div></div>
-        <div class="stat"><div class="stat-n" id="sTotal">—</div><div class="stat-l">取得件数</div></div>
+        <div class="stat"><div class="stat-n" id="sTotal">—</div><div class="stat-l">今回取得</div></div>
+        <div class="stat"><div class="stat-n b" id="sTotalAll">—</div><div class="stat-l">収集総数</div></div>
         <div class="stat"><div class="stat-n r" id="sNew">—</div><div class="stat-l">新着（前回比）</div></div>
         <div class="stat"><div class="stat-n b" id="sShops">—</div><div class="stat-l">RSS対応店舗</div></div>
       </div>
@@ -618,6 +619,7 @@ const SEARCH_SHOPS = [
 
 let keywords = JSON.parse(localStorage.getItem('keywords') || '[]');
 let allItems = [], prevLinks = new Set();
+let itemHistory = JSON.parse(localStorage.getItem('itemHistory') || '{}'); // link → {title,source,ts}
 let currentFilter = 'all', sedoriFilter = 'all';
 let watchQuery = '';
 let sedoriList = JSON.parse(localStorage.getItem('sedori') || '[]');
@@ -952,6 +954,29 @@ async function fetchFeed(feed) {
   }
   throw new Error(feed.name + ': 全プロキシ失敗');
 }
+// ─── 商品履歴 蓄積 ───────────────────────────────────────────
+function accumulateItems(items) {
+  let changed = false;
+  items.forEach(item => {
+    if (item.link && !itemHistory[item.link]) {
+      itemHistory[item.link] = { title: item.title, source: item.source, ts: item.ts };
+      changed = true;
+    }
+  });
+  if (changed) {
+    // 上限 5000件 を超えたら古いものから削除
+    const keys = Object.keys(itemHistory);
+    if (keys.length > 5000) {
+      keys.sort((a, b) => (itemHistory[a].ts || 0) - (itemHistory[b].ts || 0))
+          .slice(0, keys.length - 5000)
+          .forEach(k => delete itemHistory[k]);
+    }
+    localStorage.setItem('itemHistory', JSON.stringify(itemHistory));
+  }
+  document.getElementById('sTotalAll').textContent = Object.keys(itemHistory).length;
+}
+// ─────────────────────────────────────────────────────────────
+
 // ═══════════════════════════════════════════════════════════
 //  市場相場エンジン
 // ═══════════════════════════════════════════════════════════
@@ -1132,6 +1157,7 @@ async function loadAll() {
   else setStatus('ok', `更新 ${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`);
   renderItems();
   enrichItems(allItems);
+  accumulateItems(allItems); // 収集総数を蓄積
   // recordPrices(allItems); // 市場相場：非表示中
   if (nc>0 && slackCfg.enabled && slackCfg.url) {
     const notify = allItems.filter(i=>i.isNew&&(slackCfg.trigger==='new'||i.matched));
@@ -1361,6 +1387,7 @@ function init() {
   document.getElementById('teamsEnabled').checked=teamsCfg.enabled!==false;
   document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
   renderTags(); renderSedori(); updateNavBadge(); loadAll(); setColCount(colCount);
+  document.getElementById('sTotalAll').textContent = Object.keys(itemHistory).length;
 }
 init();
 </script>
