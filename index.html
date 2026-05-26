@@ -627,6 +627,10 @@ const SEARCH_SHOPS = [
   { name:'セカンドストリート',   icon:'🔁', noCount:true, url:kw=>`https://www.2ndstreet.jp/search?keyword=${encodeURIComponent(kw)}` },
   { name:'ハードオフ（オフモール）', icon:'🏬', noCount:true,
     url: kw=>`https://netmall.hardoff.co.jp/hashtag/${encodeURIComponent(kw)}/` },
+  // 追加サイト（最右配置）
+  { name:'ラクマ',               icon:'🎀', url:kw=>`https://fril.jp/s?query=${encodeURIComponent(kw)}` },
+  { name:'Yahoo!フリマ',         icon:'🛍', url:kw=>`https://paypayfleamarket.yahoo.co.jp/search/${encodeURIComponent(kw)}` },
+  { name:'トレファクONLINE',     icon:'🏪', url:kw=>`https://ec.treasure-f.com/search?keyword=${encodeURIComponent(kw)}` },
 ];
 
 let keywords = JSON.parse(localStorage.getItem('keywords') || '[]');
