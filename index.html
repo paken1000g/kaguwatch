@@ -488,10 +488,23 @@ function applyWatchSearch() {
   watchQuery = document.getElementById('watchSearch').value.trim().toLowerCase();
   renderItems();
 }
-document.getElementById('kwIn').addEventListener('keydown', e => { if(e.key==='Enter' && !e.isComposing) addKw(); });
+// iPad / iOS では keydown が発火しない・isComposing が残るケースがあるため
+// compositionstart/end で IME 状態を自前管理し keyup をフォールバックに追加
+(function() {
+  let composing = false;
+  const inp = document.getElementById('kwIn');
+  inp.addEventListener('compositionstart', () => { composing = true; });
+  inp.addEventListener('compositionend',   () => { composing = false; });
+  function onKwEnter(e) { if (e.key === 'Enter' && !composing) addKw(); }
+  inp.addEventListener('keydown', onKwEnter); // desktop / Android
+  inp.addEventListener('keyup',   onKwEnter); // iOS fallback (addKw は入力クリア済で2回目は no-op)
+})();
 document.getElementById('watchSearch').addEventListener('keydown', e => {
   if(e.key==='Enter') applyWatchSearch();
   if(e.key==='Escape') { e.target.value=''; watchQuery=''; renderItems(); }
+});
+document.getElementById('watchSearch').addEventListener('keyup', e => {
+  if(e.key==='Enter') applyWatchSearch(); // iOS fallback (applyWatchSearch は冪等)
 });
 
 // Filter
