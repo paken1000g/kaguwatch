@@ -418,7 +418,8 @@ const SEARCH_SHOPS = [
   // 追加サイト（最右配置）
   { name:'ラクマ',               icon:'🎀', url:kw=>`https://fril.jp/s?query=${encodeURIComponent(kw)}&sold_out_filter=1` },
   { name:'Yahoo!フリマ',         icon:'🛍', url:kw=>`https://paypayfleamarket.yahoo.co.jp/search/${encodeURIComponent(kw)}` },
-  { name:'トレファクONLINE',     icon:'🏪', url:kw=>`https://ec.treasure-f.com/search?word=${encodeURIComponent(kw)}` },
+  // step=1 = 在庫：あり フィルター（なしだと売切含む全件）
+  { name:'トレファクONLINE',     icon:'🏪', url:kw=>`https://ec.treasure-f.com/search?word=${encodeURIComponent(kw)}&step=1` },
 ];
 
 let keywords = JSON.parse(localStorage.getItem('keywords') || '[]');
