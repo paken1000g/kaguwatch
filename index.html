@@ -1320,10 +1320,6 @@ async function fetchOneHit(shop, kw, cacheKey) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const html = await res.text();
     const display = extractHitCount(html);
-    if (!display) {
-      // カウント抽出失敗時：デバッグ用に先頭300文字をコンソールに出力
-      console.debug('[hitCount miss]', shop.name, kw, html.substring(0, 300));
-    }
     hitCache[cacheKey] = display || '—';
     setHitCount(shop.name, kw, display || '—');
   } catch(e) {
