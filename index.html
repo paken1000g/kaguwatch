@@ -316,11 +316,14 @@ tr:hover td { background: var(--bg3); }
           <button class="chip" onclick="setFilter('shark',this)">SHARK ATTACK</button>
           <button class="chip" onclick="setFilter('restyle',this)">リスタイル</button>
         </div>
-        <select id="sortSel" onchange="setSortOrder(this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);cursor:pointer">
-          <option value="newest">新着順</option>
-          <option value="price_asc">値段が安い順</option>
-          <option value="price_desc">値段が高い順</option>
-        </select>
+        <div style="display:flex;gap:6px;align-items:center">
+          <button id="stockBtn" class="btn" onclick="toggleStockFilter()" style="font-size:12px">在庫あり</button>
+          <select id="sortSel" onchange="setSortOrder(this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);cursor:pointer">
+            <option value="newest">新着順</option>
+            <option value="price_asc">値段が安い順</option>
+            <option value="price_desc">値段が高い順</option>
+          </select>
+        </div>
       </div>
 
       <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
@@ -630,6 +633,7 @@ let itemHistory = JSON.parse(localStorage.getItem('itemHistory') || '{}'); // li
 let currentFilter = 'all', sedoriFilter = 'all';
 let watchQuery = '';
 let sortOrder = 'newest';
+let stockOnly = false;
 let sedoriList = JSON.parse(localStorage.getItem('sedori') || '[]');
 let editIdx = -1;
 let intervalSec = 300, countdown = 300, countRef = null;
@@ -705,6 +709,11 @@ document.getElementById('watchSearch').addEventListener('keydown', e => {
 // Filter
 function setSortOrder(val) {
   sortOrder = val;
+  renderItems();
+}
+function toggleStockFilter() {
+  stockOnly = !stockOnly;
+  document.getElementById('stockBtn').classList.toggle('primary', stockOnly);
   renderItems();
 }
 function setFilter(f, btn) {
@@ -786,21 +795,36 @@ function parsePriceFromHtml(html) {
   return null;
 }
 
+// JSON-LD から在庫状況を取得（true=在庫あり / false=在庫なし / null=不明）
+function parseStockFromHtml(html) {
+  const ldRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
+  let m;
+  while ((m = ldRe.exec(html)) !== null) {
+    try {
+      const offers = findLdOffers(JSON.parse(m[1]));
+      if (offers?.availability) {
+        const av = String(offers.availability).toLowerCase();
+        return !/(outofstock|sold.?out|discontinued|unavailable)/i.test(av);
+      }
+    } catch(e) {}
+  }
+  return null;
+}
 
 let enrichRunning = false;
 let enrichQueue = [];
 
 async function enrichItems(items) {
   if (!cfWorkerUrl) return;
-  // Apply already-cached results immediately
+  // キャッシュ済みを即反映
   items.forEach(i => {
     if (enrichCache[i.link]) {
-      i.pagePrice = enrichCache[i.link].pagePrice;
+      i.pagePrice   = enrichCache[i.link].pagePrice;
+      i.pageInStock = enrichCache[i.link].pageInStock;
     }
   });
-  // Queue items not yet cached (cap at 60 per refresh)
-  const toEnrich = items.filter(i => !enrichCache[i.link]).slice(0, 60);
-  enrichQueue = [...toEnrich];
+  // 未取得を全件キュー（上限なし）
+  enrichQueue = items.filter(i => !enrichCache[i.link]);
   if (!enrichRunning) runEnrich();
 }
 
@@ -813,10 +837,11 @@ async function runEnrich() {
         const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(item.link), 10000);
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const html = await res.text();
-        item.pagePrice = parsePriceFromHtml(html);
-        enrichCache[item.link] = { pagePrice: item.pagePrice };
+        item.pagePrice   = parsePriceFromHtml(html);
+        item.pageInStock = parseStockFromHtml(html);
+        enrichCache[item.link] = { pagePrice: item.pagePrice, pageInStock: item.pageInStock };
       } catch(e) {
-        enrichCache[item.link] = { pagePrice: null };
+        enrichCache[item.link] = { pagePrice: null, pageInStock: null };
       }
     }));
     renderItems();
@@ -846,6 +871,10 @@ function renderItems() {
   if (watchQuery) items = items.filter(i => i.title.toLowerCase().includes(watchQuery));
   if (currentFilter==='matched') items = items.filter(i=>i.matched);
   else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
+  if (stockOnly) items = items.filter(i => {
+    if (i.pageInStock !== null && i.pageInStock !== undefined) return i.pageInStock;
+    return !i.soldOut; // JSON-LD未取得時はRSS判定にフォールバック
+  });
   if (sortOrder === 'price_asc' || sortOrder === 'price_desc') {
     const getP = i => parseNum(i.pagePrice || i.price) || (sortOrder==='price_asc' ? Infinity : -1);
     items = [...items].sort((a,b) => sortOrder==='price_asc' ? getP(a)-getP(b) : getP(b)-getP(a));
