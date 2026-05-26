@@ -628,7 +628,7 @@ const SEARCH_SHOPS = [
   { name:'ハードオフ（オフモール）', icon:'🏬', noCount:true,
     url: kw=>`https://netmall.hardoff.co.jp/hashtag/${encodeURIComponent(kw)}/` },
   // 追加サイト（最右配置）
-  { name:'ラクマ',               icon:'🎀', url:kw=>`https://fril.jp/s?query=${encodeURIComponent(kw)}` },
+  { name:'ラクマ',               icon:'🎀', url:kw=>`https://fril.jp/s?query=${encodeURIComponent(kw)}&sold_out_filter=1` },
   { name:'Yahoo!フリマ',         icon:'🛍', url:kw=>`https://paypayfleamarket.yahoo.co.jp/search/${encodeURIComponent(kw)}` },
   { name:'トレファクONLINE',     icon:'🏪', url:kw=>`https://ec.treasure-f.com/search?word=${encodeURIComponent(kw)}` },
 ];
@@ -1259,6 +1259,24 @@ function renderSearch() {
 
 // ヒット数 汎用パーサー（サイト構造に依存しない多段マッチ）
 function extractHitCount(html) {
+  // 最優先: 検索結果件数に特有のテキストパターン → 見つかれば即返却（max()不使用）
+  const highPriPatterns = [
+    /全\s*([\d,]+)\s*(?:件|点)/,                              // 全XX件
+    /([\d,]+)\s*(?:件|点)\s*の商品/,                          // XX件の商品
+    /([\d,]+)\s*(?:件|点)\s*が見つかり/,                      // XX件が見つかり
+    /検索結果[^\d\n]{0,20}([\d,]+)\s*(?:件|点)/,             // 検索結果 XX件
+    /([\d,]+)\s*(?:件|点)\s*の投稿/,                          // XX件の投稿（ジモティー）
+    /([\d,]+)\s*(?:件|点)\s*中/,                              // XX件中（ページネーション）
+    /<title[^>]*>[^<]*?([\d,]{4,})\s*(?:件|点)[^<]*<\/title>/i, // titleタグ内
+  ];
+  for (const re of highPriPatterns) {
+    const m = html.match(re);
+    if (m) {
+      const n = +m[1].replace(/,/g, '');
+      if (n > 0 && n < 9999999) return n.toLocaleString() + '件';
+    }
+  }
+
   const candidates = [];
 
   // 1) Next.js __NEXT_DATA__ の深い JSON 探索（セカスト等 Next.js SSR ページ対応）
