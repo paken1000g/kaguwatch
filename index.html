@@ -621,7 +621,8 @@ const RSS_FEEDS = [
 const SEARCH_SHOPS = [
   { name:'ヤフオク',             icon:'🔨', url:kw=>`https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(kw)}&auccat=0` },
   { name:'メルカリ',             icon:'🏷', url:kw=>`https://jp.mercari.com/search/?keyword=${encodeURIComponent(kw)}&status=on_sale` },
-  { name:'ジモティー',           icon:'📍', url:kw=>`https://jmty.jp/all/sale?keyword=${encodeURIComponent(kw)}` },
+  // ジモティー全国: url:kw=>`https://jmty.jp/all/sale?keyword=${encodeURIComponent(kw)}`
+  { name:'ジモティー',           icon:'📍', url:kw=>`https://jmty.jp/tokyo/sale?keyword=${encodeURIComponent(kw)}` },
   // 件数取得不可（Akamai bot保護 / CSR）→ noCount:true で件数非表示・右端配置
   { name:'セカンドストリート',   icon:'🔁', noCount:true, url:kw=>`https://www.2ndstreet.jp/search?keyword=${encodeURIComponent(kw)}` },
   { name:'ハードオフ（オフモール）', icon:'🏬', noCount:true,
