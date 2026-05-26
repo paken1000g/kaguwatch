@@ -630,7 +630,7 @@ const SEARCH_SHOPS = [
   // 追加サイト（最右配置）
   { name:'ラクマ',               icon:'🎀', url:kw=>`https://fril.jp/s?query=${encodeURIComponent(kw)}` },
   { name:'Yahoo!フリマ',         icon:'🛍', url:kw=>`https://paypayfleamarket.yahoo.co.jp/search/${encodeURIComponent(kw)}` },
-  { name:'トレファクONLINE',     icon:'🏪', url:kw=>`https://ec.treasure-f.com/search?keyword=${encodeURIComponent(kw)}` },
+  { name:'トレファクONLINE',     icon:'🏪', url:kw=>`https://ec.treasure-f.com/search?word=${encodeURIComponent(kw)}` },
 ];
 
 let keywords = JSON.parse(localStorage.getItem('keywords') || '[]');
