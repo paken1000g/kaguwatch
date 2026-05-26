@@ -622,7 +622,10 @@ const SEARCH_SHOPS = [
   { name:'ヤフオク',             icon:'🔨', url:kw=>`https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(kw)}&auccat=0` },
   { name:'メルカリ',             icon:'🏷', url:kw=>`https://jp.mercari.com/search/?keyword=${encodeURIComponent(kw)}&status=on_sale` },
   { name:'セカンドストリート',   icon:'🔁', url:kw=>`https://www.2ndstreet.jp/search?keyword=${encodeURIComponent(kw)}` },
-  { name:'ハードオフ（オフモール）', icon:'🏬', url:kw=>`https://netmall.hardoff.co.jp/hashtag/${encodeURIComponent(kw)}/` },
+  // オフモール: nav→hashtag(キーワード絞り込み表示), hit→/search/(SSR初期HTMLからカウント取得)
+  { name:'ハードオフ（オフモール）', icon:'🏬',
+    url:    kw=>`https://netmall.hardoff.co.jp/hashtag/${encodeURIComponent(kw)}/`,
+    hitUrl: kw=>`https://netmall.hardoff.co.jp/search/?keyword=${encodeURIComponent(kw)}` },
   { name:'ジモティー',           icon:'📍', url:kw=>`https://jmty.jp/all/sale?keyword=${encodeURIComponent(kw)}` },
 ];
 
@@ -1263,7 +1266,7 @@ function extractHitCount(html) {
         if (depth > 14 || !obj || typeof obj !== 'object') return;
         for (const [k, v] of Object.entries(obj)) {
           if (typeof v === 'number' && v > 0 && v < 9999999 &&
-              /total|count|num|hit|result|found|match|item/i.test(k)) {
+              /total|count|num|hit|result|found|match|item|product|point/i.test(k)) {
             candidates.push(v);
           }
           if (v && typeof v === 'object') scanForCount(v, depth + 1);
@@ -1274,7 +1277,7 @@ function extractHitCount(html) {
   }
 
   // 2) 埋め込み JSON の count 系フィールド（SPA/SSR 汎用）
-  const jsonRe = /"(?:numItems|totalCount|total_count|numOfItems|totalNum|searchCount|resultCount|hitNum|total|count|num_hits|total_hits|itemCount|productCount|totalItems|totalProducts|hitCount|totalHits|found|matches|hits)"\s*:\s*(\d+)/g;
+  const jsonRe = /"(?:numItems|totalCount|total_count|numOfItems|totalNum|searchCount|resultCount|hitNum|total|count|num_hits|total_hits|itemCount|productCount|totalItems|totalProducts|hitCount|totalHits|found|matches|hits|allCount|searchHitCount)"\s*:\s*(\d+)/g;
   let m;
   while ((m = jsonRe.exec(html)) !== null) {
     const n = +m[1];
@@ -1310,15 +1313,21 @@ async function fetchHitCounts() {
 }
 
 async function fetchOneHit(shop, kw, cacheKey) {
+  // hitUrl があればカウント専用 URL を使用（nav URL とは別）
+  const countUrl = shop.hitUrl ? shop.hitUrl(kw) : shop.url(kw);
   try {
-    const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(shop.url(kw)), 15000);
+    const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(countUrl), 15000);
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const html = await res.text();
-    const display = extractHitCount(html) || '—';
-    hitCache[cacheKey] = display;
-    setHitCount(shop.name, kw, display);
+    const display = extractHitCount(html);
+    if (!display) {
+      // カウント抽出失敗時：デバッグ用に先頭300文字をコンソールに出力
+      console.debug('[hitCount miss]', shop.name, kw, html.substring(0, 300));
+    }
+    hitCache[cacheKey] = display || '—';
+    setHitCount(shop.name, kw, display || '—');
   } catch(e) {
-    console.warn('[hitCount]', shop.name, kw, e.message);
+    console.warn('[hitCount err]', shop.name, kw, e.message);
     hitCache[cacheKey] = '—';
     setHitCount(shop.name, kw, '—');
   }

@@ -24,14 +24,12 @@ export default {
       return json({ error: 'invalid url' }, 400);
     }
 
-    // ドメインごとに適切な Referer を付与（同一サイト内遷移に見せる）
+    // オフモールは Referer + same-origin に見せることで初期 HTML を取得できる
     const hostname = targetUrl.hostname;
     const refererMap = {
       'netmall.hardoff.co.jp': 'https://netmall.hardoff.co.jp/',
-      'www.2ndstreet.jp':       'https://www.2ndstreet.jp/',
-      '2ndstreet.jp':           'https://www.2ndstreet.jp/',
     };
-    const referer = Object.entries(refererMap).find(([h]) => hostname.includes(h.replace('www.', '')))?.[1];
+    const referer = refererMap[hostname] || null;
 
     try {
       const res = await fetch(feedUrl, {
