@@ -256,20 +256,9 @@ tr:hover td { background: var(--bg3); }
     <button class="nav-item" onclick="goPage('market',this)" style="display:none">
       <span class="nav-dot"></span>市場相場
     </button>
-    <div class="nav-label">せどり</div>
-    <button class="nav-item" onclick="goPage('sedori',this)">
-      <span class="nav-dot"></span>仕入れ台帳
-      <span class="nav-count red" id="navActive">0</span>
-    </button>
-    <button class="nav-item" onclick="goPage('profit',this)">
-      <span class="nav-dot"></span>損益サマリ
-    </button>
     <div class="nav-label">設定</div>
     <button class="nav-item" onclick="goPage('cfworker',this)">
-      <span class="nav-dot"></span>Cloudflare Worker
-    </button>
-    <button class="nav-item" onclick="goPage('settings',this)">
-      <span class="nav-dot"></span>通知設定
+      <span class="nav-dot"></span>詳細設定
     </button>
   </nav>
   <div class="sidebar-foot">
@@ -345,96 +334,7 @@ tr:hover td { background: var(--bg3); }
     </div>
   </div>
 
-  <!-- 仕入れ台帳 -->
-  <div id="page-sedori" style="display:none">
-    <div class="page-head">
-      <div class="page-title">仕入れ台帳</div>
-      <div class="page-sub">仕入れ・出品・売却の記録と利益計算</div>
-      <div class="tab-bar">
-        <button class="tab active" onclick="switchTab('list',this,'sedori')">一覧</button>
-        <button class="tab" onclick="switchTab('add',this,'sedori')">新規登録</button>
-        <button class="tab" onclick="switchTab('guide',this,'sedori')">使い方</button>
-      </div>
-    </div>
-    <div class="content">
-      <div id="sedori-list" class="panel active">
-        <div class="chips">
-          <button class="chip active" onclick="setSF('all',this)">すべて</button>
-          <button class="chip" onclick="setSF('watching',this)">検討中</button>
-          <button class="chip" onclick="setSF('purchased',this)">仕入済</button>
-          <button class="chip" onclick="setSF('listed',this)">出品中</button>
-          <button class="chip" onclick="setSF('sold',this)">売却済</button>
-        </div>
-        <div class="table-wrap">
-          <table>
-            <thead><tr>
-              <th>商品名</th><th>仕入値</th><th>売値</th><th>純利益</th><th>利益率</th><th>状態</th><th>仕入日</th><th>操作</th>
-            </tr></thead>
-            <tbody id="sedoriBody"></tbody>
-          </table>
-        </div>
-        <div class="empty" id="sedoriEmpty" style="display:none">登録がありません。「新規登録」タブから追加してください。</div>
-      </div>
-      <div id="sedori-add" class="panel">
-        <div style="max-width:480px">
-          <div class="form-grid">
-            <div class="form-group full"><div class="form-label">商品名</div><input type="text" id="f-name" placeholder="例：USM Haller テーブル W140 白"></div>
-            <div class="form-group"><div class="form-label">仕入値（円）</div><input type="number" id="f-buy" placeholder="0"></div>
-            <div class="form-group"><div class="form-label">目標売値（円）</div><input type="number" id="f-sell" placeholder="0"></div>
-            <div class="form-group"><div class="form-label">仕入れ元</div>
-              <select id="f-source">
-                <option>東京リサイクル</option><option>村田商会</option><option>シャークアタック</option>
-                <option>ジモティー</option><option>セカンドストリート</option><option>ハードオフ</option>
-                <option>ヤフオク</option><option>メルカリ</option><option>その他</option>
-              </select>
-            </div>
-            <div class="form-group"><div class="form-label">状態</div>
-              <select id="f-status">
-                <option value="watching">検討中</option><option value="purchased">仕入済</option>
-                <option value="listed">出品中</option><option value="sold">売却済</option>
-              </select>
-            </div>
-            <div class="form-group"><div class="form-label">コンディション</div>
-              <select id="f-condition">
-                <option value="">未設定</option>
-                <option value="A">A — 美品</option><option value="B">B — 良品</option>
-                <option value="C">C — 並品</option><option value="D">D — ジャンク</option>
-              </select>
-            </div>
-            <div class="form-group"><div class="form-label">出品先</div>
-              <select id="f-platform">
-                <option value="other">その他（手数料なし）</option>
-                <option value="mercari">メルカリ（10%）</option>
-                <option value="yahoo">ヤフオク（8.8%）</option>
-              </select>
-            </div>
-            <div class="form-group full"><div class="form-label">メモ</div><input type="text" id="f-memo" placeholder="状態・傷の有無・サイズなど"></div>
-            <div class="form-group"><div class="form-label">仕入日</div><input type="date" id="f-date"></div>
-            <div class="form-group"><div class="form-label">出品先URL</div><input type="text" id="f-link" placeholder="https://..."></div>
-          </div>
-          <div class="profit-preview" id="profitPreview">予想利益：— 円　/　利益率：— %</div>
-          <button class="btn primary" onclick="addSedori()">＋ 登録する</button>
-        </div>
-      </div>
-      <div id="sedori-guide" class="panel">
-        <div class="guide-box">
-          <div class="guide-title">仕入れ台帳の使い方</div>
-          <div class="guide-body">
-            <b>① 仕入れ候補を登録</b><br>
-            入荷監視でキーワードに一致した商品の「＋ 仕入れ候補に追加」ボタンを押すと自動登録されます。または「新規登録」タブから手動で登録できます。<br><br>
-            <b>② ステータスを管理</b><br>
-            検討中 → 仕入済 → 出品中 → 売却済 の順に更新していきます。一覧の「編集」ボタンからステータスと実売値を更新してください。<br><br>
-            <b>③ 利益を確認</b><br>
-            仕入値と売値を入力すると利益・利益率が自動計算されます。売却済みにした商品は「損益サマリ」に反映されます。<br><br>
-            <b>④ せどりのコツ</b><br>
-            USMハラー・カリモク・IKEA廃番品などは中古でも価値が落ちにくく、状態が良ければ仕入値の1.5〜3倍で売れることも。仕入れ元（東京リサイクル・ジモティー等）を記録しておくと傾向がつかめます。
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
 
-  <!-- 損益サマリ -->
   <!-- 市場相場 -->
   <div id="page-market" style="display:none">
     <div class="page-head">
@@ -451,40 +351,16 @@ tr:hover td { background: var(--bg3); }
     </div>
   </div>
 
-  <div id="page-profit" style="display:none">
-    <div class="page-head">
-      <div class="page-title">損益サマリ</div>
-      <div class="page-sub">売却済み商品の累計実績</div>
-    </div>
-    <div class="content">
-      <div class="guide-box" style="margin-bottom:16px">
-        <div class="guide-title">使い方</div>
-        <div class="guide-body">仕入れ台帳でステータスを「売却済」に変更した商品の累計が表示されます。利益率が高い仕入れ元・商品カテゴリを分析して、次の仕入れ判断に活用してください。</div>
-      </div>
-      <div class="stats">
-        <div class="stat"><div class="stat-n g" id="pNet">¥0</div><div class="stat-l">累計純利益</div></div>
-        <div class="stat"><div class="stat-n" id="pRev">¥0</div><div class="stat-l">累計売上</div></div>
-        <div class="stat"><div class="stat-n r" id="pCost">¥0</div><div class="stat-l">累計仕入れ</div></div>
-        <div class="stat"><div class="stat-n b" id="pMargin">0%</div><div class="stat-l">平均利益率</div></div>
-      </div>
-      <div class="table-wrap">
-        <table>
-          <thead><tr><th>商品名</th><th>仕入値</th><th>売値</th><th>手数料</th><th>純利益</th><th>利益率</th><th>仕入れ元</th></tr></thead>
-          <tbody id="profitBody"></tbody>
-        </table>
-      </div>
-      <div class="empty" id="profitEmpty">売却済みの商品がありません</div>
-    </div>
-  </div>
 
-  <!-- Cloudflare Worker設定 -->
+  <!-- 詳細設定 -->
   <div id="page-cfworker" style="display:none">
     <div class="page-head">
-      <div class="page-title">Cloudflare Worker</div>
-      <div class="page-sub">RSS取得を安定化するプロキシの設定</div>
+      <div class="page-title">詳細設定</div>
+      <div class="page-sub">Cloudflare Worker・自動更新間隔の設定</div>
     </div>
     <div class="content">
       <div class="settings-section">
+        <div class="settings-title">Cloudflare Worker</div>
         <div class="guide-box" style="margin-bottom:10px">
           <div class="guide-title">設定するとRSS取得が安定します（10万回/日 無料）</div>
           <div class="guide-body">
@@ -500,34 +376,6 @@ tr:hover td { background: var(--bg3); }
         </div>
         <div id="cfWorkerResult" style="display:none"></div>
       </div>
-    </div>
-  </div>
-
-  <!-- 通知設定 -->
-  <div id="page-settings" style="display:none">
-    <div class="page-head">
-      <div class="page-title">通知設定</div>
-      <div class="page-sub">キーワード一致時に自動通知</div>
-    </div>
-    <div class="content">
-      <div class="settings-section">
-        <div class="settings-title">Slack Webhook</div>
-        <div class="settings-row"><label>Webhook URL</label><input type="text" id="slackUrl" placeholder="https://hooks.slack.com/services/..."></div>
-        <div class="settings-row"><label>通知タイミング</label>
-          <select id="slackTrigger">
-            <option value="match">キーワード一致のみ</option>
-            <option value="new">新着すべて</option>
-          </select>
-        </div>
-        <div class="settings-row"><label>通知有効</label>
-          <label class="toggle"><input type="checkbox" id="slackEnabled" checked><span class="toggle-slider"></span></label>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn primary" onclick="saveSlack()">保存</button>
-          <button class="btn" onclick="testSlack()">テスト送信</button>
-        </div>
-        <div id="slackTestResult" style="display:none"></div>
-      </div>
       <div class="settings-section">
         <div class="settings-title">自動更新間隔</div>
         <div class="settings-row"><label>間隔</label>
@@ -539,72 +387,13 @@ tr:hover td { background: var(--bg3); }
           </select>
         </div>
       </div>
-      <div class="settings-section">
-        <div class="settings-title">Microsoft Teams通知</div>
-        <div class="settings-row"><label>Webhook URL</label><input type="text" id="teamsUrl" placeholder="https://outlook.office.com/webhook/..."></div>
-        <div class="settings-row"><label>通知タイミング</label>
-          <select id="teamsTrigger">
-            <option value="match">キーワード一致のみ</option>
-            <option value="new">新着すべて</option>
-          </select>
-        </div>
-        <div class="settings-row"><label>通知有効</label>
-          <label class="toggle"><input type="checkbox" id="teamsEnabled" checked><span class="toggle-slider"></span></label>
-        </div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn primary" onclick="saveTeams()">保存</button>
-          <button class="btn" onclick="testTeams()">テスト送信</button>
-        </div>
-        <div id="teamsTestResult" style="display:none"></div>
-      </div>
-      <div class="settings-section">
-        <div class="settings-title">Vercel更新手順</div>
-        <div class="deploy-step"><span class="deploy-num">1</span>Claudeで「○○を修正して」と依頼</div>
-        <div class="deploy-step"><span class="deploy-num">2</span>新しい index.html をダウンロード</div>
-        <div class="deploy-step"><span class="deploy-num">3</span>GitHubの kaguwatch リポジトリを開く</div>
-        <div class="deploy-step"><span class="deploy-num">4</span>index.html → 鉛筆アイコン → 全選択して貼り付け</div>
-        <div class="deploy-step"><span class="deploy-num">5</span>「Commit changes」→ Vercelが自動デプロイ</div>
-      </div>
     </div>
   </div>
+
 
 </main>
 </div>
 
-<!-- 編集モーダル -->
-<div class="modal-overlay" id="editModal" style="display:none" onclick="if(event.target===this)closeModal()">
-  <div class="modal">
-    <div class="modal-title">記録を編集 <button class="modal-close" onclick="closeModal()">×</button></div>
-    <div class="form-grid">
-      <div class="form-group full"><div class="form-label">商品名</div><input type="text" id="e-name"></div>
-      <div class="form-group"><div class="form-label">仕入値（円）</div><input type="number" id="e-buy"></div>
-      <div class="form-group"><div class="form-label">実売値（円）</div><input type="number" id="e-sell"></div>
-      <div class="form-group"><div class="form-label">状態</div>
-        <select id="e-status">
-          <option value="watching">検討中</option><option value="purchased">仕入済</option>
-          <option value="listed">出品中</option><option value="sold">売却済</option>
-        </select>
-      </div>
-      <div class="form-group"><div class="form-label">仕入れ元</div><input type="text" id="e-source"></div>
-      <div class="form-group"><div class="form-label">コンディション</div>
-        <select id="e-condition">
-          <option value="">未設定</option>
-          <option value="A">A — 美品</option><option value="B">B — 良品</option>
-          <option value="C">C — 並品</option><option value="D">D — ジャンク</option>
-        </select>
-      </div>
-      <div class="form-group"><div class="form-label">出品先</div>
-        <select id="e-platform">
-          <option value="other">その他（手数料なし）</option>
-          <option value="mercari">メルカリ（10%）</option>
-          <option value="yahoo">ヤフオク（8.8%）</option>
-        </select>
-      </div>
-      <div class="form-group full"><div class="form-label">メモ</div><input type="text" id="e-memo"></div>
-    </div>
-    <button class="btn primary" onclick="saveEdit()" style="width:100%">保存する</button>
-  </div>
-</div>
 
 <script>
 const R2J = 'https://api.rss2json.com/v1/api.json?rss_url=';
@@ -635,17 +424,13 @@ const SEARCH_SHOPS = [
 let keywords = JSON.parse(localStorage.getItem('keywords') || '[]');
 let allItems = [], prevLinks = new Set();
 let itemHistory = JSON.parse(localStorage.getItem('itemHistory') || '{}'); // link → {title,source,ts}
-let currentFilter = 'all', sedoriFilter = 'all';
+let currentFilter = 'all';
 let watchQuery = '';
 let sortOrder = 'newest';
 let stockOnly = false;
-let sedoriList = JSON.parse(localStorage.getItem('sedori') || '[]');
-let editIdx = -1;
 let intervalSec = 300, countdown = 300, countRef = null;
 let cfWorkerUrl = localStorage.getItem('cfWorkerUrl') || 'https://old-water-8b37kaguwatch-rss-proxy.renentremors.workers.dev';
 let colCount = parseInt(localStorage.getItem('colCount') || '3');
-let slackCfg = JSON.parse(localStorage.getItem('slack') || '{"url":"","trigger":"match","enabled":true}');
-let teamsCfg = JSON.parse(localStorage.getItem('teams') || '{"url":"","trigger":"match","enabled":true}');
 let shopOrder = JSON.parse(localStorage.getItem('shopOrder') || 'null') || SEARCH_SHOPS.map((_,i)=>i);
 
 // Nav
@@ -664,8 +449,6 @@ function goPage(id, btn) {
   document.querySelectorAll('.main > div').forEach(d => d.style.display = 'none');
   document.getElementById('page-'+id).style.display = '';
   if (id==='search') renderSearch();
-  if (id==='profit') renderProfit();
-  if (id==='sedori') renderSedori();
   if (id==='market') renderMarket();
 }
 function switchTab(id, btn, page) {
@@ -918,7 +701,6 @@ function renderItems() {
         </div>
         <div class="item-meta" style="margin-top:auto;padding-top:4px">
           <span>${item.date}</span>
-          ${item.matched?`<button class="btn-xs" onclick="event.preventDefault();event.stopPropagation();quickAdd('${item.title.replace(/'/g,"\\'")}')">＋追加</button>`:''}
         </div>
       </div>
     </a>`;
@@ -1209,14 +991,6 @@ async function loadAll() {
   enrichItems(allItems);
   accumulateItems(allItems); // 収集総数を蓄積
   // recordPrices(allItems); // 市場相場：非表示中
-  if (nc>0 && slackCfg.enabled && slackCfg.url) {
-    const notify = allItems.filter(i=>i.isNew&&(slackCfg.trigger==='new'||i.matched));
-    if (notify.length) sendSlack(notify);
-  }
-  if (nc>0 && teamsCfg.enabled && teamsCfg.url) {
-    const notify = allItems.filter(i=>i.isNew&&(teamsCfg.trigger==='new'||i.matched));
-    if (notify.length) sendTeams(notify);
-  }
   startCd();
 }
 function startCd() {
@@ -1357,155 +1131,6 @@ function setHitCount(shopName, kw, text) {
   if (el) el.textContent = text ? `(${text})` : '';
 }
 
-// Sedori
-function saveSedori() { localStorage.setItem('sedori', JSON.stringify(sedoriList)); }
-function quickAdd(title) {
-  sedoriList.unshift({ name:title, buy:0, sell:0, source:'', status:'watching', memo:'', date:new Date().toISOString().slice(0,10), link:'', condition:'', sellPlatform:'other' });
-  saveSedori(); updateNavBadge();
-  alert('仕入れ候補に追加しました。台帳で詳細を入力してください。');
-}
-function addSedori() {
-  const name = document.getElementById('f-name').value.trim();
-  if (!name) { alert('商品名を入力してください'); return; }
-  sedoriList.unshift({ name, buy:parseInt(document.getElementById('f-buy').value)||0, sell:parseInt(document.getElementById('f-sell').value)||0, source:document.getElementById('f-source').value, status:document.getElementById('f-status').value, memo:document.getElementById('f-memo').value, date:document.getElementById('f-date').value||new Date().toISOString().slice(0,10), link:document.getElementById('f-link').value, condition:document.getElementById('f-condition').value, sellPlatform:document.getElementById('f-platform').value });
-  saveSedori();
-  ['f-name','f-buy','f-sell','f-memo','f-link'].forEach(id=>document.getElementById(id).value='');
-  document.getElementById('f-condition').value='';
-  document.getElementById('f-platform').value='other';
-  document.getElementById('profitPreview').textContent = '純利益：— 円　/　利益率：— %';
-  renderSedori(); updateNavBadge();
-  switchTab('list', document.querySelector('#page-sedori .tab'), 'sedori');
-}
-function updatePreview() {
-  const b=parseInt(document.getElementById('f-buy').value)||0;
-  const s=parseInt(document.getElementById('f-sell').value)||0;
-  const plat=document.getElementById('f-platform').value;
-  const fee=Math.floor(s*(FEES[plat]||0));
-  const p=s-b-fee, r=b>0?((p/b)*100).toFixed(1):'—';
-  const c=p>0?'var(--accent)':p<0?'var(--red)':'var(--text3)';
-  const feeStr=fee>0?` <span style="color:var(--text3)">（手数料 −¥${fee.toLocaleString()}）</span>`:'';
-  document.getElementById('profitPreview').innerHTML=`純利益：<span style="color:${c}">¥${p.toLocaleString()}</span>${feeStr}　/　利益率：<span style="color:${c}">${r}%</span>`;
-}
-['f-buy','f-sell'].forEach(id => document.getElementById(id).addEventListener('input', updatePreview));
-document.getElementById('f-platform').addEventListener('change', updatePreview);
-function setSF(f, btn) {
-  sedoriFilter = f;
-  document.querySelectorAll('#sedori-list .chip').forEach(c=>c.classList.remove('active'));
-  btn.classList.add('active');
-  renderSedori();
-}
-const SL = { watching:'検討中', purchased:'仕入済', listed:'出品中', sold:'売却済' };
-const SC = { watching:'s-watching', purchased:'s-purchased', listed:'s-listed', sold:'s-sold' };
-const FEES = { mercari: 0.10, yahoo: 0.088, other: 0 };
-const COND_LABEL = { A:'A品', B:'B品', C:'C品', D:'D品' };
-const COND_CSS   = { A:'cond-a', B:'cond-b', C:'cond-c', D:'cond-d' };
-function calcNet(item) {
-  const sell = item.sell || 0;
-  const fee = Math.floor(sell * (FEES[item.sellPlatform] || 0));
-  return { fee, net: sell - (item.buy || 0) - fee };
-}
-function renderSedori() {
-  let items = sedoriFilter==='all' ? sedoriList : sedoriList.filter(i=>i.status===sedoriFilter);
-  const body = document.getElementById('sedoriBody'), empty = document.getElementById('sedoriEmpty');
-  if (!items.length) { body.innerHTML=''; empty.style.display=''; return; }
-  empty.style.display = 'none';
-  body.innerHTML = items.map(item => {
-    const ri = sedoriList.indexOf(item);
-    const {fee, net} = calcNet(item);
-    const r=item.buy>0?((net/item.buy)*100).toFixed(1):'—';
-    const pc=net>0?'pp':net<0?'pn':'pz';
-    const condBadge=item.condition?`<span class="sbadge ${COND_CSS[item.condition]}" style="margin-right:4px">${COND_LABEL[item.condition]}</span>`:'';
-    return `<tr>
-      <td><div style="font-weight:400;display:flex;align-items:center;flex-wrap:wrap;gap:3px">${condBadge}${item.name}</div><div style="font-size:11px;color:var(--text3)">${item.memo||''}</div></td>
-      <td style="font-family:var(--mono)">¥${(item.buy||0).toLocaleString()}</td>
-      <td style="font-family:var(--mono)">${item.sell?'¥'+item.sell.toLocaleString():'—'}</td>
-      <td class="${pc}">¥${net.toLocaleString()}</td>
-      <td class="${pc}">${r}%</td>
-      <td><span class="sbadge ${SC[item.status]}">${SL[item.status]}</span></td>
-      <td style="font-size:11px;color:var(--text3)">${item.date||'—'}</td>
-      <td style="white-space:nowrap"><button class="btn-xs" onclick="openEdit(${ri})">編集</button> <button class="btn-xs" style="color:var(--red)" onclick="delSedori(${ri})">削除</button></td>
-    </tr>`;
-  }).join('');
-}
-function updateNavBadge() {
-  document.getElementById('navActive').textContent = sedoriList.filter(i=>i.status!=='sold').length;
-}
-function openEdit(idx) {
-  editIdx=idx; const item=sedoriList[idx];
-  ['name','source','memo'].forEach(k=>document.getElementById('e-'+k).value=item[k]||'');
-  ['buy','sell'].forEach(k=>document.getElementById('e-'+k).value=item[k]||'');
-  document.getElementById('e-status').value=item.status||'watching';
-  document.getElementById('e-condition').value=item.condition||'';
-  document.getElementById('e-platform').value=item.sellPlatform||'other';
-  document.getElementById('editModal').style.display='flex';
-}
-function saveEdit() {
-  if(editIdx<0)return;
-  sedoriList[editIdx]={...sedoriList[editIdx], name:document.getElementById('e-name').value, buy:parseInt(document.getElementById('e-buy').value)||0, sell:parseInt(document.getElementById('e-sell').value)||0, status:document.getElementById('e-status').value, source:document.getElementById('e-source').value, memo:document.getElementById('e-memo').value, condition:document.getElementById('e-condition').value, sellPlatform:document.getElementById('e-platform').value};
-  saveSedori(); closeModal(); renderSedori(); renderProfit(); updateNavBadge();
-}
-function closeModal() { document.getElementById('editModal').style.display='none'; editIdx=-1; }
-function delSedori(idx) { if(!confirm('削除しますか？'))return; sedoriList.splice(idx,1); saveSedori(); renderSedori(); renderProfit(); updateNavBadge(); }
-
-// Profit
-function renderProfit() {
-  const sold = sedoriList.filter(i=>i.status==='sold'&&i.sell>0);
-  const rev=sold.reduce((s,i)=>s+(i.sell||0),0), cost=sold.reduce((s,i)=>s+(i.buy||0),0);
-  const totalFee=sold.reduce((s,i)=>s+calcNet(i).fee,0);
-  const netTotal=rev-cost-totalFee;
-  const avg=sold.length?((sold.reduce((s,i)=>{const{net}=calcNet(i);return s+(i.buy>0?net/i.buy:0);},0)/sold.length)*100).toFixed(1):0;
-  document.getElementById('pNet').textContent='¥'+netTotal.toLocaleString();
-  document.getElementById('pRev').textContent='¥'+rev.toLocaleString();
-  document.getElementById('pCost').textContent='¥'+cost.toLocaleString();
-  document.getElementById('pMargin').textContent=avg+'%';
-  const el=document.getElementById('profitBody'), em=document.getElementById('profitEmpty');
-  if(!sold.length){el.innerHTML='';em.style.display='';return;}
-  em.style.display='none';
-  el.innerHTML=sold.map(item=>{
-    const {fee,net}=calcNet(item), r=item.buy>0?((net/item.buy)*100).toFixed(1):'—';
-    const pc=net>0?'pp':net<0?'pn':'pz';
-    return `<tr><td>${item.name}</td><td style="font-family:var(--mono)">¥${(item.buy||0).toLocaleString()}</td><td style="font-family:var(--mono)">¥${(item.sell||0).toLocaleString()}</td><td style="font-family:var(--mono);color:var(--text3)">${fee>0?'−¥'+fee.toLocaleString():'—'}</td><td class="${pc}">¥${net.toLocaleString()}</td><td class="${pc}">${r}%</td><td style="font-size:11px;color:var(--text3)">${item.source||'—'}</td></tr>`;
-  }).join('');
-}
-
-// Slack
-function saveSlack() {
-  slackCfg={url:document.getElementById('slackUrl').value.trim(), trigger:document.getElementById('slackTrigger').value, enabled:document.getElementById('slackEnabled').checked};
-  localStorage.setItem('slack',JSON.stringify(slackCfg)); alert('保存しました');
-}
-async function testSlack() {
-  const url=document.getElementById('slackUrl').value.trim();
-  const r=document.getElementById('slackTestResult');
-  if(!url){r.style.display='';r.className='test-result test-err';r.textContent='Webhook URLを入力してください';return;}
-  try {
-    await fetch(url,{method:'POST',body:JSON.stringify({text:'🛋 KAGUWATCH テスト通知\nSlack連携が正常に動作しています！'}),headers:{'Content-Type':'application/json'}});
-    r.style.display='';r.className='test-result test-ok';r.textContent='✓ 送信成功！Slackを確認してください';
-  } catch(e) {
-    r.style.display='';r.className='test-result test-err';r.textContent='送信失敗（CORSエラーの可能性あり。Vercel上では正常に動作します）';
-  }
-}
-async function sendSlack(items) {
-  if(!slackCfg.url)return;
-  const lines=items.slice(0,5).map(i=>`• ${i.matched?'★ ':''}${i.title}${i.price?' ('+i.price+')':''}\n  ${i.link}`);
-  try{await fetch(slackCfg.url,{method:'POST',body:JSON.stringify({text:`🛋 *KAGUWATCH 新着* (${items.length}件)\n${lines.join('\n')}`}),headers:{'Content-Type':'application/json'}});}catch(e){}
-}
-
-// Teams
-function saveTeams() {
-  teamsCfg={url:document.getElementById('teamsUrl').value.trim(), trigger:document.getElementById('teamsTrigger').value, enabled:document.getElementById('teamsEnabled').checked};
-  localStorage.setItem('teams',JSON.stringify(teamsCfg)); alert('保存しました');
-}
-async function testTeams() {
-  const url=document.getElementById('teamsUrl').value.trim();
-  const r=document.getElementById('teamsTestResult');
-  if(!url){r.style.display='';r.className='test-result test-err';r.textContent='Webhook URLを入力してください';return;}
-  try {
-    await fetch(url,{method:'POST',body:JSON.stringify({"@type":"MessageCard","@context":"http://schema.org/extensions","text":"🛋 KAGUWATCH テスト通知\nTeams連携が正常に動作しています！"}),headers:{'Content-Type':'application/json'}});
-    r.style.display='';r.className='test-result test-ok';r.textContent='✓ 送信成功！Teamsを確認してください';
-  } catch(e) {
-    r.style.display='';r.className='test-result test-err';r.textContent='送信失敗（CORSエラーの可能性あり。Vercel上では正常に動作します）';
-  }
-}
 function saveCfWorker() {
   cfWorkerUrl = document.getElementById('cfWorkerUrl').value.trim().replace(/\/$/, '');
   localStorage.setItem('cfWorkerUrl', cfWorkerUrl);
@@ -1525,23 +1150,10 @@ async function testCfWorker() {
     r.style.display=''; r.className='test-result test-err'; r.textContent='接続失敗: ' + e.message;
   }
 }
-async function sendTeams(items) {
-  if(!teamsCfg.url)return;
-  const lines=items.slice(0,5).map(i=>`• ${i.matched?'★ ':''}${i.title}${i.price?' ('+i.price+')':''}  \n${i.link}`);
-  try{await fetch(teamsCfg.url,{method:'POST',body:JSON.stringify({"@type":"MessageCard","@context":"http://schema.org/extensions","themeColor":"2a5c3f","summary":"KAGUWATCH 新着","sections":[{"activityTitle":`🛋 KAGUWATCH 新着 (${items.length}件)`,"activityText":lines.join('\n')}]}),headers:{'Content-Type':'application/json'}});}catch(e){}
-}
-
 // Init
 function init() {
   document.getElementById('cfWorkerUrl').value=cfWorkerUrl;
-  document.getElementById('slackUrl').value=slackCfg.url||'';
-  document.getElementById('slackTrigger').value=slackCfg.trigger||'match';
-  document.getElementById('slackEnabled').checked=slackCfg.enabled!==false;
-  document.getElementById('teamsUrl').value=teamsCfg.url||'';
-  document.getElementById('teamsTrigger').value=teamsCfg.trigger||'match';
-  document.getElementById('teamsEnabled').checked=teamsCfg.enabled!==false;
-  document.getElementById('f-date').value=new Date().toISOString().slice(0,10);
-  renderTags(); renderSedori(); updateNavBadge(); loadAll(); setColCount(colCount);
+  renderTags(); loadAll(); setColCount(colCount);
   document.getElementById('sTotalAll').textContent = Object.keys(itemHistory).length;
 }
 init();
