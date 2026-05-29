@@ -475,8 +475,8 @@ const SEARCH_SHOPS = [
   { name:'ハードオフ（オフモール）', icon:'🏬', noCount:true,
     url: kw=>`https://netmall.hardoff.co.jp/hashtag/${encodeURIComponent(kw)}/` },
   // 追加サイト（最右配置）
-  // status=on_sale: 販売中のみ。sold_out_filter=1 は売切れ込み表示になるため削除
-  { name:'ラクマ',               icon:'🎀', url:kw=>`https://fril.jp/s?query=${encodeURIComponent(kw)}&status=on_sale` },
+  // fril.jp: status=on_sale は未検証パラメータのためシンプルな検索URLを使用
+  { name:'ラクマ',               icon:'🎀', url:kw=>`https://fril.jp/s?query=${encodeURIComponent(kw)}` },
   { name:'Yahoo!フリマ',         icon:'🛍', url:kw=>`https://paypayfleamarket.yahoo.co.jp/search/${encodeURIComponent(kw)}` },
   // step=1 = 在庫：あり フィルター（なしだと売切含む全件）
   { name:'トレファクONLINE',     icon:'🏪', url:kw=>`https://ec.treasure-f.com/search?word=${encodeURIComponent(kw)}&step=1` },
@@ -508,7 +508,7 @@ function goPage(id, btn) {
   closeSidebar();
   document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
-  document.querySelectorAll('.main > div').forEach(d => d.style.display = 'none');
+  document.querySelectorAll('.main > div:not(.mobile-bar)').forEach(d => d.style.display = 'none');
   document.getElementById('page-'+id).style.display = '';
   if (id==='search') renderSearch();
   if (id==='market') renderMarket();
@@ -1136,14 +1136,16 @@ function renderSearch() {
 function extractHitCount(html) {
   // 最優先: 検索結果件数に特有のテキストパターン → 見つかれば即返却（max()不使用）
   const highPriPatterns = [
-    /全\s*([\d,]+)\s*(?:件|点)/,                              // 全XX件
-    /([\d,]+)\s*(?:件|点)\s*の商品/,                          // XX件の商品
+    // 最上位: ページネーション「XX件中」は検索結果総数に最も確実に対応
+    /([\d,]+)\s*(?:件|点)\s*中/,                              // XX件中（ページネーション）
+    // ヤフオク タブ「すべて 33,162件」←「全808,506件」（カテゴリ総数）より先に評価
+    /すべて[^０-９\d]{0,50}([\d,]+)\s*(?:件|点)/,            // すべて XX件（ヤフオク検索タブ）
     /([\d,]+)\s*(?:件|点)\s*が見つかり/,                      // XX件が見つかり
     /検索結果[^\d\n]{0,20}([\d,]+)\s*(?:件|点)/,             // 検索結果 XX件
     /([\d,]+)\s*(?:件|点)\s*の投稿/,                          // XX件の投稿（ジモティー）
-    // ヤフオク: タブに「すべて 33,465件」と表示されるパターン（落札相場等の大きな数字を回避）
-    /すべて[^０-９\d]{0,50}([\d,]+)\s*(?:件|点)/,            // すべて XX件（ヤフオク検索タブ）
-    /([\d,]+)\s*(?:件|点)\s*中/,                              // XX件中（ページネーション）
+    /([\d,]+)\s*(?:件|点)\s*の商品/,                          // XX件の商品
+    // 「全XX件」はカテゴリ総数を拾う可能性があるため後回し
+    /全\s*([\d,]+)\s*(?:件|点)/,                              // 全XX件
     /<title[^>]*>[^<]*?([\d,]{4,})\s*(?:件|点)[^<]*<\/title>/i, // titleタグ内
   ];
   for (const re of highPriPatterns) {
