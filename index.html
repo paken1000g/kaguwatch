@@ -249,7 +249,6 @@ tr:hover td { background: var(--bg3); }
     <div class="nav-label">監視</div>
     <button class="nav-item active" onclick="goPage('watch',this)">
       <span class="nav-dot"></span>入荷監視
-      <span class="nav-count" id="navMatch">0</span>
     </button>
     <button class="nav-item" onclick="goPage('search',this)">
       <span class="nav-dot"></span>検索リンク集
@@ -889,7 +888,7 @@ function renderItems() {
   document.getElementById('sMatch').textContent = mc;
   document.getElementById('sTotal').textContent = allItems.length;
   document.getElementById('sShops').textContent = RSS_FEEDS.filter(f=>!f.disabled).length;
-  document.getElementById('navMatch').textContent = mc;
+
   const el = document.getElementById('itemsList');
   if (!items.length) { el.innerHTML='<div class="empty">該当するアイテムがありません<br>キーワードやサイズ条件を調整してみてください</div>'; return; }
   el.innerHTML = items.map(item => {
