@@ -465,7 +465,9 @@ const RSS_FEEDS = [
   { id:'restyle',   name:'リスタイル',   badge:'b-restyle', site:'https://www.restyle-net.com/', url:'https://www.restyle-net.com/collections/all.atom' },
 ];
 const SEARCH_SHOPS = [
-  { name:'ヤフオク',             icon:'🔨', url:kw=>`https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(kw)}&auccat=0` },
+  // noCount:true = タブ件数はCSRレンダリングのためSSR HTMLに含まれず取得不可
+  // カテゴリ総数（80万件超）が誤表示されるため件数非表示
+  { name:'ヤフオク', icon:'🔨', noCount:true, url:kw=>`https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(kw)}&auccat=0` },
   { name:'メルカリ',             icon:'🏷', url:kw=>`https://jp.mercari.com/search/?keyword=${encodeURIComponent(kw)}&status=on_sale` },
   // ジモティー全国: url:kw=>`https://jmty.jp/all/sale?keyword=${encodeURIComponent(kw)}`
   // noCount:true = 受付終了を除外するURLパラメータが存在しないため件数非表示
