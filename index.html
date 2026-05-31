@@ -388,6 +388,7 @@ tr:hover td { background: var(--bg3); }
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <button id="stockBtn" class="btn" onclick="toggleStockFilter()" style="font-size:12px">在庫あり</button>
+          <button id="enrichBtn" class="btn" onclick="toggleEnrich()" style="font-size:12px" title="価格・在庫をページごとに確認（重くなります）">価格取得</button>
           <select id="sortSel" onchange="setSortOrder(this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);cursor:pointer">
             <option value="newest">新着順</option>
             <option value="price_asc">値段が安い順</option>
@@ -529,6 +530,8 @@ let watchQuery = '';
 let sortOrder = 'newest';
 let favoriteItems = JSON.parse(localStorage.getItem('favoriteItems') || '{}');
 let stockOnly = false;
+let enrichEnabled = false;
+let renderLimit = 60;
 let intervalSec = 300, countdown = 300, countRef = null;
 let cfWorkerUrl = localStorage.getItem('cfWorkerUrl') || 'https://old-water-8b37kaguwatch-rss-proxy.renentremors.workers.dev';
 let colCount = parseInt(localStorage.getItem('colCount') || '3');
@@ -629,6 +632,11 @@ function toggleStockFilter() {
   stockOnly = !stockOnly;
   document.getElementById('stockBtn').classList.toggle('primary', stockOnly);
   renderItems();
+}
+function toggleEnrich() {
+  enrichEnabled = !enrichEnabled;
+  document.getElementById('enrichBtn').classList.toggle('primary', enrichEnabled);
+  if (enrichEnabled) enrichItems(allItems);
 }
 function setFilter(f, btn) {
   currentFilter = f;
@@ -797,7 +805,8 @@ function setStatus(s, txt) {
   document.getElementById('dot').className = 'sdot'+(s==='loading'?' loading':s==='err'?' err':'');
   document.getElementById('statusTxt').textContent = txt;
 }
-function renderItems() {
+function renderItems(keepLimit = false) {
+  if (!keepLimit) renderLimit = 60;
   const mainEl = document.querySelector('.main');
   const sv = mainEl ? mainEl.scrollTop : 0;
   let items = allItems;
@@ -819,7 +828,7 @@ function renderItems() {
 
   const el = document.getElementById('itemsList');
   if (!items.length) { el.innerHTML='<div class="empty">該当するアイテムがありません<br>キーワードやサイズ条件を調整してみてください</div>'; return; }
-  el.innerHTML = items.map(item => {
+  el.innerHTML = items.slice(0, renderLimit).map(item => {
     const feed = RSS_FEEDS.find(f=>f.id===item.source);
     const thumb = item.thumbnail
       ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
@@ -852,8 +861,15 @@ function renderItems() {
       </div>
     </a>`;
   }).join('');
+  const remaining = items.length - renderLimit;
+  if (remaining > 0) {
+    el.innerHTML += `<div style="grid-column:1/-1;text-align:center;padding:16px 0 8px">
+      <button class="btn" onclick="loadMoreItems()" style="min-width:160px">もっと見る（残り${remaining}件）</button>
+    </div>`;
+  }
   if (mainEl && sv > 0) mainEl.scrollTop = sv;
 }
+function loadMoreItems() { renderLimit += 60; renderItems(true); }
 function gbt(el, tag) { return [...el.getElementsByTagNameNS('*', tag)]; }
 function gbt1(el, tag) { return el.getElementsByTagNameNS('*', tag)[0]; }
 function parseXmlFeed(xmlStr, feed) {
@@ -933,7 +949,7 @@ function scheduleBackgroundRender() {
   clearTimeout(_bgRenderTimer);
   _bgRenderTimer = setTimeout(() => {
     accumulateItems(allItems);
-    enrichItems(allItems);
+    if (enrichEnabled) enrichItems(allItems);
     renderItems();
   }, 800);
 }
@@ -1253,7 +1269,7 @@ async function loadAll() {
   else if (errs.length) setStatus('err','一部失敗: ' + errs.join(' / '));
   else setStatus('ok', `更新 ${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`);
   renderItems();
-  enrichItems(allItems);
+  if (enrichEnabled) enrichItems(allItems);
   accumulateItems(allItems);
   sendNewItemNotif(allItems);
   startCd();
