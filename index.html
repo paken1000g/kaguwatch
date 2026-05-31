@@ -399,7 +399,13 @@ tr:hover td { background: var(--bg3); }
         </div>
       </div>
 
-      <div style="margin-top:14px">
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px;margin-bottom:2px">
+        <span style="font-size:11px;color:var(--text3);white-space:nowrap">最低価格</span>
+        <input type="range" id="minPriceSlider" min="0" max="500000" step="5000" value="0" style="flex:1;accent-color:var(--accent)" oninput="setMinPrice(this.value)">
+        <span id="minPriceLabel" style="font-size:11px;font-family:var(--mono);color:var(--text2);white-space:nowrap;min-width:88px;text-align:right">すべて</span>
+      </div>
+
+      <div style="margin-top:10px">
       <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
       </div>
     </div>
@@ -530,6 +536,7 @@ let itemHistory = JSON.parse(localStorage.getItem('itemHistory') || '{}');
 let currentFilter = 'all';
 let watchQuery = '';
 let sortOrder = 'newest';
+let minPrice = 0;
 let favoriteItems = JSON.parse(localStorage.getItem('favoriteItems') || '{}');
 let enrichEnabled = false;
 let renderLimit = 60;
@@ -618,6 +625,12 @@ document.getElementById('watchSearch').addEventListener('keyup', e => {
 // Filter
 function setSortOrder(val) {
   sortOrder = val;
+  renderItems();
+}
+function setMinPrice(val) {
+  minPrice = parseInt(val) || 0;
+  document.getElementById('minPriceLabel').textContent =
+    minPrice > 0 ? '¥' + minPrice.toLocaleString() + ' 以上' : 'すべて';
   renderItems();
 }
 function toggleEnrich() {
@@ -797,6 +810,9 @@ function renderItems(keepLimit = false) {
   if (watchQuery) items = items.filter(i => i.title.toLowerCase().includes(watchQuery));
   if (currentFilter==='matched') items = items.filter(i=>i.matched);
   else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
+  if (minPrice > 0) {
+    items = items.filter(i => { const p = parseNum(i.pagePrice || i.price); return p > 0 && p >= minPrice; });
+  }
   if (sortOrder === 'price_asc' || sortOrder === 'price_desc') {
     const getP = i => parseNum(i.pagePrice || i.price) || (sortOrder==='price_asc' ? Infinity : -1);
     items = [...items].sort((a,b) => sortOrder==='price_asc' ? getP(a)-getP(b) : getP(b)-getP(a));
