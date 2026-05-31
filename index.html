@@ -457,7 +457,7 @@ tr:hover td { background: var(--bg3); }
 const R2J = 'https://api.rss2json.com/v1/api.json?rss_url=';
 const ALLORIGINS = 'https://api.allorigins.win/get?url=';
 const RSS_FEEDS = [
-  { id:'tokyo',     name:'imption',   badge:'b-tokyo',    site:'https://tokyo-recycle.net/collections/all', url:'https://tokyo-recycle.net/collections/all.atom' },
+  { id:'tokyo',     name:'imption',   badge:'b-tokyo',    site:'https://tokyo-recycle.net/collections/all', shopifyStore:'tokyo-recycle.net', url:'https://tokyo-recycle.net/collections/all.atom' },
   { id:'rocca',     name:'rocca rocca',badge:'b-rocca',   site:'https://roccarocca.shop/', url:'https://roccarocca.shop/collections/all.atom', disabled:true },
   { id:'furuichi',  name:'furuichi',  badge:'b-furuichi', site:'https://furuichic.com/', url:'https://furuichic.com/collections/all.atom' },
   { id:'timehype',  name:'TIME HYPE', badge:'b-timehype', site:'https://time-hype.com/', url:'https://time-hype.com/collections/all.atom' },
@@ -881,7 +881,69 @@ async function fetchViaRss2json(feed) {
     return { source:feed.id, title:item.title||'—', link:item.link||feed.site, date:parseDate(item.pubDate), ts, thumbnail:item.thumbnail||item.enclosure?.link||null, price:extractPrice(full), listPrice:extractListPrice(full), sizes:extractSizes(full), matched:isMatch(full), soldOut:isSoldOut(full), isNew:false };
   }).filter(item => !/様専用|専用決済/.test(item.title));
 }
+const SHOPIFY_CACHE_TTL = 60 * 60 * 1000;
+
+async function fetchShopifyProducts(feed) {
+  const cacheKey = 'shopify_' + feed.id;
+  try {
+    const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+    if (cached && Date.now() - cached.ts < SHOPIFY_CACHE_TTL) {
+      return cached.items.map(item => ({ ...item, matched: isMatch(item.title) }));
+    }
+  } catch(e) {}
+
+  if (!cfWorkerUrl) throw new Error('Worker URL 未設定');
+
+  const items = [];
+  let page = 1;
+  while (true) {
+    const url = `https://${feed.shopifyStore}/products.json?limit=250&page=${page}`;
+    const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(url), 15000);
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const data = await res.json();
+    const products = data.products || [];
+
+    for (const p of products) {
+      if (!p.variants.some(v => v.available)) continue;
+      if (/様専用|専用決済/.test(p.title)) continue;
+      const variant = p.variants[0];
+      const priceNum = parseFloat(variant.price || '0');
+      const compareNum = parseFloat(variant.compare_at_price || '0');
+      const price = priceNum > 0 ? `¥${Math.round(priceNum).toLocaleString()}` : '';
+      const listPrice = compareNum > priceNum ? `¥${Math.round(compareNum).toLocaleString()}` : '';
+      const thumb = p.images[0]?.src || null;
+      const link = `https://${feed.shopifyStore}/products/${p.handle}`;
+      const ts = new Date(p.updated_at || p.created_at).getTime() || 0;
+      items.push({
+        source: feed.id, title: p.title, link,
+        date: parseDate(p.updated_at || p.created_at), ts,
+        thumbnail: thumb, price, listPrice,
+        sizes: extractSizes(p.title),
+        matched: isMatch(p.title),
+        soldOut: false, isNew: false,
+        pagePrice: null, pageInStock: null,
+      });
+    }
+    if (products.length < 250) break;
+    page++;
+  }
+
+  try {
+    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items }));
+  } catch(e) {
+    console.warn('[shopify cache] 保存失敗:', e.message);
+  }
+  return items;
+}
 async function fetchFeed(feed) {
+  if (feed.shopifyStore) {
+    try {
+      return await fetchShopifyProducts(feed);
+    } catch(e) {
+      console.warn('[shopify]', feed.name, '失敗 → RSSフォールバック:', e.message);
+      if (!feed.url) throw e;
+    }
+  }
   const fns = cfWorkerUrl
     ? [fetchViaCfWorker, fetchViaCorsproxy, fetchViaAllOrigins, fetchViaRss2json]
     : [fetchViaCorsproxy, fetchViaAllOrigins, fetchViaRss2json];
@@ -1107,7 +1169,11 @@ function startCd() {
     if (countdown<=0) { clearInterval(countRef); loadAll(); }
   }, 1000);
 }
-function manualRefresh() { if(countRef)clearInterval(countRef); loadAll(); }
+function manualRefresh() {
+  RSS_FEEDS.filter(f => f.shopifyStore).forEach(f => localStorage.removeItem('shopify_' + f.id));
+  if(countRef) clearInterval(countRef);
+  loadAll();
+}
 function updateInterval() { intervalSec=parseInt(document.getElementById('intervalSel').value); if(countRef)clearInterval(countRef); startCd(); }
 
 // Search
