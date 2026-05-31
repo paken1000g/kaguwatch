@@ -772,7 +772,10 @@ function renderItems(keepLimit = false) {
   const mainEl = document.querySelector('.main');
   const sv = mainEl ? mainEl.scrollTop : 0;
   let items = allItems;
-  if (watchQuery) items = items.filter(i => i.title.toLowerCase().includes(watchQuery));
+  if (watchQuery) {
+    const terms = watchQuery.split(/\s+/).filter(Boolean);
+    items = items.filter(i => { const t = i.title.toLowerCase(); return terms.every(term => t.includes(term)); });
+  }
   if (currentFilter==='matched') items = items.filter(i=>i.matched);
   else if (currentFilter==='favorites') items = items.filter(i=>!!favoriteItems[i.link]);
   else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
