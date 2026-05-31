@@ -930,10 +930,11 @@ function processShopifyRawProducts(products, feed) {
     const listPrice = compareNum > priceNum ? `¥${Math.round(compareNum).toLocaleString()}` : '';
     const thumb = p.images[0]?.src || null;
     const link = `https://${feed.shopifyStore}/products/${p.handle}`;
-    const ts = new Date(p.created_at).getTime() || 0;
+    const pubAt = p.published_at || p.created_at;
+    const ts = new Date(pubAt).getTime() || 0;
     items.push({
       source: feed.id, title: p.title, link,
-      date: parseDate(p.created_at), ts,
+      date: parseDate(pubAt), ts,
       thumbnail: thumb, price, listPrice,
       sizes: extractSizes(p.title),
       matched: isMatch(p.title),
@@ -944,14 +945,14 @@ function processShopifyRawProducts(products, feed) {
 }
 
 async function fetchShopifyPage(feed, page) {
-  const url = `https://${feed.shopifyStore}/collections/all/products.json?limit=250&sort_by=created-descending&page=${page}`;
+  const url = `https://${feed.shopifyStore}/collections/all/products.json?limit=250&sort_by=published-at-descending&page=${page}`;
   const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(url), 15000);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return (await res.json()).products || [];
 }
 
 async function fetchShopifyProducts(feed) {
-  const cacheKey = 'shopify_' + feed.id;
+  const cacheKey = 'shopify2_' + feed.id;
   let staleItems = null;
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
@@ -1347,7 +1348,7 @@ function startCd() {
   }, 1000);
 }
 function manualRefresh() {
-  RSS_FEEDS.filter(f => f.shopifyStore).forEach(f => localStorage.removeItem('shopify_' + f.id));
+  RSS_FEEDS.filter(f => f.shopifyStore).forEach(f => { localStorage.removeItem('shopify_' + f.id); localStorage.removeItem('shopify2_' + f.id); });
   if(countRef) clearInterval(countRef);
   loadAll();
 }
