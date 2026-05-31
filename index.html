@@ -227,6 +227,10 @@ tr:hover td { background: var(--bg3); }
 .modal-title { font-size: 15px; font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
 .modal-close { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 18px; }
 
+/* ── Watch stats (compact 2-col) ─────────── */
+.watch-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
+.watch-stat-n { font-family: var(--mono); font-size: 20px; font-weight: 500; color: var(--text); line-height: 1; }
+.watch-stat-l { font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: .06em; margin-top: 4px; }
 /* ── Item detail modal ───────────────────── */
 .item-detail-modal {
   background: var(--bg2); border-radius: var(--radius-lg);
@@ -400,9 +404,9 @@ tr:hover td { background: var(--bg3); }
         <button class="btn" onclick="manualRefresh()">↺ 更新</button>
       </div>
 
-      <div id="statsRow" class="stats" style="grid-template-columns:repeat(2,1fr);margin-bottom:18px">
-        <div class="stat" id="sMatchStat" style="display:none"><div class="stat-n" id="sMatch">—</div><div class="stat-l">検索結果</div></div>
-        <div class="stat"><div class="stat-n b" id="sTotalAll">—</div><div class="stat-l">収集総数</div></div>
+      <div id="statsRow" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+        <div class="watch-stat"><div class="watch-stat-n" id="sTotalAll">—</div><div class="watch-stat-l">収集</div></div>
+        <div class="watch-stat"><div class="watch-stat-n" id="sMatch">—</div><div class="watch-stat-l">検索結果</div></div>
         <div style="display:none"><span id="sTotal"></span><span id="sNew"></span><span id="sShops"></span></div>
       </div>
 
@@ -830,10 +834,7 @@ function renderItems(keepLimit = false) {
     items = [...items].sort((a,b) => sortOrder==='price_asc' ? getP(a)-getP(b) : getP(b)-getP(a));
   }
   const hasSearch = !!watchQuery;
-  const sMatchStat = document.getElementById('sMatchStat');
-  if (sMatchStat) sMatchStat.style.display = hasSearch ? '' : 'none';
-  document.getElementById('statsRow').style.gridTemplateColumns = hasSearch ? 'repeat(2,1fr)' : '1fr';
-  if (hasSearch) document.getElementById('sMatch').textContent = items.length;
+  document.getElementById('sMatch').textContent = hasSearch ? items.length : '—';
   document.getElementById('sTotal').textContent = allItems.length;
   document.getElementById('sShops').textContent = RSS_FEEDS.filter(f=>!f.disabled).length;
 
