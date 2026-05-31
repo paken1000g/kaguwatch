@@ -893,6 +893,7 @@ async function fetchViaRss2json(feed) {
 }
 const SHOPIFY_CACHE_TTL = 60 * 60 * 1000;
 const shopifyBgFetching = new Set();
+let _notifyTimer = null, _notifyResults = [];
 
 function showToast(msg, duration = 4000) {
   const el = document.getElementById('toast');
@@ -900,6 +901,19 @@ function showToast(msg, duration = 4000) {
   el.classList.add('show');
   clearTimeout(el._t);
   el._t = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+function notifyShopifyComplete(name, count) {
+  _notifyResults.push({ name, count });
+  clearTimeout(_notifyTimer);
+  _notifyTimer = setTimeout(() => {
+    const total = _notifyResults.reduce((s, r) => s + r.count, 0);
+    const msg = _notifyResults.length === 1
+      ? `✓ ${_notifyResults[0].name} 全${total}件 取得完了`
+      : `✓ 全ブランド 計${total}件 取得完了`;
+    showToast(msg);
+    _notifyResults = [];
+  }, 600);
 }
 
 function processShopifyRawProducts(products, feed) {
@@ -914,10 +928,10 @@ function processShopifyRawProducts(products, feed) {
     const listPrice = compareNum > priceNum ? `¥${Math.round(compareNum).toLocaleString()}` : '';
     const thumb = p.images[0]?.src || null;
     const link = `https://${feed.shopifyStore}/products/${p.handle}`;
-    const ts = new Date(p.updated_at || p.created_at).getTime() || 0;
+    const ts = new Date(p.created_at).getTime() || 0;
     items.push({
       source: feed.id, title: p.title, link,
-      date: parseDate(p.updated_at || p.created_at), ts,
+      date: parseDate(p.created_at), ts,
       thumbnail: thumb, price, listPrice,
       sizes: extractSizes(p.title),
       matched: isMatch(p.title),
@@ -928,22 +942,42 @@ function processShopifyRawProducts(products, feed) {
   return items;
 }
 
+async function fetchShopifyPage(feed, page) {
+  const url = `https://${feed.shopifyStore}/collections/all/products.json?limit=250&sort_by=created-descending&page=${page}`;
+  const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(url), 15000);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  return (await res.json()).products || [];
+}
+
 async function fetchShopifyProducts(feed) {
   const cacheKey = 'shopify_' + feed.id;
+  let staleItems = null;
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
-    if (cached && Date.now() - cached.ts < SHOPIFY_CACHE_TTL) {
-      return cached.items.map(item => ({ ...item, matched: isMatch(item.title) }));
+    if (cached) {
+      const items = cached.items.map(item => ({ ...item, matched: isMatch(item.title) }));
+      if (Date.now() - cached.ts < SHOPIFY_CACHE_TTL) return items; // 新鮮なキャッシュ→即返す
+      staleItems = items; // 古いキャッシュ→とりあえず返しつつバックグラウンドで更新
     }
   } catch(e) {}
 
-  if (!cfWorkerUrl) throw new Error('Worker URL 未設定');
+  if (!cfWorkerUrl) {
+    if (staleItems) return staleItems;
+    throw new Error('Worker URL 未設定');
+  }
 
-  // page 1 のみ即座に取得して返す
-  const url1 = `https://${feed.shopifyStore}/products.json?limit=250&page=1`;
-  const res1 = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(url1), 15000);
-  if (!res1.ok) throw new Error('HTTP ' + res1.status);
-  const raw1 = (await res1.json()).products || [];
+  if (staleItems) {
+    // stale-while-revalidate: 古いデータを即返してバックグラウンドで全件更新
+    if (!shopifyBgFetching.has(feed.id)) {
+      shopifyBgFetching.add(feed.id);
+      fetchShopifyProductsBackground(feed, [], cacheKey, 1)
+        .finally(() => shopifyBgFetching.delete(feed.id));
+    }
+    return staleItems;
+  }
+
+  // キャッシュなし: page 1 を同期取得してすぐ返す
+  const raw1 = await fetchShopifyPage(feed, 1);
   const firstItems = processShopifyRawProducts(raw1, feed);
 
   if (raw1.length < 250) {
@@ -951,24 +985,20 @@ async function fetchShopifyProducts(feed) {
     return firstItems;
   }
 
-  // 続きはバックグラウンドで取得（二重実行防止）
   if (!shopifyBgFetching.has(feed.id)) {
     shopifyBgFetching.add(feed.id);
-    fetchShopifyProductsBackground(feed, firstItems, cacheKey)
+    fetchShopifyProductsBackground(feed, firstItems, cacheKey, 2)
       .finally(() => shopifyBgFetching.delete(feed.id));
   }
   return firstItems;
 }
 
-async function fetchShopifyProductsBackground(feed, initialItems, cacheKey) {
+async function fetchShopifyProductsBackground(feed, initialItems, cacheKey, startPage = 2) {
   const bgItems = [...initialItems];
-  let page = 2;
+  let page = startPage;
   while (true) {
     try {
-      const url = `https://${feed.shopifyStore}/products.json?limit=250&page=${page}`;
-      const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(url), 15000);
-      if (!res.ok) break;
-      const raw = (await res.json()).products || [];
+      const raw = await fetchShopifyPage(feed, page);
       bgItems.push(...processShopifyRawProducts(raw, feed));
       if (raw.length < 250) break;
       page++;
@@ -977,13 +1007,13 @@ async function fetchShopifyProductsBackground(feed, initialItems, cacheKey) {
       break;
     }
   }
+  if (!bgItems.length) return;
   try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items: bgItems })); } catch(e) {}
-  // allItems 内のこのフィードの商品を差し替えて再描画
   allItems = allItems.filter(i => i.source !== feed.id).concat(bgItems).sort((a, b) => b.ts - a.ts);
   enrichItems(allItems);
   accumulateItems(allItems);
   renderItems();
-  showToast(`✓ ${feed.name} 全${bgItems.length}件 読み込み完了`);
+  notifyShopifyComplete(feed.name, bgItems.length);
 }
 async function fetchFeed(feed) {
   if (feed.shopifyStore) {
