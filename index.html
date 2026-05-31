@@ -164,9 +164,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .item-card.soldout .item-title { text-decoration: line-through; color: var(--text3); }
 .b-new { background: var(--red-lt); color: var(--red); }
 .item-meta { font-size: 11px; color: var(--text3); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.item-price { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--text); }
-.item-price-loading { font-size: 11px; color: var(--text3); font-family: var(--mono); }
-.item-link { color: var(--blue); text-decoration: none; font-size: 11px; }
+.item-price { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--text); }.item-link { color: var(--blue); text-decoration: none; font-size: 11px; }
 .item-link:hover { text-decoration: underline; }
 .item-actions { margin-top: 5px; }
 .btn-xs { padding: 4px 10px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer; font-family: var(--sans); transition: all .12s; }
@@ -436,10 +434,7 @@ tr:hover td { background: var(--bg3); }
           <input type="number" id="minPriceInput" min="0" step="1000" placeholder="下限" style="width:72px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMinPriceFromInput(this.value)">
           <span style="font-size:11px;color:var(--text3)">〜 ¥</span>
           <input type="number" id="maxPriceInput" min="0" step="1000" placeholder="上限なし" style="width:72px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMaxPriceFromInput(this.value)">
-          <div style="display:flex;gap:6px;margin-left:auto">
-            <button id="favFilterBtn" class="btn" onclick="toggleFavFilter()" style="font-size:13px;padding:5px 14px">★ お気に入りのみ</button>
-            <button id="enrichBtn" class="btn" onclick="toggleEnrich()" style="font-size:11px;padding:3px 10px" title="価格をページごとに確認">価格取得</button>
-          </div>
+          <button id="favFilterBtn" class="btn" onclick="toggleFavFilter()" style="font-size:13px;padding:5px 14px;margin-left:auto">★ お気に入りのみ</button>
         </div>
       </div>
 
@@ -575,7 +570,6 @@ let sortOrder = 'newest';
 let minPrice = 0;
 let maxPrice = 0;
 let favoriteItems = JSON.parse(localStorage.getItem('favoriteItems') || '{}');
-let enrichEnabled = false;
 let renderLimit = 60;
 let intervalSec = 300, countdown = 300, countRef = null;
 let cfWorkerUrl = localStorage.getItem('cfWorkerUrl') || 'https://old-water-8b37kaguwatch-rss-proxy.renentremors.workers.dev';
@@ -704,11 +698,6 @@ function setSortOrder(val, btn) {
   });
   renderItems();
 }
-function toggleEnrich() {
-  enrichEnabled = !enrichEnabled;
-  document.getElementById('enrichBtn').classList.toggle('primary', enrichEnabled);
-  if (enrichEnabled) enrichItems(allItems);
-}
 function setFilter(f, btn) {
   currentFilter = f;
   document.querySelectorAll('#filterChips .chip').forEach(c => c.classList.remove('active'));
@@ -760,116 +749,6 @@ function extractPrice(text) {
 }
 function isSoldOut(text) { return /sold[\s-]?out|在庫切れ|売り切れ|売切れ|完売|ソールドアウト/i.test(text||''); }
 
-// ─── 商品ページ エンリッチメント ──────────────────────────────────────────
-const enrichCache = {};
-
-function findLdOffers(obj) {
-  if (!obj || typeof obj !== 'object') return null;
-  if (Array.isArray(obj)) {
-    for (const x of obj) { const r = findLdOffers(x); if (r) return r; }
-    return null;
-  }
-  if (obj.offers) {
-    const o = Array.isArray(obj.offers) ? obj.offers[0] : obj.offers;
-    if (o?.price != null) return o;
-  }
-  if (obj['@graph']) return findLdOffers(obj['@graph']);
-  return null;
-}
-
-function parsePriceFromHtml(html) {
-  // 1) JSON-LD
-  const ldRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-  let m;
-  while ((m = ldRe.exec(html)) !== null) {
-    try {
-      const offers = findLdOffers(JSON.parse(m[1]));
-      if (offers?.price != null) {
-        // parseFloat で "45000.00" → 45000 に正しく変換（replace(/[^\d]/g,'') は小数点を消して桁数が増えるバグがある）
-        const p = Math.round(parseFloat(String(offers.price)));
-        if (p > 0) return '¥' + p.toLocaleString();
-      }
-    } catch(e) {}
-  }
-  // 2) OGP meta
-  const metaPatterns = [
-    /<meta[^>]+property=["']product:price:amount["'][^>]+content=["']([^"']+)["']/i,
-    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']product:price:amount["']/i,
-  ];
-  for (const re of metaPatterns) {
-    const mm = html.match(re);
-    if (mm?.[1]) { const p = Math.round(parseFloat(mm[1])); if (p > 0) return '¥' + p.toLocaleString(); }
-  }
-  return null;
-}
-
-// JSON-LD から在庫状況を取得（true=在庫あり / false=在庫なし / null=不明）
-function parseStockFromHtml(html) {
-  const ldRe = /<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi;
-  let m;
-  while ((m = ldRe.exec(html)) !== null) {
-    try {
-      const offers = findLdOffers(JSON.parse(m[1]));
-      if (offers?.availability) {
-        const av = String(offers.availability).toLowerCase();
-        return !/(outofstock|sold.?out|discontinued|unavailable)/i.test(av);
-      }
-    } catch(e) {}
-  }
-  return null;
-}
-
-let enrichRunning = false;
-let enrichQueue = [];
-
-async function enrichItems(items) {
-  if (!cfWorkerUrl) return;
-  // キャッシュ済みを即反映
-  items.forEach(i => {
-    if (enrichCache[i.link]) {
-      i.pagePrice   = enrichCache[i.link].pagePrice;
-      i.pageInStock = enrichCache[i.link].pageInStock;
-    }
-  });
-  // 未取得を全件キュー（上限なし）
-  enrichQueue = items.filter(i => !enrichCache[i.link]);
-  if (!enrichRunning) runEnrich();
-}
-
-async function runEnrich() {
-  enrichRunning = true;
-  while (enrichQueue.length > 0) {
-    const batch = enrichQueue.splice(0, 4);
-    await Promise.all(batch.map(async item => {
-      try {
-        const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(item.link), 10000);
-        if (!res.ok) throw new Error('HTTP ' + res.status);
-        const html = await res.text();
-        item.pagePrice   = parsePriceFromHtml(html);
-        item.pageInStock = parseStockFromHtml(html);
-        enrichCache[item.link] = { pagePrice: item.pagePrice, pageInStock: item.pageInStock };
-      } catch(e) {
-        enrichCache[item.link] = { pagePrice: null, pageInStock: null };
-      }
-    }));
-    patchEnrichedItems(batch);
-  }
-  enrichRunning = false;
-}
-function patchEnrichedItems(batch) {
-  batch.forEach(item => {
-    const card = document.querySelector(`.item-card[href="${item.link}"]`);
-    if (!card) return;
-    // 価格エリアのみ更新（サムネイルは一切触らない）
-    const priceMeta = card.querySelectorAll('.item-meta')[0];
-    if (!priceMeta) return;
-    const displayPrice = item.pagePrice || item.price;
-    let html = '';
-    if (displayPrice) html = `<span class="item-price">${displayPrice}</span>`;
-    if (item.listPrice && !item.pagePrice) html += `<span style="font-size:10px;color:var(--text3)">定価 ${item.listPrice}</span>`;
-    priceMeta.innerHTML = html;
-  });
-}
 // ─────────────────────────────────────────────────────────────────────────────
 function isMatch(t) { return keywords.length > 0 && keywords.some(k=>t.toLowerCase().includes(k.toLowerCase())); }
 function hl(text) {
@@ -899,7 +778,7 @@ function renderItems(keepLimit = false) {
   else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
   if (minPrice > 0 || maxPrice > 0) {
     items = items.filter(i => {
-      const p = parseNum(i.pagePrice || i.price);
+      const p = parseNum(i.price);
       if (p <= 0) return false;
       if (minPrice > 0 && p < minPrice) return false;
       if (maxPrice > 0 && p > maxPrice) return false;
@@ -907,7 +786,7 @@ function renderItems(keepLimit = false) {
     });
   }
   if (sortOrder === 'price_asc' || sortOrder === 'price_desc') {
-    const getP = i => parseNum(i.pagePrice || i.price) || (sortOrder==='price_asc' ? Infinity : -1);
+    const getP = i => parseNum(i.price) || (sortOrder==='price_asc' ? Infinity : -1);
     items = [...items].sort((a,b) => sortOrder==='price_asc' ? getP(a)-getP(b) : getP(b)-getP(a));
   }
   const hasSearch = !!watchQuery;
@@ -935,14 +814,8 @@ function renderItems(keepLimit = false) {
         </div>
         <div class="item-title">${hl(item.title)}</div>
         <div class="item-meta">
-          ${(()=>{
-            const displayPrice = item.pagePrice || item.price;
-            const loadingPrice = !enrichCache[item.link] && cfWorkerUrl;
-            if (displayPrice) return `<span class="item-price">${displayPrice}</span>`;
-            if (loadingPrice) return `<span class="item-price-loading">価格取得中…</span>`;
-            return '';
-          })()}
-          ${item.listPrice && !item.pagePrice?`<span style="font-size:10px;color:var(--text3)">定価 ${item.listPrice}</span>`:''}
+          ${item.price?`<span class="item-price">${item.price}</span>`:''}
+          ${item.listPrice?`<span style="font-size:10px;color:var(--text3)">定価 ${item.listPrice}</span>`:''}
         </div>
         <div class="item-meta" style="margin-top:auto;padding-top:4px">
           <span>${item.date}</span>
@@ -1038,7 +911,6 @@ function scheduleBackgroundRender() {
   clearTimeout(_bgRenderTimer);
   _bgRenderTimer = setTimeout(() => {
     accumulateItems(allItems);
-    if (enrichEnabled) enrichItems(allItems);
     renderItems();
   }, 800);
 }
@@ -1063,7 +935,6 @@ function processShopifyRawProducts(products, feed) {
       sizes: extractSizes(p.title),
       matched: isMatch(p.title),
       soldOut: false, isNew: false,
-      pagePrice: null, pageInStock: null,
     });
   }
   return items;
@@ -1194,7 +1065,7 @@ function parseNum(priceStr) {
 function recordPrices(items) {
   let changed = false;
   items.forEach(item => {
-    const p = parseNum(item.pagePrice || item.price);
+    const p = parseNum(item.price);
     if (!p || p < 1000 || p > 5000000) return;
     keywords.forEach(kw => {
       if (!item.title.toLowerCase().includes(kw.toLowerCase())) return;
@@ -1288,7 +1159,7 @@ function calcStats(kw) {
 
 // カードに表示するバッジ HTML
 function marketBadgeHtml(item) {
-  const p = parseNum(item.pagePrice || item.price);
+  const p = parseNum(item.price);
   if (!p) return '';
   for (const kw of keywords) {
     if (!item.title.toLowerCase().includes(kw.toLowerCase())) continue;
@@ -1358,7 +1229,6 @@ async function loadAll() {
   else if (errs.length) setStatus('err','一部失敗: ' + errs.join(' / '));
   else setStatus('ok', `更新 ${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`);
   renderItems();
-  if (enrichEnabled) enrichItems(allItems);
   accumulateItems(allItems);
   sendNewItemNotif(allItems);
   startCd();
@@ -1406,7 +1276,7 @@ function renderFavorites() {
     const likelySold = !live && shopifyIds.has(item.source);
     const confirmedSold = live && live.soldOut;
     const isSold = likelySold || confirmedSold;
-    const currentPrice = live?.pagePrice || live?.price || item.price;
+    const currentPrice = live?.price || item.price;
     const thumb = item.thumbnail
       ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
       : `<div class="item-thumb-ph">🛋</div>`;
