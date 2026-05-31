@@ -230,6 +230,7 @@ tr:hover td { background: var(--bg3); }
 /* ── Watch top bar (search + stats) ─────── */
 .watch-topbar { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; margin-bottom: 16px; }
 @media (max-width: 767px) { .watch-topbar { grid-template-columns: 1fr; } }
+#filterChips::-webkit-scrollbar { display: none; }
 /* ── Dual range price slider ─────────────── */
 .price-slider-wrap { position: relative; width: 140px; height: 20px; flex-shrink: 0; }
 .price-slider-track { position: absolute; top: 50%; left: 0; right: 0; height: 4px; transform: translateY(-50%); background: var(--bg3); border-radius: 2px; }
@@ -373,7 +374,6 @@ tr:hover td { background: var(--bg3); }
   <div id="page-watch">
     <div class="page-head">
       <div class="page-title">入荷監視</div>
-      <div class="page-sub">複数店舗のRSSを自動取得。検索窓でリアルタイム絞り込みができます。</div>
     </div>
     <div class="content">
       <div class="watch-topbar">
@@ -389,40 +389,41 @@ tr:hover td { background: var(--bg3); }
         </div>
       </div>
 
-      <div class="chips" id="filterChips" style="margin-bottom:6px">
-        <button class="chip active" onclick="setFilter('all',this)">すべて</button>
-        <button class="chip" onclick="setFilter('tokyo',this)">imption</button>
-        <button class="chip" onclick="setFilter('furuichi',this)">furuichi</button>
-        <button class="chip" onclick="setFilter('timehype',this)">TIME HYPE</button>
-        <button class="chip" onclick="setFilter('shark',this)">SHARK ATTACK</button>
-        <button class="chip" onclick="setFilter('restyle',this)">リスタイル</button>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px">
-        <div class="chips" style="margin-bottom:0">
-          <button class="chip active" id="sort-newest" onclick="setSortOrder('newest',this)">新着順</button>
-          <button class="chip" id="sort-price_asc" onclick="setSortOrder('price_asc',this)">安い順</button>
-          <button class="chip" id="sort-price_desc" onclick="setSortOrder('price_desc',this)">高い順</button>
+      <!-- フィルターカード -->
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);margin-bottom:12px;overflow:hidden">
+        <!-- 上段: ブランド（横スクロール） | 並べ替え -->
+        <div style="display:flex;align-items:center;border-bottom:1px solid var(--border)">
+          <div id="filterChips" style="display:flex;gap:4px;padding:8px 10px;overflow-x:auto;flex:1;scrollbar-width:none;-webkit-overflow-scrolling:touch">
+            <button class="chip active" onclick="setFilter('all',this)" style="flex-shrink:0">すべて</button>
+            <button class="chip" onclick="setFilter('tokyo',this)" style="flex-shrink:0">imption</button>
+            <button class="chip" onclick="setFilter('furuichi',this)" style="flex-shrink:0">furuichi</button>
+            <button class="chip" onclick="setFilter('timehype',this)" style="flex-shrink:0">TIME HYPE</button>
+            <button class="chip" onclick="setFilter('shark',this)" style="flex-shrink:0">SHARK ATTACK</button>
+            <button class="chip" onclick="setFilter('restyle',this)" style="flex-shrink:0">リスタイル</button>
+          </div>
+          <div style="display:flex;gap:4px;padding:8px 10px;border-left:1px solid var(--border);flex-shrink:0">
+            <button class="chip active" id="sort-newest" onclick="setSortOrder('newest',this)">新着順</button>
+            <button class="chip" id="sort-price_asc" onclick="setSortOrder('price_asc',this)">安い順</button>
+            <button class="chip" id="sort-price_desc" onclick="setSortOrder('price_desc',this)">高い順</button>
+          </div>
         </div>
-        <button id="enrichBtn" class="btn" onclick="toggleEnrich()" style="font-size:12px;margin-left:auto" title="価格をページごとに確認（重くなります）">価格取得</button>
-      </div>
-
-      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap">
-        <span style="font-size:11px;color:var(--text3);white-space:nowrap">価格</span>
-        <div class="price-slider-wrap">
-          <div class="price-slider-track"><div class="price-slider-fill" id="priceSliderFill"></div></div>
-          <input type="range" class="price-range-thumb" id="minPriceSlider" min="0" max="200000" step="5000" value="0" oninput="onMinSlider(this.value)">
-          <input type="range" class="price-range-thumb" id="maxPriceSlider" min="0" max="200000" step="5000" value="200000" oninput="onMaxSlider(this.value)">
+        <!-- 下段: 価格フィルター -->
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--text3);white-space:nowrap">価格</span>
+          <div class="price-slider-wrap">
+            <div class="price-slider-track"><div class="price-slider-fill" id="priceSliderFill"></div></div>
+            <input type="range" class="price-range-thumb" id="minPriceSlider" min="0" max="200000" step="5000" value="0" oninput="onMinSlider(this.value)">
+            <input type="range" class="price-range-thumb" id="maxPriceSlider" min="0" max="200000" step="5000" value="200000" oninput="onMaxSlider(this.value)">
+          </div>
+          <span style="font-size:11px;color:var(--text3)">¥</span>
+          <input type="number" id="minPriceInput" min="0" step="1000" placeholder="下限" style="width:72px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMinPriceFromInput(this.value)">
+          <span style="font-size:11px;color:var(--text3)">〜 ¥</span>
+          <input type="number" id="maxPriceInput" min="0" step="1000" placeholder="上限なし" style="width:72px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMaxPriceFromInput(this.value)">
+          <button id="enrichBtn" class="btn" onclick="toggleEnrich()" style="font-size:11px;margin-left:auto;padding:3px 8px" title="価格をページごとに確認">価格取得</button>
         </div>
-        <span style="font-size:11px;color:var(--text3)">¥</span>
-        <input type="number" id="minPriceInput" min="0" step="1000" placeholder="下限" style="width:76px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text)" oninput="setMinPriceFromInput(this.value)">
-        <span style="font-size:11px;color:var(--text3)">〜 ¥</span>
-        <input type="number" id="maxPriceInput" min="0" step="1000" placeholder="上限なし" style="width:76px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text)" oninput="setMaxPriceFromInput(this.value)">
       </div>
 
-      <div style="margin-top:10px">
       <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
-      </div>
     </div>
   </div>
 
