@@ -227,6 +227,9 @@ tr:hover td { background: var(--bg3); }
 .modal-title { font-size: 15px; font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
 .modal-close { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 18px; }
 
+/* ── Watch top bar (search + stats) ─────── */
+.watch-topbar { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; margin-bottom: 16px; }
+@media (max-width: 767px) { .watch-topbar { grid-template-columns: 1fr; } }
 /* ── Watch stats (compact 2-col) ─────────── */
 .watch-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
 .watch-stat-n { font-family: var(--mono); font-size: 20px; font-weight: 500; color: var(--text); line-height: 1; }
@@ -398,16 +401,17 @@ tr:hover td { background: var(--bg3); }
       <div class="page-sub">複数店舗のRSSを自動取得。検索窓でリアルタイム絞り込みができます。</div>
     </div>
     <div class="content">
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:16px;flex-wrap:wrap">
-        <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル" style="width:240px;min-width:140px">
-        <button class="btn primary" onclick="applyWatchSearch()">検索</button>
-        <button class="btn" onclick="manualRefresh()">↺ 更新</button>
-      </div>
-
-      <div id="statsRow" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        <div class="watch-stat"><div class="watch-stat-n" id="sTotalAll">—</div><div class="watch-stat-l">収集</div></div>
-        <div class="watch-stat"><div class="watch-stat-n" id="sMatch">—</div><div class="watch-stat-l">検索結果</div></div>
-        <div style="display:none"><span id="sTotal"></span><span id="sNew"></span><span id="sShops"></span></div>
+      <div class="watch-topbar">
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル" style="flex:1;min-width:0">
+          <button class="btn primary" onclick="applyWatchSearch()">検索</button>
+          <button class="btn" onclick="manualRefresh()">↺ 更新</button>
+        </div>
+        <div id="statsRow" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+          <div class="watch-stat"><div class="watch-stat-n" id="sMatch">—</div><div class="watch-stat-l">検索結果</div></div>
+          <div class="watch-stat"><div class="watch-stat-n" id="sTotalAll">—</div><div class="watch-stat-l">収集</div></div>
+          <div style="display:none"><span id="sTotal"></span><span id="sNew"></span><span id="sShops"></span></div>
+        </div>
       </div>
 
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
