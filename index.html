@@ -285,11 +285,12 @@ tr:hover td { background: var(--bg3); }
 }
 /* ── お気に入りボタン ─────────────────────── */
 .fav-btn {
-  position: absolute; top: 7px; right: 7px; z-index: 2;
-  width: 24px; height: 24px; border-radius: 50%; border: none; cursor: pointer;
-  background: none; color: var(--text3); opacity: 0;
-  font-size: 15px; display: flex; align-items: center; justify-content: center;
-  transition: opacity .15s, color .15s, background .15s;
+  position: absolute; bottom: 8px; right: 8px; z-index: 2;
+  width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(255,255,255,.8); color: var(--text3); opacity: 0;
+  font-size: 20px; display: flex; align-items: center; justify-content: center;
+  transition: opacity .2s, color .15s, background .15s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.12);
 }
 .item-card:hover .fav-btn { opacity: 1; }
 .fav-btn.on { opacity: 1; color: #f59e0b; }
