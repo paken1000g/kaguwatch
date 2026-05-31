@@ -282,9 +282,19 @@ tr:hover td { background: var(--bg3); }
   .items-list { grid-template-columns: repeat(2,1fr) !important; }
   .items-list.cols-2 { grid-template-columns: 1fr !important; }
 }
+/* ── Toast notification ──────────────────── */
+#toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px);
+  background: rgba(26,26,24,.86); color: #fff; padding: 7px 18px;
+  border-radius: 99px; font-size: 12px; opacity: 0; pointer-events: none;
+  transition: opacity .25s, transform .25s; z-index: 9999;
+  white-space: nowrap;
+}
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
+<div id="toast"></div>
 <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
 <div class="shell">
 
@@ -457,12 +467,12 @@ tr:hover td { background: var(--bg3); }
 const R2J = 'https://api.rss2json.com/v1/api.json?rss_url=';
 const ALLORIGINS = 'https://api.allorigins.win/get?url=';
 const RSS_FEEDS = [
-  { id:'tokyo',     name:'imption',   badge:'b-tokyo',    site:'https://tokyo-recycle.net/collections/all', shopifyStore:'tokyo-recycle.net' },
+  { id:'tokyo',     name:'imption',   badge:'b-tokyo',    site:'https://tokyo-recycle.net/collections/all', shopifyStore:'tokyo-recycle.net', url:'https://tokyo-recycle.net/collections/all.atom' },
   { id:'rocca',     name:'rocca rocca',badge:'b-rocca',   site:'https://roccarocca.shop/', url:'https://roccarocca.shop/collections/all.atom', disabled:true },
-  { id:'furuichi',  name:'furuichi',  badge:'b-furuichi', site:'https://furuichic.com/', url:'https://furuichic.com/collections/all.atom' },
-  { id:'timehype',  name:'TIME HYPE', badge:'b-timehype', site:'https://time-hype.com/', url:'https://time-hype.com/collections/all.atom' },
-  { id:'shark',     name:'SHARK ATTACK', badge:'b-shark', site:'https://sharkattack.jp/', url:'https://sharkattack.jp/collections/all.atom' },
-  { id:'restyle',   name:'リスタイル',   badge:'b-restyle', site:'https://www.restyle-net.com/', url:'https://www.restyle-net.com/collections/all.atom' },
+  { id:'furuichi',  name:'furuichi',  badge:'b-furuichi', site:'https://furuichic.com/', shopifyStore:'furuichic.com', url:'https://furuichic.com/collections/all.atom' },
+  { id:'timehype',  name:'TIME HYPE', badge:'b-timehype', site:'https://time-hype.com/', shopifyStore:'time-hype.com', url:'https://time-hype.com/collections/all.atom' },
+  { id:'shark',     name:'SHARK ATTACK', badge:'b-shark', site:'https://sharkattack.jp/', shopifyStore:'sharkattack.jp', url:'https://sharkattack.jp/collections/all.atom' },
+  { id:'restyle',   name:'リスタイル',   badge:'b-restyle', site:'https://www.restyle-net.com/', shopifyStore:'www.restyle-net.com', url:'https://www.restyle-net.com/collections/all.atom' },
 ];
 const SEARCH_SHOPS = [
   // noCount:true = タブ件数はCSRレンダリングのためSSR HTMLに含まれず取得不可
@@ -881,74 +891,109 @@ async function fetchViaRss2json(feed) {
     return { source:feed.id, title:item.title||'—', link:item.link||feed.site, date:parseDate(item.pubDate), ts, thumbnail:item.thumbnail||item.enclosure?.link||null, price:extractPrice(full), listPrice:extractListPrice(full), sizes:extractSizes(full), matched:isMatch(full), soldOut:isSoldOut(full), isNew:false };
   }).filter(item => !/様専用|専用決済/.test(item.title));
 }
-const SHOPIFY_CACHE_TTL = 60 * 60 * 1000; // 1時間
+const SHOPIFY_CACHE_TTL = 60 * 60 * 1000;
+const shopifyBgFetching = new Set();
+
+function showToast(msg, duration = 4000) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(el._t);
+  el._t = setTimeout(() => el.classList.remove('show'), duration);
+}
+
+function processShopifyRawProducts(products, feed) {
+  const items = [];
+  for (const p of products) {
+    if (!p.variants.some(v => v.available)) continue;
+    if (/様専用|専用決済/.test(p.title)) continue;
+    const variant = p.variants[0];
+    const priceNum = parseFloat(variant.price || '0');
+    const compareNum = parseFloat(variant.compare_at_price || '0');
+    const price = priceNum > 0 ? `¥${Math.round(priceNum).toLocaleString()}` : '';
+    const listPrice = compareNum > priceNum ? `¥${Math.round(compareNum).toLocaleString()}` : '';
+    const thumb = p.images[0]?.src || null;
+    const link = `https://${feed.shopifyStore}/products/${p.handle}`;
+    const ts = new Date(p.updated_at || p.created_at).getTime() || 0;
+    items.push({
+      source: feed.id, title: p.title, link,
+      date: parseDate(p.updated_at || p.created_at), ts,
+      thumbnail: thumb, price, listPrice,
+      sizes: extractSizes(p.title),
+      matched: isMatch(p.title),
+      soldOut: false, isNew: false,
+      pagePrice: null, pageInStock: null,
+    });
+  }
+  return items;
+}
 
 async function fetchShopifyProducts(feed) {
-  // ── キャッシュ確認 ──────────────────────────────────────────
   const cacheKey = 'shopify_' + feed.id;
   try {
     const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
     if (cached && Date.now() - cached.ts < SHOPIFY_CACHE_TTL) {
-      // マッチ状態はキーワードが変わる可能性があるため読み込み時に再計算
       return cached.items.map(item => ({ ...item, matched: isMatch(item.title) }));
     }
   } catch(e) {}
 
   if (!cfWorkerUrl) throw new Error('Worker URL 未設定');
 
-  // ── products.json 全件取得（250件ずつページネーション）───────
-  const items = [];
-  let page = 1;
-  while (true) {
-    const url = `https://${feed.shopifyStore}/products.json?limit=250&page=${page}`;
-    const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(url), 15000);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const data = await res.json();
-    const products = data.products || [];
+  // page 1 のみ即座に取得して返す
+  const url1 = `https://${feed.shopifyStore}/products.json?limit=250&page=1`;
+  const res1 = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(url1), 15000);
+  if (!res1.ok) throw new Error('HTTP ' + res1.status);
+  const raw1 = (await res1.json()).products || [];
+  const firstItems = processShopifyRawProducts(raw1, feed);
 
-    for (const p of products) {
-      // 在庫ありバリアントが1つもなければスキップ
-      if (!p.variants.some(v => v.available)) continue;
-      // 専用出品はスキップ
-      if (/様専用|専用決済/.test(p.title)) continue;
-
-      const variant = p.variants[0];
-      const priceNum = parseFloat(variant.price || '0');
-      const compareNum = parseFloat(variant.compare_at_price || '0');
-      const price = priceNum > 0 ? `¥${Math.round(priceNum).toLocaleString()}` : '';
-      const listPrice = compareNum > priceNum
-        ? `¥${Math.round(compareNum).toLocaleString()}` : '';
-      const thumb = p.images[0]?.src || null;
-      const link = `https://${feed.shopifyStore}/products/${p.handle}`;
-      const ts = new Date(p.updated_at || p.created_at).getTime() || 0;
-
-      items.push({
-        source: feed.id, title: p.title, link,
-        date: parseDate(p.updated_at || p.created_at), ts,
-        thumbnail: thumb, price, listPrice,
-        sizes: extractSizes(p.title),
-        matched: isMatch(p.title),
-        soldOut: false, isNew: false,
-        pagePrice: null, pageInStock: null,
-      });
-    }
-
-    if (products.length < 250) break;
-    page++;
+  if (raw1.length < 250) {
+    try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items: firstItems })); } catch(e) {}
+    return firstItems;
   }
 
-  // ── localStorage にキャッシュ保存 ──────────────────────────
-  try {
-    localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items }));
-  } catch(e) {
-    console.warn('[shopify cache] 保存失敗:', e.message);
+  // 続きはバックグラウンドで取得（二重実行防止）
+  if (!shopifyBgFetching.has(feed.id)) {
+    shopifyBgFetching.add(feed.id);
+    fetchShopifyProductsBackground(feed, firstItems, cacheKey)
+      .finally(() => shopifyBgFetching.delete(feed.id));
   }
-
-  return items;
+  return firstItems;
 }
 
+async function fetchShopifyProductsBackground(feed, initialItems, cacheKey) {
+  const bgItems = [...initialItems];
+  let page = 2;
+  while (true) {
+    try {
+      const url = `https://${feed.shopifyStore}/products.json?limit=250&page=${page}`;
+      const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(url), 15000);
+      if (!res.ok) break;
+      const raw = (await res.json()).products || [];
+      bgItems.push(...processShopifyRawProducts(raw, feed));
+      if (raw.length < 250) break;
+      page++;
+    } catch(e) {
+      console.warn('[shopify bg]', feed.name, 'p' + page, e.message);
+      break;
+    }
+  }
+  try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items: bgItems })); } catch(e) {}
+  // allItems 内のこのフィードの商品を差し替えて再描画
+  allItems = allItems.filter(i => i.source !== feed.id).concat(bgItems).sort((a, b) => b.ts - a.ts);
+  enrichItems(allItems);
+  accumulateItems(allItems);
+  renderItems();
+  showToast(`✓ ${feed.name} 全${bgItems.length}件 読み込み完了`);
+}
 async function fetchFeed(feed) {
-  if (feed.shopifyStore) return fetchShopifyProducts(feed);
+  if (feed.shopifyStore) {
+    try {
+      return await fetchShopifyProducts(feed);
+    } catch(e) {
+      console.warn('[shopify]', feed.name, '失敗 → RSSフォールバック:', e.message);
+      if (!feed.url) throw e;
+    }
+  }
   const fns = cfWorkerUrl
     ? [fetchViaCfWorker, fetchViaCorsproxy, fetchViaAllOrigins, fetchViaRss2json]
     : [fetchViaCorsproxy, fetchViaAllOrigins, fetchViaRss2json];
@@ -1175,7 +1220,6 @@ function startCd() {
   }, 1000);
 }
 function manualRefresh() {
-  // 手動更新時は Shopify キャッシュを破棄して最新を取得
   RSS_FEEDS.filter(f => f.shopifyStore).forEach(f => localStorage.removeItem('shopify_' + f.id));
   if(countRef) clearInterval(countRef);
   loadAll();
