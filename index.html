@@ -387,7 +387,6 @@ tr:hover td { background: var(--bg3); }
           <button class="chip" onclick="setFilter('restyle',this)">リスタイル</button>
         </div>
         <div style="display:flex;gap:6px;align-items:center">
-          <button id="stockBtn" class="btn" onclick="toggleStockFilter()" style="font-size:12px">在庫あり</button>
           <button id="enrichBtn" class="btn" onclick="toggleEnrich()" style="font-size:12px" title="価格・在庫をページごとに確認（重くなります）">価格取得</button>
           <select id="sortSel" onchange="setSortOrder(this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);cursor:pointer">
             <option value="newest">新着順</option>
@@ -529,7 +528,6 @@ let currentFilter = 'all';
 let watchQuery = '';
 let sortOrder = 'newest';
 let favoriteItems = JSON.parse(localStorage.getItem('favoriteItems') || '{}');
-let stockOnly = false;
 let enrichEnabled = false;
 let renderLimit = 60;
 let intervalSec = 300, countdown = 300, countRef = null;
@@ -626,11 +624,6 @@ document.getElementById('watchSearch').addEventListener('keyup', e => {
 // Filter
 function setSortOrder(val) {
   sortOrder = val;
-  renderItems();
-}
-function toggleStockFilter() {
-  stockOnly = !stockOnly;
-  document.getElementById('stockBtn').classList.toggle('primary', stockOnly);
   renderItems();
 }
 function toggleEnrich() {
@@ -766,10 +759,7 @@ async function runEnrich() {
         enrichCache[item.link] = { pagePrice: null, pageInStock: null };
       }
     }));
-    // stockOnly が有効な場合は在庫フィルターの表示更新が必要なため全再描画
-    // それ以外はサムネイルを再生成しない軽量パッチで明滅を防ぐ
-    if (stockOnly) renderItems();
-    else patchEnrichedItems(batch);
+    patchEnrichedItems(batch);
   }
   enrichRunning = false;
 }
@@ -813,10 +803,6 @@ function renderItems(keepLimit = false) {
   if (watchQuery) items = items.filter(i => i.title.toLowerCase().includes(watchQuery));
   if (currentFilter==='matched') items = items.filter(i=>i.matched);
   else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
-  if (stockOnly) items = items.filter(i => {
-    if (i.pageInStock !== null && i.pageInStock !== undefined) return i.pageInStock;
-    return !i.soldOut;
-  });
   if (sortOrder === 'price_asc' || sortOrder === 'price_desc') {
     const getP = i => parseNum(i.pagePrice || i.price) || (sortOrder==='price_asc' ? Infinity : -1);
     items = [...items].sort((a,b) => sortOrder==='price_asc' ? getP(a)-getP(b) : getP(b)-getP(a));
@@ -1317,7 +1303,7 @@ function renderFavorites() {
     const feed = RSS_FEEDS.find(f => f.id === item.source);
     // Shopifyフィードで現在フィードにない = 売り切れの可能性が高い
     const likelySold = !live && shopifyIds.has(item.source);
-    const confirmedSold = live && (live.soldOut || live.pageInStock === false);
+    const confirmedSold = live && live.soldOut;
     const isSold = likelySold || confirmedSold;
     const currentPrice = live?.pagePrice || live?.price || item.price;
     const thumb = item.thumbnail
