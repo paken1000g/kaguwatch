@@ -282,19 +282,9 @@ tr:hover td { background: var(--bg3); }
   .items-list { grid-template-columns: repeat(2,1fr) !important; }
   .items-list.cols-2 { grid-template-columns: 1fr !important; }
 }
-/* ── Toast notification ──────────────────── */
-#toast {
-  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(8px);
-  background: rgba(26,26,24,.86); color: #fff; padding: 7px 18px;
-  border-radius: 99px; font-size: 12px; opacity: 0; pointer-events: none;
-  transition: opacity .25s, transform .25s; z-index: 9999;
-  white-space: nowrap;
-}
-#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 </style>
 </head>
 <body>
-<div id="toast"></div>
 <div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
 <div class="shell">
 
@@ -769,6 +759,8 @@ function setStatus(s, txt) {
   document.getElementById('statusTxt').textContent = txt;
 }
 function renderItems() {
+  const mainEl = document.querySelector('.main');
+  const sv = mainEl ? mainEl.scrollTop : 0;
   let items = allItems;
   if (watchQuery) items = items.filter(i => i.title.toLowerCase().includes(watchQuery));
   if (currentFilter==='matched') items = items.filter(i=>i.matched);
@@ -819,6 +811,7 @@ function renderItems() {
       </div>
     </a>`;
   }).join('');
+  if (mainEl && sv > 0) mainEl.scrollTop = sv;
 }
 function gbt(el, tag) { return [...el.getElementsByTagNameNS('*', tag)]; }
 function gbt1(el, tag) { return el.getElementsByTagNameNS('*', tag)[0]; }
@@ -893,27 +886,15 @@ async function fetchViaRss2json(feed) {
 }
 const SHOPIFY_CACHE_TTL = 60 * 60 * 1000;
 const shopifyBgFetching = new Set();
-let _notifyTimer = null, _notifyResults = [];
+let _bgRenderTimer = null;
 
-function showToast(msg, duration = 4000) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  clearTimeout(el._t);
-  el._t = setTimeout(() => el.classList.remove('show'), duration);
-}
-
-function notifyShopifyComplete(name, count) {
-  _notifyResults.push({ name, count });
-  clearTimeout(_notifyTimer);
-  _notifyTimer = setTimeout(() => {
-    const total = _notifyResults.reduce((s, r) => s + r.count, 0);
-    const msg = _notifyResults.length === 1
-      ? `✓ ${_notifyResults[0].name} 全${total}件 取得完了`
-      : `✓ 全ブランド 計${total}件 取得完了`;
-    showToast(msg);
-    _notifyResults = [];
-  }, 600);
+function scheduleBackgroundRender() {
+  clearTimeout(_bgRenderTimer);
+  _bgRenderTimer = setTimeout(() => {
+    accumulateItems(allItems);
+    enrichItems(allItems);
+    renderItems();
+  }, 800);
 }
 
 function processShopifyRawProducts(products, feed) {
@@ -1010,10 +991,7 @@ async function fetchShopifyProductsBackground(feed, initialItems, cacheKey, star
   if (!bgItems.length) return;
   try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items: bgItems })); } catch(e) {}
   allItems = allItems.filter(i => i.source !== feed.id).concat(bgItems).sort((a, b) => b.ts - a.ts);
-  enrichItems(allItems);
-  accumulateItems(allItems);
-  renderItems();
-  notifyShopifyComplete(feed.name, bgItems.length);
+  scheduleBackgroundRender();
 }
 async function fetchFeed(feed) {
   if (feed.shopifyStore) {
