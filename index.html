@@ -281,19 +281,19 @@ tr:hover td { background: var(--bg3); }
   .page-head { padding: 20px 16px 0; }
   .items-list { grid-template-columns: repeat(2,1fr) !important; }
   .items-list.cols-2 { grid-template-columns: 1fr !important; }
-  .seen-btn { display: flex !important; }
+  .fav-btn { opacity: 1 !important; }
 }
-/* ── 既読ボタン ──────────────────────────── */
-.seen-btn {
-  display: none; position: absolute; top: 7px; right: 7px; z-index: 2;
-  width: 22px; height: 22px; border-radius: 50%; border: none; cursor: pointer;
-  background: rgba(0,0,0,.07); color: var(--text3);
-  font-size: 13px; align-items: center; justify-content: center;
-  transition: background .15s, color .15s;
+/* ── お気に入りボタン ─────────────────────── */
+.fav-btn {
+  position: absolute; top: 7px; right: 7px; z-index: 2;
+  width: 24px; height: 24px; border-radius: 50%; border: none; cursor: pointer;
+  background: none; color: var(--text3); opacity: 0;
+  font-size: 15px; display: flex; align-items: center; justify-content: center;
+  transition: opacity .15s, color .15s, background .15s;
 }
-.item-card:hover .seen-btn { display: flex; }
-.seen-btn:hover { background: var(--red-lt); color: var(--red); }
-.item-card.seen-card { opacity: 0.28; }
+.item-card:hover .fav-btn { opacity: 1; }
+.fav-btn.on { opacity: 1; color: #f59e0b; }
+.fav-btn:hover, .fav-btn.on:hover { background: rgba(245,158,11,.15); color: #f59e0b; }
 /* ── 通知ボタン ──────────────────────────── */
 .notif-btn {
   margin-left: auto; background: none; border: 1px solid var(--border2);
@@ -317,6 +317,10 @@ tr:hover td { background: var(--bg3); }
     <div class="nav-label">監視</div>
     <button class="nav-item active" onclick="goPage('watch',this)">
       <span class="nav-dot"></span>入荷監視
+    </button>
+    <button class="nav-item" onclick="goPage('favorites',this)">
+      <span class="nav-dot"></span>お気に入り
+      <span class="nav-count" id="favCount" style="display:none">0</span>
     </button>
     <button class="nav-item" onclick="goPage('search',this)">
       <span class="nav-dot"></span>検索リンク集
@@ -383,7 +387,6 @@ tr:hover td { background: var(--bg3); }
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <button id="stockBtn" class="btn" onclick="toggleStockFilter()" style="font-size:12px">在庫あり</button>
-          <button id="seenBtn" class="btn primary" onclick="toggleHideSeen()" style="font-size:12px">既読を隠す</button>
           <select id="sortSel" onchange="setSortOrder(this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);cursor:pointer">
             <option value="newest">新着順</option>
             <option value="price_asc">値段が安い順</option>
@@ -395,6 +398,17 @@ tr:hover td { background: var(--bg3); }
       <div style="margin-top:14px">
       <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
       </div>
+    </div>
+  </div>
+
+  <!-- お気に入り -->
+  <div id="page-favorites" style="display:none">
+    <div class="page-head">
+      <div class="page-title">お気に入り</div>
+      <div class="page-sub">★ をタップして保存。売り切れた商品は自動でマークされます。</div>
+    </div>
+    <div class="content">
+      <div class="items-list" id="favList"><div class="empty">お気に入りはまだありません</div></div>
     </div>
   </div>
 
@@ -512,8 +526,7 @@ let itemHistory = JSON.parse(localStorage.getItem('itemHistory') || '{}');
 let currentFilter = 'all';
 let watchQuery = '';
 let sortOrder = 'newest';
-let seenLinks = new Set(JSON.parse(localStorage.getItem('seenLinks') || '[]'));
-let hideSeen = true;
+let favoriteItems = JSON.parse(localStorage.getItem('favoriteItems') || '{}');
 let stockOnly = false;
 let intervalSec = 300, countdown = 300, countRef = null;
 let cfWorkerUrl = localStorage.getItem('cfWorkerUrl') || 'https://old-water-8b37kaguwatch-rss-proxy.renentremors.workers.dev';
@@ -538,6 +551,7 @@ function goPage(id, btn) {
   document.getElementById('page-'+id).style.display = '';
   if (id==='search') renderSearch();
   if (id==='market') renderMarket();
+  if (id==='favorites') renderFavorites();
 }
 function openSidebar() {
   document.querySelector('.sidebar').classList.add('open');
@@ -793,7 +807,6 @@ function renderItems() {
     if (i.pageInStock !== null && i.pageInStock !== undefined) return i.pageInStock;
     return !i.soldOut;
   });
-  if (hideSeen) items = items.filter(i => !seenLinks.has(i.link));
   if (sortOrder === 'price_asc' || sortOrder === 'price_desc') {
     const getP = i => parseNum(i.pagePrice || i.price) || (sortOrder==='price_asc' ? Infinity : -1);
     items = [...items].sort((a,b) => sortOrder==='price_asc' ? getP(a)-getP(b) : getP(b)-getP(a));
@@ -810,9 +823,9 @@ function renderItems() {
     const thumb = item.thumbnail
       ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
       : `<div class="item-thumb-ph">🛋</div>`;
-    const isSeen = seenLinks.has(item.link);
-    return `<a class="item-card${item.matched?' matched':''}${item.soldOut?' soldout':''}${isSeen?' seen-card':''}" href="${item.link}" data-link="${item.link.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">
-      <span class="seen-btn" onclick="markSeen('${item.link.replace(/'/g,"\\'")}',event)" title="既読にする">×</span>
+    const isFav = !!favoriteItems[item.link];
+    return `<a class="item-card${item.matched?' matched':''}${item.soldOut?' soldout':''}" href="${item.link}" data-link="${item.link.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">
+      <span class="fav-btn${isFav?' on':''}" onclick="toggleFavorite('${item.link.replace(/'/g,"\\'")}',event)" title="${isFav?'お気に入りを解除':'お気に入りに追加'}">★</span>
       ${thumb}
       <div class="item-body">
         <div class="item-top">
@@ -1244,19 +1257,71 @@ async function loadAll() {
   sendNewItemNotif(allItems);
   startCd();
 }
-// ─── 既読管理 ────────────────────────────────────────────────
-function markSeen(link, e) {
+// ─── お気に入り管理 ───────────────────────────────────────────
+function toggleFavorite(link, e) {
   e.preventDefault();
   e.stopPropagation();
-  seenLinks.add(link);
-  try { localStorage.setItem('seenLinks', JSON.stringify([...seenLinks])); } catch(_) {}
+  if (favoriteItems[link]) {
+    delete favoriteItems[link];
+  } else {
+    const item = allItems.find(i => i.link === link);
+    if (item) {
+      favoriteItems[link] = {
+        link: item.link, title: item.title, thumbnail: item.thumbnail,
+        source: item.source, price: item.price, date: item.date, ts: item.ts,
+      };
+    }
+  }
+  try { localStorage.setItem('favoriteItems', JSON.stringify(favoriteItems)); } catch(_) {}
+  updateFavCount();
   renderItems();
+  const favPage = document.getElementById('page-favorites');
+  if (favPage && favPage.style.display !== 'none') renderFavorites();
 }
-function toggleHideSeen() {
-  hideSeen = !hideSeen;
-  document.getElementById('seenBtn').textContent = hideSeen ? '既読を隠す' : '既読を表示';
-  document.getElementById('seenBtn').classList.toggle('primary', hideSeen);
-  renderItems();
+function updateFavCount() {
+  const n = Object.keys(favoriteItems).length;
+  const el = document.getElementById('favCount');
+  if (!el) return;
+  el.textContent = n;
+  el.style.display = n > 0 ? '' : 'none';
+}
+function renderFavorites() {
+  const el = document.getElementById('favList');
+  const favs = Object.values(favoriteItems).sort((a, b) => b.ts - a.ts);
+  if (!favs.length) {
+    el.innerHTML = '<div class="empty">お気に入りはまだありません<br>商品カードの ★ をタップして保存できます</div>';
+    return;
+  }
+  const shopifyIds = new Set(RSS_FEEDS.filter(f => f.shopifyStore).map(f => f.id));
+  el.innerHTML = favs.map(item => {
+    const live = allItems.find(i => i.link === item.link);
+    const feed = RSS_FEEDS.find(f => f.id === item.source);
+    // Shopifyフィードで現在フィードにない = 売り切れの可能性が高い
+    const likelySold = !live && shopifyIds.has(item.source);
+    const confirmedSold = live && (live.soldOut || live.pageInStock === false);
+    const isSold = likelySold || confirmedSold;
+    const currentPrice = live?.pagePrice || live?.price || item.price;
+    const thumb = item.thumbnail
+      ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      : `<div class="item-thumb-ph">🛋</div>`;
+    return `<a class="item-card${isSold?' soldout':''}" href="${item.link}" target="_blank" rel="noopener">
+      <span class="fav-btn on" onclick="toggleFavorite('${item.link.replace(/'/g,"\\'")}',event)" title="お気に入りを解除">★</span>
+      ${thumb}
+      <div class="item-body">
+        <div class="item-top">
+          <span class="badge ${feed?.badge||''}">${feed?.name||item.source}</span>
+          ${isSold?'<span class="badge b-sold">売り切れ</span>':''}
+        </div>
+        <div class="item-title">${item.title}</div>
+        <div class="item-meta">
+          ${currentPrice?`<span class="item-price">${currentPrice}</span>`:''}
+        </div>
+        <div class="item-meta" style="margin-top:auto;padding-top:4px">
+          <span>${item.date}</span>
+        </div>
+      </div>
+    </a>`;
+  }).join('');
 }
 
 // ─── ブラウザ通知 ─────────────────────────────────────────────
@@ -1487,7 +1552,7 @@ function init() {
   document.getElementById('cfWorkerUrl').value=cfWorkerUrl;
   renderTags(); loadAll(); setColCount(colCount);
   document.getElementById('sTotalAll').textContent = Object.keys(itemHistory).length;
-  document.getElementById('seenBtn').classList.toggle('primary', hideSeen);
+  updateFavCount();
   updateNotifBtn();
 }
 init();
