@@ -112,7 +112,7 @@ input[type=range] { width: 100%; accent-color: var(--accent); }
 .items-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .item-card {
   background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
-  overflow: hidden; display: flex; flex-direction: column;
+  overflow: hidden; display: flex; flex-direction: column; position: relative;
   transition: box-shadow .18s, border-color .18s, transform .18s;
   text-decoration: none; color: inherit; cursor: pointer;
   box-shadow: var(--shadow-sm);
@@ -281,7 +281,27 @@ tr:hover td { background: var(--bg3); }
   .page-head { padding: 20px 16px 0; }
   .items-list { grid-template-columns: repeat(2,1fr) !important; }
   .items-list.cols-2 { grid-template-columns: 1fr !important; }
+  .seen-btn { display: flex !important; }
 }
+/* ── 既読ボタン ──────────────────────────── */
+.seen-btn {
+  display: none; position: absolute; top: 7px; right: 7px; z-index: 2;
+  width: 22px; height: 22px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(0,0,0,.07); color: var(--text3);
+  font-size: 13px; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
+}
+.item-card:hover .seen-btn { display: flex; }
+.seen-btn:hover { background: var(--red-lt); color: var(--red); }
+.item-card.seen-card { opacity: 0.28; }
+/* ── 通知ボタン ──────────────────────────── */
+.notif-btn {
+  margin-left: auto; background: none; border: 1px solid var(--border2);
+  border-radius: var(--radius); padding: 3px 8px; cursor: pointer;
+  font-size: 12px; color: var(--text3); transition: all .15s;
+}
+.notif-btn.on { color: var(--accent); border-color: var(--accent); background: var(--accent-lt); }
+.notif-btn.denied { opacity: .4; cursor: default; }
 </style>
 </head>
 <body>
@@ -314,6 +334,7 @@ tr:hover td { background: var(--bg3); }
       <span class="sdot loading" id="dot"></span>
       <span id="statusTxt" style="font-size:11px">接続中...</span>
       <span class="ct" id="ctDown">5:00</span>
+      <button id="notifBtn" class="notif-btn" onclick="toggleNotif()" title="新着通知">🔔</button>
     </div>
   </div>
 </aside>
@@ -362,6 +383,7 @@ tr:hover td { background: var(--bg3); }
         </div>
         <div style="display:flex;gap:6px;align-items:center">
           <button id="stockBtn" class="btn" onclick="toggleStockFilter()" style="font-size:12px">在庫あり</button>
+          <button id="seenBtn" class="btn primary" onclick="toggleHideSeen()" style="font-size:12px">既読を隠す</button>
           <select id="sortSel" onchange="setSortOrder(this.value)" style="font-size:12px;padding:4px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text);cursor:pointer">
             <option value="newest">新着順</option>
             <option value="price_asc">値段が安い順</option>
@@ -486,10 +508,12 @@ const SEARCH_SHOPS = [
 
 let keywords = JSON.parse(localStorage.getItem('keywords') || '[]');
 let allItems = [], prevLinks = new Set();
-let itemHistory = JSON.parse(localStorage.getItem('itemHistory') || '{}'); // link → {title,source,ts}
+let itemHistory = JSON.parse(localStorage.getItem('itemHistory') || '{}');
 let currentFilter = 'all';
 let watchQuery = '';
 let sortOrder = 'newest';
+let seenLinks = new Set(JSON.parse(localStorage.getItem('seenLinks') || '[]'));
+let hideSeen = true;
 let stockOnly = false;
 let intervalSec = 300, countdown = 300, countRef = null;
 let cfWorkerUrl = localStorage.getItem('cfWorkerUrl') || 'https://old-water-8b37kaguwatch-rss-proxy.renentremors.workers.dev';
@@ -767,8 +791,9 @@ function renderItems() {
   else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
   if (stockOnly) items = items.filter(i => {
     if (i.pageInStock !== null && i.pageInStock !== undefined) return i.pageInStock;
-    return !i.soldOut; // JSON-LD未取得時はRSS判定にフォールバック
+    return !i.soldOut;
   });
+  if (hideSeen) items = items.filter(i => !seenLinks.has(i.link));
   if (sortOrder === 'price_asc' || sortOrder === 'price_desc') {
     const getP = i => parseNum(i.pagePrice || i.price) || (sortOrder==='price_asc' ? Infinity : -1);
     items = [...items].sort((a,b) => sortOrder==='price_asc' ? getP(a)-getP(b) : getP(b)-getP(a));
@@ -785,7 +810,9 @@ function renderItems() {
     const thumb = item.thumbnail
       ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
       : `<div class="item-thumb-ph">🛋</div>`;
-    return `<a class="item-card${item.matched?' matched':''}${item.soldOut?' soldout':''}" href="${item.link}" data-link="${item.link.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">
+    const isSeen = seenLinks.has(item.link);
+    return `<a class="item-card${item.matched?' matched':''}${item.soldOut?' soldout':''}${isSeen?' seen-card':''}" href="${item.link}" data-link="${item.link.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">
+      <span class="seen-btn" onclick="markSeen('${item.link.replace(/'/g,"\\'")}',event)" title="既読にする">×</span>
       ${thumb}
       <div class="item-body">
         <div class="item-top">
@@ -1213,10 +1240,58 @@ async function loadAll() {
   else setStatus('ok', `更新 ${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`);
   renderItems();
   enrichItems(allItems);
-  accumulateItems(allItems); // 収集総数を蓄積
-  // recordPrices(allItems); // 市場相場：非表示中
+  accumulateItems(allItems);
+  sendNewItemNotif(allItems);
   startCd();
 }
+// ─── 既読管理 ────────────────────────────────────────────────
+function markSeen(link, e) {
+  e.preventDefault();
+  e.stopPropagation();
+  seenLinks.add(link);
+  try { localStorage.setItem('seenLinks', JSON.stringify([...seenLinks])); } catch(_) {}
+  renderItems();
+}
+function toggleHideSeen() {
+  hideSeen = !hideSeen;
+  document.getElementById('seenBtn').textContent = hideSeen ? '既読を隠す' : '既読を表示';
+  document.getElementById('seenBtn').classList.toggle('primary', hideSeen);
+  renderItems();
+}
+
+// ─── ブラウザ通知 ─────────────────────────────────────────────
+function updateNotifBtn() {
+  const btn = document.getElementById('notifBtn');
+  if (!btn) return;
+  const perm = Notification.permission;
+  btn.className = 'notif-btn' + (perm === 'granted' ? ' on' : perm === 'denied' ? ' denied' : '');
+  btn.title = perm === 'granted' ? '通知オン（クリックでオフ）' : perm === 'denied' ? '通知がブロックされています' : '通知をオンにする';
+}
+async function toggleNotif() {
+  if (Notification.permission === 'denied') return;
+  if (Notification.permission === 'granted') {
+    // 現状はAPIで通知を完全オフにはできないため、状態を維持
+    alert('通知を止めるにはブラウザの設定から変更してください。');
+    return;
+  }
+  await Notification.requestPermission();
+  updateNotifBtn();
+}
+function sendNewItemNotif(items) {
+  if (Notification.permission !== 'granted') return;
+  const newMatched = items.filter(i => i.isNew && i.matched);
+  if (!newMatched.length) return;
+  if (newMatched.length === 1) {
+    const item = newMatched[0];
+    new Notification(`🛋 新着: ${item.title}`, { body: item.price || '', icon: '/favicon.ico' });
+  } else {
+    new Notification(`🛋 キーワード一致 ${newMatched.length}件の新着`, {
+      body: newMatched.slice(0, 3).map(i => i.title).join('\n'),
+      icon: '/favicon.ico',
+    });
+  }
+}
+
 function startCd() {
   if (countRef) clearInterval(countRef);
   countdown = intervalSec;
@@ -1412,6 +1487,8 @@ function init() {
   document.getElementById('cfWorkerUrl').value=cfWorkerUrl;
   renderTags(); loadAll(); setColCount(colCount);
   document.getElementById('sTotalAll').textContent = Object.keys(itemHistory).length;
+  document.getElementById('seenBtn').classList.toggle('primary', hideSeen);
+  updateNotifBtn();
 }
 init();
 </script>
