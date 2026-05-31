@@ -372,7 +372,7 @@ tr:hover td { background: var(--bg3); }
       </div>
 
       <div class="stats" style="grid-template-columns:repeat(2,1fr);margin-bottom:18px">
-        <div class="stat"><div class="stat-n g" id="sMatch">—</div><div class="stat-l">キーワード一致</div></div>
+        <div class="stat"><div class="stat-n" id="sMatch">—</div><div class="stat-l" id="sMatchLabel">表示中</div></div>
         <div class="stat"><div class="stat-n b" id="sTotalAll">—</div><div class="stat-l">収集総数</div></div>
         <div style="display:none"><span id="sTotal"></span><span id="sNew"></span><span id="sShops"></span></div>
       </div>
@@ -821,8 +821,8 @@ function renderItems(keepLimit = false) {
     const getP = i => parseNum(i.pagePrice || i.price) || (sortOrder==='price_asc' ? Infinity : -1);
     items = [...items].sort((a,b) => sortOrder==='price_asc' ? getP(a)-getP(b) : getP(b)-getP(a));
   }
-  const mc = allItems.filter(i=>i.matched).length;
-  document.getElementById('sMatch').textContent = mc;
+  document.getElementById('sMatch').textContent = items.length;
+  document.getElementById('sMatchLabel').textContent = watchQuery ? '検索結果' : '表示中';
   document.getElementById('sTotal').textContent = allItems.length;
   document.getElementById('sShops').textContent = RSS_FEEDS.filter(f=>!f.disabled).length;
 
@@ -834,7 +834,7 @@ function renderItems(keepLimit = false) {
       ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
       : `<div class="item-thumb-ph">🛋</div>`;
     const isFav = !!favoriteItems[item.link];
-    return `<a class="item-card${item.matched?' matched':''}${item.soldOut?' soldout':''}" href="${item.link}" data-link="${item.link.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">
+    return `<a class="item-card${item.soldOut?' soldout':''}" href="${item.link}" data-link="${item.link.replace(/"/g,'&quot;')}" target="_blank" rel="noopener">
       <span class="fav-btn${isFav?' on':''}" onclick="toggleFavorite('${item.link.replace(/'/g,"\\'")}',event)" title="${isFav?'お気に入りを解除':'お気に入りに追加'}">★</span>
       ${thumb}
       <div class="item-body">
@@ -842,7 +842,6 @@ function renderItems(keepLimit = false) {
           <span class="badge ${feed.badge}">${feed.name}</span>
           ${item.isNew?'<span class="badge b-new">NEW</span>':''}
           ${item.soldOut?'<span class="badge b-sold">SOLD</span>':''}
-          ${item.matched?'<span class="badge b-match">一致</span>':''}
         </div>
         <div class="item-title">${hl(item.title)}</div>
         <div class="item-meta">
