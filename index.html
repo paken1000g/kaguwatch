@@ -399,11 +399,13 @@ tr:hover td { background: var(--bg3); }
         </div>
       </div>
 
-      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;margin-bottom:2px">
-        <span style="font-size:11px;color:var(--text3);white-space:nowrap">最低価格</span>
-        <input type="range" id="minPriceSlider" min="0" max="500000" step="5000" value="0" style="width:160px;flex-shrink:0;accent-color:var(--accent)" oninput="setMinPrice(this.value)">
-        <span style="font-size:11px;color:var(--text3)">¥</span>
-        <input type="number" id="minPriceInput" min="0" max="500000" step="5000" value="" placeholder="0" style="width:90px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text)" oninput="setMinPriceFromInput(this.value)">
+      <div style="display:flex;align-items:center;gap:8px;margin-top:10px;margin-bottom:2px;flex-wrap:wrap">
+        <span style="font-size:11px;color:var(--text3);white-space:nowrap">価格</span>
+        <input type="range" id="minPriceSlider" min="0" max="200000" step="5000" value="0" style="width:140px;flex-shrink:0;accent-color:var(--accent)" oninput="setMinPrice(this.value)">
+        <span style="font-size:11px;color:var(--text3);white-space:nowrap">¥</span>
+        <input type="number" id="minPriceInput" min="0" step="1000" placeholder="下限" style="width:80px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text)" oninput="setMinPriceFromInput(this.value)">
+        <span style="font-size:11px;color:var(--text3);white-space:nowrap">〜 ¥</span>
+        <input type="number" id="maxPriceInput" min="0" step="1000" placeholder="上限なし" style="width:80px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg2);color:var(--text)" oninput="setMaxPriceFromInput(this.value)">
       </div>
 
       <div style="margin-top:10px">
@@ -538,6 +540,7 @@ let currentFilter = 'all';
 let watchQuery = '';
 let sortOrder = 'newest';
 let minPrice = 0;
+let maxPrice = 0;
 let favoriteItems = JSON.parse(localStorage.getItem('favoriteItems') || '{}');
 let enrichEnabled = false;
 let renderLimit = 60;
@@ -634,8 +637,12 @@ function setMinPrice(val) {
   renderItems();
 }
 function setMinPriceFromInput(val) {
-  minPrice = Math.min(Math.max(parseInt(val) || 0, 0), 500000);
-  document.getElementById('minPriceSlider').value = minPrice;
+  minPrice = Math.max(parseInt(val) || 0, 0);
+  document.getElementById('minPriceSlider').value = Math.min(minPrice, 200000);
+  renderItems();
+}
+function setMaxPriceFromInput(val) {
+  maxPrice = Math.max(parseInt(val) || 0, 0);
   renderItems();
 }
 function toggleEnrich() {
@@ -815,8 +822,14 @@ function renderItems(keepLimit = false) {
   if (watchQuery) items = items.filter(i => i.title.toLowerCase().includes(watchQuery));
   if (currentFilter==='matched') items = items.filter(i=>i.matched);
   else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
-  if (minPrice > 0) {
-    items = items.filter(i => { const p = parseNum(i.pagePrice || i.price); return p > 0 && p >= minPrice; });
+  if (minPrice > 0 || maxPrice > 0) {
+    items = items.filter(i => {
+      const p = parseNum(i.pagePrice || i.price);
+      if (p <= 0) return false;
+      if (minPrice > 0 && p < minPrice) return false;
+      if (maxPrice > 0 && p > maxPrice) return false;
+      return true;
+    });
   }
   if (sortOrder === 'price_asc' || sortOrder === 'price_desc') {
     const getP = i => parseNum(i.pagePrice || i.price) || (sortOrder==='price_asc' ? Infinity : -1);
