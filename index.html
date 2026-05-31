@@ -286,15 +286,15 @@ tr:hover td { background: var(--bg3); }
 /* ── お気に入りボタン ─────────────────────── */
 .fav-btn {
   position: absolute; bottom: 8px; right: 8px; z-index: 2;
-  width: 32px; height: 32px; border-radius: 50%; border: none; cursor: pointer;
-  background: rgba(255,255,255,.8); color: var(--text3); opacity: 0;
-  font-size: 20px; display: flex; align-items: center; justify-content: center;
+  width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(255,255,255,.85); color: var(--text3); opacity: 0.25;
+  font-size: 22px; display: flex; align-items: center; justify-content: center;
   transition: opacity .2s, color .15s, background .15s;
-  box-shadow: 0 1px 4px rgba(0,0,0,.12);
+  box-shadow: 0 1px 6px rgba(0,0,0,.15);
 }
 .item-card:hover .fav-btn { opacity: 1; }
-.fav-btn.on { opacity: 1; color: #f59e0b; }
-.fav-btn:hover, .fav-btn.on:hover { background: rgba(245,158,11,.15); color: #f59e0b; }
+.fav-btn.on { opacity: 1; color: #f59e0b; background: rgba(255,255,255,.95); }
+.fav-btn:hover { opacity: 1; background: rgba(245,158,11,.12); color: #f59e0b; }
 /* ── 通知ボタン ──────────────────────────── */
 .notif-btn {
   margin-left: auto; background: none; border: 1px solid var(--border2);
@@ -371,8 +371,8 @@ tr:hover td { background: var(--bg3); }
         </div>
       </div>
 
-      <div class="stats" style="grid-template-columns:repeat(2,1fr);margin-bottom:18px">
-        <div class="stat"><div class="stat-n" id="sMatch">—</div><div class="stat-l" id="sMatchLabel">表示中</div></div>
+      <div id="statsRow" class="stats" style="grid-template-columns:repeat(2,1fr);margin-bottom:18px">
+        <div class="stat" id="sMatchStat" style="display:none"><div class="stat-n" id="sMatch">—</div><div class="stat-l">検索結果</div></div>
         <div class="stat"><div class="stat-n b" id="sTotalAll">—</div><div class="stat-l">収集総数</div></div>
         <div style="display:none"><span id="sTotal"></span><span id="sNew"></span><span id="sShops"></span></div>
       </div>
@@ -821,8 +821,11 @@ function renderItems(keepLimit = false) {
     const getP = i => parseNum(i.pagePrice || i.price) || (sortOrder==='price_asc' ? Infinity : -1);
     items = [...items].sort((a,b) => sortOrder==='price_asc' ? getP(a)-getP(b) : getP(b)-getP(a));
   }
-  document.getElementById('sMatch').textContent = items.length;
-  document.getElementById('sMatchLabel').textContent = watchQuery ? '検索結果' : '表示中';
+  const hasSearch = !!watchQuery;
+  const sMatchStat = document.getElementById('sMatchStat');
+  if (sMatchStat) sMatchStat.style.display = hasSearch ? '' : 'none';
+  document.getElementById('statsRow').style.gridTemplateColumns = hasSearch ? 'repeat(2,1fr)' : '1fr';
+  if (hasSearch) document.getElementById('sMatch').textContent = items.length;
   document.getElementById('sTotal').textContent = allItems.length;
   document.getElementById('sShops').textContent = RSS_FEEDS.filter(f=>!f.disabled).length;
 
