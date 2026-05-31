@@ -394,7 +394,7 @@ tr:hover td { background: var(--bg3); }
         </div>
         <div id="statsRow" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="watch-stat"><div class="watch-stat-n" id="sMatch">—</div><div class="watch-stat-l">検索結果</div></div>
-          <div class="watch-stat"><div class="watch-stat-n" id="sTotalAll">—</div><div class="watch-stat-l">収集</div></div>
+          <div class="watch-stat"><div class="watch-stat-n" id="sTotalAll">—</div><div class="watch-stat-l">収集総数</div></div>
           <div style="display:none"><span id="sTotal"></span><span id="sNew"></span><span id="sShops"></span></div>
         </div>
       </div>
@@ -407,6 +407,7 @@ tr:hover td { background: var(--bg3); }
             <span class="filter-lbl">店舗</span>
             <div class="filter-chips" id="filterChips">
               <button class="chip active" onclick="setFilter('all',this)" style="flex-shrink:0">すべて</button>
+              <button class="chip" onclick="setFilter('favorites',this)" style="flex-shrink:0">★ お気に入り</button>
               <button class="chip" onclick="setFilter('tokyo',this)" style="flex-shrink:0">imption</button>
               <button class="chip" onclick="setFilter('furuichi',this)" style="flex-shrink:0">furuichi</button>
               <button class="chip" onclick="setFilter('timehype',this)" style="flex-shrink:0">TIME HYPE</button>
@@ -877,6 +878,7 @@ function renderItems(keepLimit = false) {
   let items = allItems;
   if (watchQuery) items = items.filter(i => i.title.toLowerCase().includes(watchQuery));
   if (currentFilter==='matched') items = items.filter(i=>i.matched);
+  else if (currentFilter==='favorites') items = items.filter(i=>!!favoriteItems[i.link]);
   else if (currentFilter!=='all') items = items.filter(i=>i.source===currentFilter);
   if (minPrice > 0 || maxPrice > 0) {
     items = items.filter(i => {
