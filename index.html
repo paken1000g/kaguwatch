@@ -36,52 +36,60 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; font-weight: 300; min-height: 100vh; }
 
-.shell { display: grid; grid-template-columns: 216px 1fr; min-height: 100vh; }
+.shell { display: flex; flex-direction: column; min-height: 100vh; }
 
-/* ── Sidebar ─────────────────────────────── */
-.sidebar { background: var(--bg2); border-right: 1px solid var(--border); display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; }
-.logo { padding: 22px 18px 18px; border-bottom: 1px solid var(--border); }
-.logo-en { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: .22em; text-transform: uppercase; margin-bottom: 5px; }
-.logo-ja { font-size: 16px; font-weight: 500; color: var(--text); letter-spacing: -.01em; }
-.nav { padding: 12px 10px; flex: 1; overflow-y: auto; }
-.nav-label { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: .14em; text-transform: uppercase; padding: 12px 8px 5px; }
-.nav-item { display: flex; align-items: center; gap: 9px; padding: 9px 10px; border-radius: var(--radius); cursor: pointer; color: var(--text2); font-size: 13px; font-weight: 300; transition: all .15s; margin-bottom: 2px; border: none; background: none; width: 100%; text-align: left; }
-.nav-item:hover { background: var(--bg3); color: var(--text); }
-.nav-item.active { background: var(--accent-lt); color: var(--accent); font-weight: 500; }
-.nav-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; opacity: .4; flex-shrink: 0; }
-.nav-item.active .nav-dot { opacity: 1; }
-.nav-count { margin-left: auto; font-family: var(--mono); font-size: 10px; background: var(--accent-lt); color: var(--accent); padding: 1px 6px; border-radius: 99px; }
-.nav-count.red { background: var(--red-lt); color: var(--red); }
-.sidebar-foot { padding: 12px 10px; border-top: 1px solid var(--border); }
-.status-row { display: flex; align-items: center; gap: 6px; padding: 6px 8px; font-size: 11px; color: var(--text3); }
+/* ── Top bar ─────────────────────────────── */
+.topbar {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 24px; position: sticky; top: 0; z-index: 10; flex-shrink: 0;
+}
+.topbar-logo { display: flex; flex-direction: column; gap: 1px; }
+.logo-en { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: .22em; text-transform: uppercase; }
+.logo-ja { font-size: 15px; font-weight: 500; color: var(--text); letter-spacing: -.01em; }
+.topbar-right { margin-left: auto; display: flex; align-items: center; gap: 6px; }
+.status-mini { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text3); margin-right: 4px; }
 .sdot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-md); flex-shrink: 0; }
 .sdot.loading { background: var(--amber); animation: blink 1.2s infinite; }
 .sdot.err { background: var(--red); }
 @keyframes blink { 0%,100%{opacity:1}50%{opacity:.3} }
-.ct { margin-left: auto; font-family: var(--mono); font-size: 10px; }
+.ct { font-family: var(--mono); font-size: 10px; }
+.icon-btn {
+  background: none; border: 1px solid var(--border2); border-radius: var(--radius);
+  padding: 5px 9px; cursor: pointer; font-size: 14px; color: var(--text2);
+  transition: all .15s; line-height: 1;
+}
+.icon-btn:hover { border-color: var(--accent); background: var(--accent-lt); color: var(--accent); }
 
-/* ── Main ────────────────────────────────── */
-.main { overflow: auto; }
-.page-head { padding: 28px 32px 0; border-bottom: 1px solid var(--border); background: var(--bg2); }
-.page-title { font-size: 20px; font-weight: 500; letter-spacing: -.03em; margin-bottom: 3px; }
-.page-sub { font-size: 12px; color: var(--text3); margin-bottom: 18px; line-height: 1.6; }
-.tab-bar { display: flex; gap: 0; }
-.tab { padding: 10px 18px; font-size: 13px; color: var(--text3); border-bottom: 2px solid transparent; cursor: pointer; background: none; border-top: none; border-left: none; border-right: none; transition: all .15s; font-weight: 300; font-family: var(--sans); }
-.tab:hover { color: var(--text); }
-.tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+/* ── Error banner ────────────────────────── */
+.err-banner {
+  display: none; background: var(--red-lt); border-bottom: 1px solid rgba(192,57,43,.15);
+  padding: 7px 24px; font-size: 12px; color: var(--red); line-height: 1.6;
+}
 
+/* ── Tab bar ─────────────────────────────── */
+.main-tabbar {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  display: flex; padding: 0 24px; flex-shrink: 0;
+}
+.main-tab {
+  padding: 10px 18px; font-size: 13px; color: var(--text3);
+  border-bottom: 2px solid transparent; cursor: pointer;
+  background: none; border-top: none; border-left: none; border-right: none;
+  transition: all .15s; font-weight: 300; font-family: var(--sans);
+}
+.main-tab:hover { color: var(--text); }
+.main-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 500; }
+.tab-badge {
+  margin-left: 5px; font-family: var(--mono); font-size: 10px;
+  background: var(--accent-lt); color: var(--accent); padding: 1px 6px; border-radius: 99px;
+}
+
+/* ── Main / panels ───────────────────────── */
+.main { flex: 1; overflow: auto; }
+.main-panel { display: none; }
+.main-panel.active { display: block; }
 .content { padding: 24px 32px; }
-.panel { display: none; }
-.panel.active { display: block; }
-
-/* ── Stats ───────────────────────────────── */
-.stats { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 18px; }
-.stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; box-shadow: var(--shadow-sm); }
-.stat-n { font-family: var(--mono); font-size: 24px; font-weight: 500; color: var(--text); line-height: 1; }
-.stat-n.g { color: var(--accent); }
-.stat-n.r { color: var(--red); }
-.stat-n.b { color: var(--blue); }
-.stat-l { font-size: 11px; color: var(--text3); margin-top: 5px; }
 
 /* ── Controls ────────────────────────────── */
 .row { display: flex; gap: 8px; margin-bottom: 12px; }
@@ -96,7 +104,6 @@ input::placeholder { color: var(--text3); }
 .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 16px; min-height: 28px; }
 .tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 11px; background: var(--accent-lt); border: 1px solid rgba(42,92,63,.18); border-radius: 99px; font-size: 12px; color: var(--accent); }
 .tag button { background: none; border: none; color: var(--accent-md); cursor: pointer; font-size: 13px; line-height: 1; padding: 0; }
-.chips { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
 .chip { padding: 5px 13px; font-size: 12px; border: 1px solid var(--border2); border-radius: 99px; background: none; cursor: pointer; color: var(--text2); transition: all .15s; font-family: var(--sans); }
 .chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
 .chip.active { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); font-weight: 500; }
@@ -104,130 +111,56 @@ input::placeholder { color: var(--text3); }
 .btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
 .btn.primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 500; }
 .btn.primary:hover { background: var(--accent-md); border-color: var(--accent-md); }
-.toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-
 input[type=range] { width: 100%; accent-color: var(--accent); }
 
-/* ── Item cards (縦型グリッド) ────────────── */
+/* ── Item cards ──────────────────────────── */
 .items-list { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .item-card {
   background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
   overflow: hidden; display: flex; flex-direction: column; position: relative;
   transition: box-shadow .18s, border-color .18s, transform .18s;
-  text-decoration: none; color: inherit; cursor: pointer;
-  box-shadow: var(--shadow-sm);
+  text-decoration: none; color: inherit; cursor: pointer; box-shadow: var(--shadow-sm);
 }
 .item-card:hover { border-color: var(--border2); box-shadow: var(--shadow); transform: translateY(-2px); }
 .item-card.matched { border-color: rgba(42,92,63,.35); background: linear-gradient(to bottom, var(--accent-lt), var(--bg2)); }
 .item-thumb { width: 100%; height: 190px; object-fit: cover; display: block; background: var(--bg3); flex-shrink: 0; }
 .item-thumb-ph { width: 100%; height: 190px; flex-shrink: 0; background: var(--bg3); display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 40px; }
-.items-list.cols-2 .item-thumb { height: 240px; }
-.items-list.cols-2 .item-thumb-ph { height: 240px; font-size: 52px; }
+.item-card.soldout { opacity: 0.45; }
+.item-card.soldout .item-title { text-decoration: line-through; color: var(--text3); }
 .item-body { padding: 12px 14px 14px; flex: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0; }
 .item-top { display: flex; align-items: flex-start; gap: 4px; flex-wrap: wrap; }
 .item-title { font-size: 12px; font-weight: 400; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; width: 100%; color: var(--text); }
 .badge { font-size: 10px; padding: 2px 7px; border-radius: 99px; font-family: var(--mono); white-space: nowrap; flex-shrink: 0; }
 .b-tokyo { background: var(--blue-lt); color: var(--blue); }
-.b-murata { background: var(--accent-lt); color: var(--accent); }
-.b-jmty { background: var(--amber-lt); color: var(--amber); }
 .b-shark { background: #e8f0ff; color: #1a3a8c; }
-.b-kagutone { background: #fef3e8; color: #b5521e; }
-.b-clapp { background: #e8f5f5; color: #1a7a7a; }
-.b-rocca { background: #fce8f0; color: #8c2a4e; }
-.b-camori { background: #e8f0fe; color: #1a56a0; }
-.b-guide { background: #f3f0e8; color: #7a5c1a; }
 .b-restyle { background: #e8f5e9; color: #1b5e20; }
-.b-kokoelma { background: #fdf0fb; color: #7a1a70; }
-.b-greeniche { background: #e6f4ea; color: #1e6b3a; }
-.b-lloyds { background: #f5f0e8; color: #7a4f1a; }
-.b-malto { background: #f0e8f5; color: #5a1a7a; }
 .b-furuichi { background: #e8f5f0; color: #1a6b5a; }
-.b-haluta { background: #fef5e6; color: #8a5a00; }
-.b-tokyoapt { background: #e8f0ff; color: #1a3a8a; }
 .b-timehype { background: #f5e8e8; color: #7a1a1a; }
 .b-match { background: var(--accent-lt); color: var(--accent); }
 .b-sold { background: #f0f0f0; color: #999; }
-.b-market-low  { background: #d4edda; color: #1a5c2a; font-weight:500; }
-.b-market-mid  { background: var(--bg3); color: var(--text3); }
-.b-market-high { background: var(--amber-lt); color: var(--amber); font-weight:500; }
-/* 市場相場 */
-.market-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(240px,1fr)); gap:14px; margin-top:18px; }
-.market-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--radius-lg); padding:18px; box-shadow:var(--shadow-sm); }
-.market-kw { font-size:14px; font-weight:500; margin-bottom:10px; }
-.market-median { font-family:var(--mono); font-size:24px; font-weight:500; color:var(--accent); }
-.market-sub { font-size:11px; color:var(--text3); margin-top:3px; }
-.market-bar-wrap { margin-top:12px; height:5px; background:var(--bg3); border-radius:3px; overflow:hidden; }
-.market-bar { height:100%; background:var(--accent); border-radius:3px; transition:width .4s; }
-.market-badge-row { display:flex; gap:6px; flex-wrap:wrap; margin-top:10px; font-size:11px; }
-.market-no-data { text-align:center; padding:3rem; color:var(--text3); font-size:13px; }
-.item-card.soldout { opacity: 0.45; }
-.item-card.soldout .item-title { text-decoration: line-through; color: var(--text3); }
 .b-new { background: var(--red-lt); color: var(--red); }
 .item-meta { font-size: 11px; color: var(--text3); display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
-.item-price { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--text); }.item-link { color: var(--blue); text-decoration: none; font-size: 11px; }
-.item-link:hover { text-decoration: underline; }
-.item-actions { margin-top: 5px; }
-.btn-xs { padding: 4px 10px; font-size: 11px; border-radius: 6px; border: 1px solid var(--border2); background: var(--bg2); color: var(--text2); cursor: pointer; font-family: var(--sans); transition: all .12s; }
-.btn-xs:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
+.item-price { font-family: var(--mono); font-size: 14px; font-weight: 500; color: var(--text); }
 mark { background: rgba(42,92,63,.15); color: var(--accent); border-radius: 3px; padding: 0 2px; }
 .empty { text-align: center; padding: 4rem 2rem; color: var(--text3); font-size: 13px; line-height: 2.4; }
 .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
-/* ── Search shops ─────────────────────────── */
-.shop-block { margin-bottom: 20px; }
-.shop-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.shop-icon { width: 28px; height: 28px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; font-size: 13px; background: var(--bg3); flex-shrink: 0; }
-.shop-name { font-size: 13px; font-weight: 500; }
-.shop-sub { font-size: 11px; color: var(--text3); }
-.link-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px,1fr)); gap: 6px; }
+/* ── Search shops (modal内) ──────────────── */
 .search-link {
-  display: flex; align-items: center; gap: 8px;
-  padding: 10px 14px;
-  background: var(--bg2); border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
+  display: flex; align-items: center; gap: 8px; padding: 10px 14px;
+  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
   font-size: 13px; color: var(--text2); text-decoration: none;
   transition: all .15s; box-shadow: var(--shadow-sm);
 }
 .search-link:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); box-shadow: var(--shadow); transform: translateY(-1px); }
-.search-link span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .hit-count { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-left: auto; }
 
-/* ── Sedori ──────────────────────────────── */
-.table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { text-align: left; font-size: 10px; font-weight: 500; color: var(--text3); padding: 8px 12px; border-bottom: 1px solid var(--border); font-family: var(--mono); letter-spacing: .08em; text-transform: uppercase; white-space: nowrap; }
-td { padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--text); vertical-align: middle; font-weight: 300; }
-tr:last-child td { border-bottom: none; }
-tr:hover td { background: var(--bg3); }
-.sbadge { font-size: 10px; padding: 2px 7px; border-radius: 99px; font-family: var(--mono); }
-.s-watching { background: var(--blue-lt); color: var(--blue); }
-.s-purchased { background: var(--amber-lt); color: var(--amber); }
-.s-listed { background: var(--accent-lt); color: var(--accent); }
-.s-sold { background: var(--bg3); color: var(--text3); }
-.cond-a { background: var(--accent-lt); color: var(--accent); }
-.cond-b { background: var(--blue-lt); color: var(--blue); }
-.cond-c { background: var(--amber-lt); color: var(--amber); }
-.cond-d { background: var(--red-lt); color: var(--red); }
-.pp { color: var(--accent); font-family: var(--mono); }
-.pn { color: var(--red); font-family: var(--mono); }
-.pz { color: var(--text3); font-family: var(--mono); }
-
-/* ── Form ────────────────────────────────── */
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-.form-group { display: flex; flex-direction: column; gap: 5px; }
-.form-group.full { grid-column: 1/-1; }
-.form-label { font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: .08em; text-transform: uppercase; }
-.profit-preview { font-size: 13px; padding: 12px 14px; background: var(--bg3); border-radius: var(--radius); margin-bottom: 14px; font-family: var(--mono); color: var(--text2); }
-
-/* ── Modal ───────────────────────────────── */
-.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 100; }
-.modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 460px; box-shadow: var(--shadow); }
-.modal-title { font-size: 15px; font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
-.modal-close { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 18px; }
-
-/* ── Watch top bar (search + stats) ─────── */
+/* ── Watch top bar ───────────────────────── */
 .watch-topbar { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; margin-bottom: 16px; }
-@media (max-width: 767px) { .watch-topbar { grid-template-columns: 1fr; } }
+.watch-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
+.watch-stat-n { font-family: var(--mono); font-size: 20px; font-weight: 500; color: var(--text); line-height: 1; }
+.watch-stat-l { font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: .06em; margin-top: 4px; }
+
 /* ── Filter card ─────────────────────────── */
 .filter-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); margin-bottom: 14px; overflow: hidden; box-shadow: var(--shadow-sm); }
 .filter-row { display: flex; align-items: stretch; border-bottom: 1px solid var(--border); }
@@ -241,9 +174,8 @@ tr:hover td { background: var(--bg3); }
 .filter-chips::-webkit-scrollbar { display: none; }
 .filter-price { display: flex; flex-direction: column; gap: 8px; padding: 8px 12px; }
 .filter-price-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-@media (max-width: 767px) {
-  .filter-price-row .price-slider-wrap { flex: 1; width: auto; }
-}
+@media (max-width: 767px) { .filter-price-row .price-slider-wrap { flex: 1; width: auto; } }
+
 /* ── Dual range price slider ─────────────── */
 .price-slider-wrap { position: relative; width: 140px; height: 28px; flex-shrink: 0; }
 .price-slider-track { position: absolute; top: 50%; left: 0; right: 0; height: 4px; transform: translateY(-50%); background: var(--bg3); border-radius: 2px; }
@@ -259,296 +191,220 @@ tr:hover td { background: var(--bg3); }
   .price-range-thumb::-webkit-slider-thumb { width: 22px; height: 22px; }
   .price-range-thumb::-moz-range-thumb { width: 20px; height: 20px; }
 }
-/* ── Watch stats (compact 2-col) ─────────── */
-.watch-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
-.watch-stat-n { font-family: var(--mono); font-size: 20px; font-weight: 500; color: var(--text); line-height: 1; }
-.watch-stat-l { font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: .06em; margin-top: 4px; }
+
+/* ── Modal ───────────────────────────────── */
+.modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
+.modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 480px; box-shadow: var(--shadow); max-height: 85vh; overflow-y: auto; }
+.modal-wide { max-width: 600px; }
+.modal-title { font-size: 15px; font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
+.modal-close { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 18px; padding: 0; }
+
 /* ── Settings ────────────────────────────── */
-.settings-section { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px 20px; margin-bottom: 14px; box-shadow: var(--shadow-sm); }
-.settings-title { font-size: 13px; font-weight: 500; margin-bottom: 14px; }
+.settings-section { margin-bottom: 18px; }
+.settings-section:last-child { margin-bottom: 0; }
+.settings-title { font-size: 12px; font-weight: 500; color: var(--text3); letter-spacing: .06em; text-transform: uppercase; font-family: var(--mono); margin-bottom: 12px; }
 .settings-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.settings-row label { font-size: 12px; color: var(--text2); width: 90px; flex-shrink: 0; font-weight: 400; }
+.settings-row label { font-size: 12px; color: var(--text2); width: 80px; flex-shrink: 0; font-weight: 400; }
 .settings-row input, .settings-row select { flex: 1; }
 .settings-row:last-child { margin-bottom: 0; }
-.toggle { position: relative; width: 32px; height: 18px; flex-shrink: 0; }
-.toggle input { opacity: 0; width: 0; height: 0; }
-.toggle-slider { position: absolute; inset: 0; background: var(--bg3); border: 1px solid var(--border2); border-radius: 99px; cursor: pointer; transition: .2s; }
-.toggle-slider:before { content: ''; position: absolute; width: 12px; height: 12px; left: 2px; top: 2px; background: var(--text3); border-radius: 50%; transition: .2s; }
-.toggle input:checked + .toggle-slider { background: var(--accent-lt); border-color: var(--accent); }
-.toggle input:checked + .toggle-slider:before { transform: translateX(14px); background: var(--accent); }
+.guide-box { background: var(--accent-lt); border: 1px solid rgba(42,92,63,.18); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 14px; }
+.guide-title { font-size: 12px; font-weight: 500; color: var(--accent); margin-bottom: 6px; }
+.guide-body { font-size: 12px; color: var(--text2); line-height: 1.9; font-weight: 300; }
+.guide-body b { font-weight: 500; color: var(--text); }
 .test-result { font-size: 12px; padding: 8px 12px; border-radius: var(--radius); margin-top: 10px; }
 .test-ok { background: var(--accent-lt); color: var(--accent); }
 .test-err { background: var(--red-lt); color: var(--red); }
-.deploy-step { font-size: 13px; color: var(--text2); padding: 6px 0; border-bottom: 1px solid var(--border); display: flex; gap: 10px; font-weight: 300; }
-.deploy-step:last-child { border-bottom: none; }
-.deploy-num { font-family: var(--mono); font-size: 10px; color: var(--text3); width: 16px; flex-shrink: 0; padding-top: 2px; }
-.guide-box { background: var(--accent-lt); border: 1px solid rgba(42,92,63,.18); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 18px; }
-.guide-title { font-size: 12px; font-weight: 500; color: var(--accent); margin-bottom: 8px; }
-.guide-body { font-size: 13px; color: var(--text2); line-height: 1.9; font-weight: 300; }
-.guide-body b { font-weight: 500; color: var(--text); }
 
-/* ── Mobile drawer & top bar ─────────────── */
-.mobile-bar { display: none; }
-.sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 199; }
-.sidebar-backdrop.open { display: block; }
-
-@media (max-width: 767px) {
-  .shell { grid-template-columns: 1fr; }
-  .sidebar {
-    position: fixed; left: 0; top: 0; width: 260px; height: 100%;
-    z-index: 200; transform: translateX(-100%);
-    transition: transform .25s ease; box-shadow: none;
-  }
-  .sidebar.open { transform: translateX(0); box-shadow: 6px 0 28px rgba(0,0,0,.18); }
-  .mobile-bar {
-    display: flex; align-items: center; gap: 12px;
-    padding: 12px 16px; background: var(--bg2);
-    border-bottom: 1px solid var(--border);
-    position: sticky; top: 0; z-index: 10;
-  }
-  .mobile-bar-title { font-size: 15px; font-weight: 500; letter-spacing: -.01em; }
-  .hamburger-btn {
-    background: none; border: none; cursor: pointer; padding: 5px;
-    color: var(--text); display: flex; flex-direction: column;
-    gap: 4px; align-items: center; justify-content: center;
-  }
-  .hamburger-btn span { display: block; width: 18px; height: 2px; background: currentColor; border-radius: 1px; }
-  .content { padding: 16px; }
-  .page-head { padding: 20px 16px 0; }
-  .items-list { grid-template-columns: repeat(2,1fr); }
-  .fav-btn { opacity: 1 !important; }
-}
 /* ── お気に入りボタン ─────────────────────── */
 .fav-btn {
   position: absolute; bottom: 8px; right: 8px; z-index: 2;
   width: 40px; height: 40px; border-radius: 50%; border: none; cursor: pointer;
   background: rgba(255,255,255,.85); color: var(--text3); opacity: 0.25;
   font-size: 22px; display: flex; align-items: center; justify-content: center;
-  transition: opacity .2s, color .15s, background .15s;
-  box-shadow: 0 1px 6px rgba(0,0,0,.15);
+  transition: opacity .2s, color .15s, background .15s; box-shadow: 0 1px 6px rgba(0,0,0,.15);
 }
 .item-card:hover .fav-btn { opacity: 1; }
 .fav-btn.on { opacity: 1; color: #f59e0b; background: rgba(255,255,255,.95); }
 .fav-btn:hover { opacity: 1; background: rgba(245,158,11,.12); color: #f59e0b; }
+
 /* ── 通知ボタン ──────────────────────────── */
-.notif-btn {
-  margin-left: auto; background: none; border: 1px solid var(--border2);
-  border-radius: var(--radius); padding: 3px 8px; cursor: pointer;
-  font-size: 12px; color: var(--text3); transition: all .15s;
-}
+.notif-btn { background: none; border: 1px solid var(--border2); border-radius: var(--radius); padding: 5px 8px; cursor: pointer; font-size: 12px; color: var(--text3); transition: all .15s; }
 .notif-btn.on { color: var(--accent); border-color: var(--accent); background: var(--accent-lt); }
 .notif-btn.denied { opacity: .4; cursor: default; }
+
+/* ── Mobile ──────────────────────────────── */
+@media (max-width: 767px) {
+  .topbar { padding: 10px 16px; }
+  .status-mini { display: none; }
+  .main-tabbar { padding: 0 16px; }
+  .err-banner { padding: 7px 16px; }
+  .content { padding: 16px; }
+  .items-list { grid-template-columns: repeat(2, 1fr); }
+  .watch-topbar { grid-template-columns: 1fr; }
+  .fav-btn { opacity: 1 !important; }
+}
 </style>
 </head>
 <body>
-<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
-<div class="shell">
 
-<aside class="sidebar">
-  <div class="logo">
-    <div class="logo-en">// KAGUWATCH</div>
-    <div class="logo-ja">家具ウォッチャー</div>
-  </div>
-  <nav class="nav">
-    <div class="nav-label">監視</div>
-    <button class="nav-item active" onclick="goPage('watch',this)">
-      <span class="nav-dot"></span>入荷監視
-    </button>
-    <button class="nav-item" onclick="goPage('favorites',this)">
-      <span class="nav-dot"></span>お気に入り
-      <span class="nav-count" id="favCount" style="display:none">0</span>
-    </button>
-    <button class="nav-item" onclick="goPage('search',this)">
-      <span class="nav-dot"></span>検索リンク集
-    </button>
-    <button class="nav-item" onclick="goPage('market',this)">
-      <span class="nav-dot"></span>市場相場
-    </button>
-    <div class="nav-label">設定</div>
-    <button class="nav-item" onclick="goPage('cfworker',this)">
-      <span class="nav-dot"></span>詳細設定
-    </button>
-  </nav>
-  <div class="sidebar-foot">
-    <div class="status-row">
-      <span class="sdot loading" id="dot"></span>
-      <span id="statusTxt" style="font-size:11px">接続中...</span>
-      <span class="ct" id="ctDown">5:00</span>
-      <button id="notifBtn" class="notif-btn" onclick="toggleNotif()" title="新着通知">🔔</button>
+<!-- 外部検索モーダル -->
+<div id="searchModalOverlay" class="modal-overlay" onclick="if(event.target===this)closeSearchModal()" style="display:none">
+  <div class="modal modal-wide">
+    <div class="modal-title">外部検索<button class="modal-close" onclick="closeSearchModal()">×</button></div>
+    <div class="row">
+      <input type="text" id="kwIn" placeholder="キーワードを追加　例：USMハラー、カリモク">
+      <button class="btn primary" onclick="addKw()">＋ 追加</button>
     </div>
-    <div id="errHint" style="display:none;font-size:11px;color:var(--red);padding:4px 8px 6px;line-height:1.6"></div>
+    <div class="tag-list" id="tagList"></div>
+    <div id="searchShops"></div>
   </div>
-</aside>
+</div>
 
-<main class="main">
-
-  <!-- モバイルトップバー（スマホのみ表示） -->
-  <div class="mobile-bar">
-    <button class="hamburger-btn" onclick="openSidebar()" aria-label="メニューを開く">
-      <span></span><span></span><span></span>
-    </button>
-    <span class="mobile-bar-title">家具ウォッチャー</span>
-  </div>
-
-  <!-- 入荷監視 -->
-  <div id="page-watch">
-    <div class="page-head">
-      <div class="page-title">入荷監視</div>
-      <div class="page-sub">複数のセレクトショップ・リサイクルショップの入荷情報を自動で一括収集します。<br>キーワード検索・ブランド絞り込み・価格フィルターで目当ての商品をすばやく見つけられます。★ をタップするとお気に入りに保存でき、売り切れも検知します。</div>
-    </div>
-    <div class="content">
-      <div class="watch-topbar">
-        <div style="display:flex;gap:8px;align-items:center">
-          <div style="position:relative;flex:1;min-width:0">
-            <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル" style="width:100%;padding-right:28px">
-            <button id="watchSearchClear" onclick="clearWatchSearch()" title="クリア" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;line-height:1;color:var(--text3);padding:0">×</button>
-          </div>
-          <button class="btn primary" onclick="applyWatchSearch()">検索</button>
-          <button class="btn" onclick="manualRefresh()">↺ 更新</button>
-        </div>
-        <div id="statsRow" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-          <div class="watch-stat"><div class="watch-stat-n" id="sMatch">—</div><div class="watch-stat-l">検索結果</div></div>
-          <div class="watch-stat"><div class="watch-stat-n" id="sTotalAll">—</div><div class="watch-stat-l">収集総数</div></div>
-          <div style="display:none"><span id="sTotal"></span><span id="sNew"></span><span id="sShops"></span></div>
+<!-- 設定モーダル -->
+<div id="settingsModalOverlay" class="modal-overlay" onclick="if(event.target===this)closeSettings()" style="display:none">
+  <div class="modal">
+    <div class="modal-title">設定<button class="modal-close" onclick="closeSettings()">×</button></div>
+    <div class="settings-section">
+      <div class="settings-title">Cloudflare Worker</div>
+      <div class="guide-box">
+        <div class="guide-title">設定するとRSS取得が安定します（10万回/日 無料）</div>
+        <div class="guide-body">
+          <b>① </b><a href="https://dash.cloudflare.com" target="_blank" rel="noopener" style="color:var(--accent)">Cloudflareダッシュボード</a> → Workers &amp; Pages → Create Worker<br>
+          <b>② </b>リポジトリの <b>worker.js</b> を貼り付けて Deploy<br>
+          <b>③ </b>発行された <b>xxxxx.workers.dev</b> のURLを下に入力して保存
         </div>
       </div>
+      <div class="settings-row"><label>Worker URL</label><input type="text" id="cfWorkerUrl" placeholder="https://kaguwatch-rss-proxy.xxxxx.workers.dev"></div>
+      <div style="display:flex;gap:8px;margin-top:10px">
+        <button class="btn primary" onclick="saveCfWorker()">保存</button>
+        <button class="btn" onclick="testCfWorker()">接続テスト</button>
+      </div>
+      <div id="cfWorkerResult" style="display:none"></div>
+    </div>
+    <div class="divider"></div>
+    <div class="settings-section">
+      <div class="settings-title">自動更新間隔</div>
+      <div class="settings-row"><label>間隔</label>
+        <select id="intervalSel" onchange="updateInterval()">
+          <option value="300">5分ごと（推奨）</option>
+          <option value="600">10分ごと</option>
+          <option value="180">3分ごと</option>
+          <option value="60">1分ごと（負荷注意）</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
 
-      <!-- フィルターカード -->
-      <div class="filter-card">
-        <!-- 店舗 | 並び替え -->
-        <div class="filter-row">
-          <div class="filter-col grow">
-            <span class="filter-lbl">店舗</span>
-            <div class="filter-chips-wrap">
-              <div class="filter-chips" id="filterChips">
-                <button class="chip active" onclick="setFilter('all',this)" style="flex-shrink:0">すべて</button>
-                <button class="chip" onclick="setFilter('tokyo',this)" style="flex-shrink:0">imption</button>
-                <button class="chip" onclick="setFilter('furuichi',this)" style="flex-shrink:0">furuichi</button>
-                <button class="chip" onclick="setFilter('timehype',this)" style="flex-shrink:0">TIME HYPE</button>
-                <button class="chip" onclick="setFilter('shark',this)" style="flex-shrink:0">SHARK ATTACK</button>
-                <button class="chip" onclick="setFilter('restyle',this)" style="flex-shrink:0">リスタイル</button>
+<div class="shell">
+
+  <!-- トップバー -->
+  <header class="topbar">
+    <div class="topbar-logo">
+      <div class="logo-en">// KAGUWATCH</div>
+      <div class="logo-ja">家具ウォッチャー</div>
+    </div>
+    <div class="topbar-right">
+      <div class="status-mini">
+        <span class="sdot loading" id="dot"></span>
+        <span id="statusTxt">接続中...</span>
+        <span class="ct" id="ctDown">5:00</span>
+      </div>
+      <button id="notifBtn" class="notif-btn" onclick="toggleNotif()" title="新着通知">🔔</button>
+      <button class="icon-btn" onclick="openSearchModal()" title="外部検索">🔗</button>
+      <button class="icon-btn" onclick="openSettings()" title="設定">⚙</button>
+    </div>
+  </header>
+
+  <!-- エラーバナー -->
+  <div class="err-banner" id="errBanner"></div>
+
+  <!-- タブバー -->
+  <div class="main-tabbar">
+    <button class="main-tab active" id="tab-watch" onclick="switchMainTab('watch',this)">入荷監視</button>
+    <button class="main-tab" id="tab-favorites" onclick="switchMainTab('favorites',this)">
+      お気に入り<span class="tab-badge" id="favCount" style="display:none">0</span>
+    </button>
+  </div>
+
+  <main class="main">
+
+    <!-- 入荷監視パネル -->
+    <div id="panel-watch" class="main-panel active">
+      <div class="content">
+        <div class="watch-topbar">
+          <div style="display:flex;gap:8px;align-items:center">
+            <div style="position:relative;flex:1;min-width:0">
+              <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル" style="width:100%;padding-right:28px">
+              <button id="watchSearchClear" onclick="clearWatchSearch()" title="クリア" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;line-height:1;color:var(--text3);padding:0">×</button>
+            </div>
+            <button class="btn primary" onclick="applyWatchSearch()">検索</button>
+            <button class="btn" onclick="manualRefresh()">↺ 更新</button>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+            <div class="watch-stat"><div class="watch-stat-n" id="sMatch">—</div><div class="watch-stat-l">検索結果</div></div>
+            <div class="watch-stat"><div class="watch-stat-n" id="sTotalAll">—</div><div class="watch-stat-l">収集総数</div></div>
+            <div style="display:none"><span id="sTotal"></span><span id="sNew"></span><span id="sShops"></span></div>
+          </div>
+        </div>
+
+        <!-- フィルターカード -->
+        <div class="filter-card">
+          <div class="filter-row">
+            <div class="filter-col grow">
+              <span class="filter-lbl">店舗</span>
+              <div class="filter-chips-wrap">
+                <div class="filter-chips" id="filterChips">
+                  <button class="chip active" onclick="setFilter('all',this)" style="flex-shrink:0">すべて</button>
+                  <button class="chip" onclick="setFilter('tokyo',this)" style="flex-shrink:0">imption</button>
+                  <button class="chip" onclick="setFilter('furuichi',this)" style="flex-shrink:0">furuichi</button>
+                  <button class="chip" onclick="setFilter('timehype',this)" style="flex-shrink:0">TIME HYPE</button>
+                  <button class="chip" onclick="setFilter('shark',this)" style="flex-shrink:0">SHARK ATTACK</button>
+                  <button class="chip" onclick="setFilter('restyle',this)" style="flex-shrink:0">リスタイル</button>
+                </div>
+              </div>
+            </div>
+            <div class="filter-sep"></div>
+            <div class="filter-col">
+              <span class="filter-lbl">並び替え</span>
+              <div style="display:flex;gap:4px;flex-shrink:0">
+                <button class="chip active" id="sort-newest" onclick="setSortOrder('newest',this)">新着順</button>
+                <button class="chip" id="sort-price_asc" onclick="setSortOrder('price_asc',this)">安い順</button>
+                <button class="chip" id="sort-price_desc" onclick="setSortOrder('price_desc',this)">高い順</button>
               </div>
             </div>
           </div>
-          <div class="filter-sep"></div>
-          <div class="filter-col">
-            <span class="filter-lbl">並び替え</span>
-            <div style="display:flex;gap:4px;flex-shrink:0">
-              <button class="chip active" id="sort-newest" onclick="setSortOrder('newest',this)">新着順</button>
-              <button class="chip" id="sort-price_asc" onclick="setSortOrder('price_asc',this)">安い順</button>
-              <button class="chip" id="sort-price_desc" onclick="setSortOrder('price_desc',this)">高い順</button>
+          <div class="filter-price">
+            <div class="filter-price-row">
+              <span class="filter-lbl" style="white-space:nowrap">価格</span>
+              <div class="price-slider-wrap">
+                <div class="price-slider-track"><div class="price-slider-fill" id="priceSliderFill"></div></div>
+                <input type="range" class="price-range-thumb" id="minPriceSlider" min="0" max="200000" step="5000" value="0" oninput="onMinSlider(this.value)">
+                <input type="range" class="price-range-thumb" id="maxPriceSlider" min="0" max="200000" step="5000" value="200000" oninput="onMaxSlider(this.value)">
+              </div>
+            </div>
+            <div class="filter-price-row">
+              <span style="font-size:11px;color:var(--text3)">¥</span>
+              <input type="number" id="minPriceInput" min="0" step="1000" placeholder="下限" style="width:88px;font-size:12px;font-family:var(--mono);padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMinPriceFromInput(this.value)">
+              <span style="font-size:11px;color:var(--text3)">〜 ¥</span>
+              <input type="number" id="maxPriceInput" min="0" step="1000" placeholder="上限なし" style="width:88px;font-size:12px;font-family:var(--mono);padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMaxPriceFromInput(this.value)">
+              <button id="favFilterBtn" class="btn" onclick="toggleFavFilter()" style="font-size:13px;padding:5px 14px;margin-left:auto">★ お気に入りのみ</button>
             </div>
           </div>
         </div>
-        <!-- 価格 -->
-        <div class="filter-price">
-          <div class="filter-price-row">
-            <span class="filter-lbl" style="white-space:nowrap">価格</span>
-            <div class="price-slider-wrap">
-              <div class="price-slider-track"><div class="price-slider-fill" id="priceSliderFill"></div></div>
-              <input type="range" class="price-range-thumb" id="minPriceSlider" min="0" max="200000" step="5000" value="0" oninput="onMinSlider(this.value)">
-              <input type="range" class="price-range-thumb" id="maxPriceSlider" min="0" max="200000" step="5000" value="200000" oninput="onMaxSlider(this.value)">
-            </div>
-          </div>
-          <div class="filter-price-row">
-            <span style="font-size:11px;color:var(--text3)">¥</span>
-            <input type="number" id="minPriceInput" min="0" step="1000" placeholder="下限" style="width:88px;font-size:12px;font-family:var(--mono);padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMinPriceFromInput(this.value)">
-            <span style="font-size:11px;color:var(--text3)">〜 ¥</span>
-            <input type="number" id="maxPriceInput" min="0" step="1000" placeholder="上限なし" style="width:88px;font-size:12px;font-family:var(--mono);padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMaxPriceFromInput(this.value)">
-            <button id="favFilterBtn" class="btn" onclick="toggleFavFilter()" style="font-size:13px;padding:5px 14px;margin-left:auto">★ お気に入りのみ</button>
-          </div>
-        </div>
-      </div>
 
-      <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
-    </div>
-  </div>
-
-  <!-- お気に入り -->
-  <div id="page-favorites" style="display:none">
-    <div class="page-head">
-      <div class="page-title">お気に入り</div>
-      <div class="page-sub">★ をタップして保存。売り切れた商品は自動でマークされます。</div>
-    </div>
-    <div class="content">
-      <div class="items-list" id="favList"><div class="empty">お気に入りはまだありません</div></div>
-    </div>
-  </div>
-
-  <!-- 検索リンク集 -->
-  <div id="page-search" style="display:none">
-    <div class="page-head">
-      <div class="page-title">検索リンク集</div>
-      <div class="page-sub">登録キーワードで各サイトへ直接ジャンプ</div>
-    </div>
-    <div class="content">
-      <div class="row">
-        <input type="text" id="kwIn" placeholder="キーワードを追加　例：USMハラー、カリモク">
-        <button class="btn primary" onclick="addKw()">＋ 追加</button>
-      </div>
-      <div class="tag-list" id="tagList"></div>
-      <div id="searchShops"></div>
-    </div>
-  </div>
-
-
-  <!-- 市場相場 -->
-  <div id="page-market" style="display:none">
-    <div class="page-head">
-      <div class="page-title">市場相場</div>
-      <div class="page-sub">登録キーワードの価格分布から中央値を算出し「買うべきか」を判定します</div>
-    </div>
-    <div class="content">
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-        <button class="btn primary" onclick="fetchMarketData()">📊 相場を更新（Mercari参照）</button>
-        <button class="btn" onclick="clearMarketDB()">リセット</button>
-        <span style="font-size:11px;color:var(--text3)" id="marketStatus"></span>
-      </div>
-      <div id="marketGrid" class="market-grid"></div>
-    </div>
-  </div>
-
-
-  <!-- 詳細設定 -->
-  <div id="page-cfworker" style="display:none">
-    <div class="page-head">
-      <div class="page-title">詳細設定</div>
-      <div class="page-sub">Cloudflare Worker・自動更新間隔の設定</div>
-    </div>
-    <div class="content">
-      <div class="settings-section">
-        <div class="settings-title">Cloudflare Worker</div>
-        <div class="guide-box" style="margin-bottom:10px">
-          <div class="guide-title">設定するとRSS取得が安定します（10万回/日 無料）</div>
-          <div class="guide-body">
-            <b>① </b><a href="https://dash.cloudflare.com" target="_blank" rel="noopener" style="color:var(--accent)">Cloudflareダッシュボード</a> → Workers &amp; Pages → Create application → Create Worker<br>
-            <b>② </b>リポジトリの <b>worker.js</b> の中身をエディタに貼り付けて Deploy<br>
-            <b>③ </b>発行された <b>xxxxx.workers.dev</b> のURLを下に入力して保存
-          </div>
-        </div>
-        <div class="settings-row"><label>Worker URL</label><input type="text" id="cfWorkerUrl" placeholder="https://kaguwatch-rss-proxy.xxxxx.workers.dev"></div>
-        <div style="display:flex;gap:8px;margin-top:10px">
-          <button class="btn primary" onclick="saveCfWorker()">保存</button>
-          <button class="btn" onclick="testCfWorker()">接続テスト</button>
-        </div>
-        <div id="cfWorkerResult" style="display:none"></div>
-      </div>
-      <div class="settings-section">
-        <div class="settings-title">自動更新間隔</div>
-        <div class="settings-row"><label>間隔</label>
-          <select id="intervalSel" onchange="updateInterval()">
-            <option value="300">5分ごと（推奨）</option>
-            <option value="600">10分ごと</option>
-            <option value="180">3分ごと</option>
-            <option value="60">1分ごと（負荷注意）</option>
-          </select>
-        </div>
+        <div class="items-list" id="itemsList"><div class="empty">読み込み中...</div></div>
       </div>
     </div>
-  </div>
 
+    <!-- お気に入りパネル -->
+    <div id="panel-favorites" class="main-panel">
+      <div class="content">
+        <div class="items-list" id="favList"><div class="empty">お気に入りはまだありません</div></div>
+      </div>
+    </div>
 
-</main>
+  </main>
 </div>
 
 
@@ -564,22 +420,13 @@ const RSS_FEEDS = [
   { id:'restyle',   name:'リスタイル',   badge:'b-restyle', site:'https://www.restyle-net.com/', shopifyStore:'www.restyle-net.com', url:'https://www.restyle-net.com/collections/all.atom' },
 ];
 const SEARCH_SHOPS = [
-  // noCount:true = タブ件数はCSRレンダリングのためSSR HTMLに含まれず取得不可
-  // カテゴリ総数（80万件超）が誤表示されるため件数非表示
   { name:'ヤフオク', icon:'🔨', noCount:true, url:kw=>`https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(kw)}&auccat=0` },
   { name:'メルカリ',             icon:'🏷', url:kw=>`https://jp.mercari.com/search/?keyword=${encodeURIComponent(kw)}&status=on_sale` },
-  // ジモティー全国: url:kw=>`https://jmty.jp/all/sale?keyword=${encodeURIComponent(kw)}`
-  // noCount:true = 受付終了を除外するURLパラメータが存在しないため件数非表示
   { name:'ジモティー',           icon:'📍', noCount:true, url:kw=>`https://jmty.jp/tokyo/sale?keyword=${encodeURIComponent(kw)}` },
-  // 件数取得不可（Akamai bot保護 / CSR）→ noCount:true で件数非表示・右端配置
   { name:'セカンドストリート',   icon:'🔁', noCount:true, url:kw=>`https://www.2ndstreet.jp/search?keyword=${encodeURIComponent(kw)}` },
-  { name:'ハードオフ（オフモール）', icon:'🏬', noCount:true,
-    url: kw=>`https://netmall.hardoff.co.jp/hashtag/${encodeURIComponent(kw)}/` },
-  // 追加サイト（最右配置）
-  // fril.jp: status=on_sale は未検証パラメータのためシンプルな検索URLを使用
+  { name:'ハードオフ（オフモール）', icon:'🏬', noCount:true, url:kw=>`https://netmall.hardoff.co.jp/hashtag/${encodeURIComponent(kw)}/` },
   { name:'ラクマ',               icon:'🎀', url:kw=>`https://fril.jp/s?query=${encodeURIComponent(kw)}` },
   { name:'Yahoo!フリマ',         icon:'🛍', url:kw=>`https://paypayfleamarket.yahoo.co.jp/search/${encodeURIComponent(kw)}` },
-  // step=1 = 在庫：あり フィルター（なしだと売切含む全件）
   { name:'トレファクONLINE',     icon:'🏪', url:kw=>`https://ec.treasure-f.com/search?word=${encodeURIComponent(kw)}&step=1` },
 ];
 
@@ -589,60 +436,46 @@ let itemHistory = JSON.parse(localStorage.getItem('itemHistory') || '{}');
 let currentFilter = 'all';
 let watchQuery = '';
 let sortOrder = 'newest';
-let minPrice = 0;
-let maxPrice = 0;
+let minPrice = 0, maxPrice = 0;
 let favoriteItems = JSON.parse(localStorage.getItem('favoriteItems') || '{}');
 let renderLimit = 60;
 let intervalSec = 300, countdown = 300, countRef = null;
 let cfWorkerUrl = localStorage.getItem('cfWorkerUrl') || 'https://old-water-8b37kaguwatch-rss-proxy.renentremors.workers.dev';
-let shopOrder = JSON.parse(localStorage.getItem('shopOrder') || 'null') || SEARCH_SHOPS.map((_,i)=>i);
 
-// Nav
-function goPage(id, btn) {
-  closeSidebar();
-  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  document.querySelectorAll('.main > div:not(.mobile-bar)').forEach(d => d.style.display = 'none');
-  document.getElementById('page-'+id).style.display = '';
-  if (id==='search') renderSearch();
-  if (id==='market') renderMarket();
-  if (id==='favorites') renderFavorites();
+// ── Navigation ────────────────────────────────────────────────
+function switchMainTab(id, btn) {
+  document.querySelectorAll('.main-tab').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  document.querySelectorAll('.main-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  if (id === 'favorites') renderFavorites();
 }
-function openSidebar() {
-  document.querySelector('.sidebar').classList.add('open');
-  document.getElementById('sidebarBackdrop').classList.add('open');
-  document.body.style.overflow = 'hidden';
+function openSearchModal() {
+  document.getElementById('searchModalOverlay').style.display = '';
+  renderTags();
+  renderSearch();
 }
-function closeSidebar() {
-  document.querySelector('.sidebar').classList.remove('open');
-  document.getElementById('sidebarBackdrop').classList.remove('open');
-  document.body.style.overflow = '';
+function closeSearchModal() {
+  document.getElementById('searchModalOverlay').style.display = 'none';
 }
-function switchTab(id, btn, page) {
-  document.getElementById('page-'+page).querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-  btn.classList.add('active');
-  document.getElementById('page-'+page).querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.getElementById(page+'-'+id).classList.add('active');
+function openSettings() {
+  document.getElementById('cfWorkerUrl').value = cfWorkerUrl;
+  document.getElementById('settingsModalOverlay').style.display = '';
+}
+function closeSettings() {
+  document.getElementById('settingsModalOverlay').style.display = 'none';
 }
 
-// Keywords
+// ── Keywords ──────────────────────────────────────────────────
 function addKw() {
   const inp = document.getElementById('kwIn');
   const v = inp.value.trim();
-  inp.value = '';
-  inp.focus();
+  inp.value = ''; inp.focus();
   if (v && !keywords.includes(v)) {
     keywords.push(v);
     localStorage.setItem('keywords', JSON.stringify(keywords));
     renderTags(); renderSearch();
   }
-}
-function _kw(inp) {
-  const v = inp.value.trim();
-  inp.value = '';
-  inp.focus();
-  if (v && !keywords.includes(v)) { keywords.push(v); localStorage.setItem('keywords', JSON.stringify(keywords)); renderItems(); renderSearch(); }
-  renderTags();
 }
 function removeKw(i) { keywords.splice(i,1); localStorage.setItem('keywords', JSON.stringify(keywords)); renderTags(); renderItems(); renderSearch(); }
 function renderTags() {
@@ -651,6 +484,8 @@ function renderTags() {
     : '<span style="font-size:11px;color:var(--text3)">キーワードなし（全件表示中）</span>';
   document.getElementById('tagList').innerHTML = h;
 }
+
+// ── Search ────────────────────────────────────────────────────
 function applyWatchSearch() {
   watchQuery = document.getElementById('watchSearch').value.trim().toLowerCase();
   document.getElementById('watchSearchClear').style.display = watchQuery ? '' : 'none';
@@ -658,35 +493,31 @@ function applyWatchSearch() {
 }
 function clearWatchSearch() {
   const inp = document.getElementById('watchSearch');
-  inp.value = '';
-  watchQuery = '';
+  inp.value = ''; watchQuery = '';
   document.getElementById('watchSearchClear').style.display = 'none';
-  inp.focus();
-  renderItems();
+  inp.focus(); renderItems();
 }
-// iPad / iOS では keydown が発火しない・isComposing が残るケースがあるため
-// compositionstart/end で IME 状態を自前管理し keyup をフォールバックに追加
 (function() {
   let composing = false;
   const inp = document.getElementById('kwIn');
   inp.addEventListener('compositionstart', () => { composing = true; });
   inp.addEventListener('compositionend',   () => { composing = false; });
   function onKwEnter(e) { if (e.key === 'Enter' && !composing) addKw(); }
-  inp.addEventListener('keydown', onKwEnter); // desktop / Android
-  inp.addEventListener('keyup',   onKwEnter); // iOS fallback (addKw は入力クリア済で2回目は no-op)
+  inp.addEventListener('keydown', onKwEnter);
+  inp.addEventListener('keyup',   onKwEnter);
 })();
 document.getElementById('watchSearch').addEventListener('keydown', e => {
-  if(e.key==='Enter') applyWatchSearch();
-  if(e.key==='Escape') clearWatchSearch();
+  if (e.key === 'Enter') applyWatchSearch();
+  if (e.key === 'Escape') clearWatchSearch();
 });
 document.getElementById('watchSearch').addEventListener('keyup', e => {
-  if(e.key==='Enter') applyWatchSearch(); // iOS fallback
+  if (e.key === 'Enter') applyWatchSearch();
 });
 document.getElementById('watchSearch').addEventListener('input', e => {
   document.getElementById('watchSearchClear').style.display = e.target.value ? '' : 'none';
 });
 
-// Filter
+// ── Filter ────────────────────────────────────────────────────
 const PRICE_SLIDER_MAX = 200000;
 function _updatePriceFill() {
   const fill = document.getElementById('priceSliderFill');
@@ -695,27 +526,23 @@ function _updatePriceFill() {
   const pMax = maxPrice > 0 ? Math.min(maxPrice, PRICE_SLIDER_MAX) / PRICE_SLIDER_MAX * 100 : 100;
   fill.style.left = pMin + '%';
   fill.style.width = Math.max(pMax - pMin, 0) + '%';
-  // サムが重なったとき min 側を前面に出してドラッグ可能にする
   const minEl = document.getElementById('minPriceSlider');
   const maxEl = document.getElementById('maxPriceSlider');
   if (minEl && maxEl) {
-    const minVal = parseInt(minEl.value);
-    const maxVal = parseInt(maxEl.value);
-    minEl.style.zIndex = minVal >= maxVal - 5000 ? '5' : '';
+    minEl.style.zIndex = parseInt(minEl.value) >= parseInt(maxEl.value) - 5000 ? '5' : '';
   }
 }
 function onMinSlider(val) {
-  const maxSliderVal = parseInt(document.getElementById('maxPriceSlider').value);
-  minPrice = Math.min(parseInt(val) || 0, maxSliderVal - 5000);
-  minPrice = Math.max(minPrice, 0);
+  const maxV = parseInt(document.getElementById('maxPriceSlider').value);
+  minPrice = Math.max(Math.min(parseInt(val) || 0, maxV - 5000), 0);
   document.getElementById('minPriceSlider').value = minPrice;
   document.getElementById('minPriceInput').value = minPrice > 0 ? minPrice : '';
   _updatePriceFill(); renderItems();
 }
 function onMaxSlider(val) {
   const v = parseInt(val) || PRICE_SLIDER_MAX;
-  const minSliderVal = parseInt(document.getElementById('minPriceSlider').value);
-  const clamped = Math.max(v, minSliderVal + 5000);
+  const minV = parseInt(document.getElementById('minPriceSlider').value);
+  const clamped = Math.max(v, minV + 5000);
   maxPrice = clamped >= PRICE_SLIDER_MAX ? 0 : clamped;
   document.getElementById('maxPriceSlider').value = maxPrice > 0 ? maxPrice : PRICE_SLIDER_MAX;
   document.getElementById('maxPriceInput').value = maxPrice > 0 ? maxPrice : '';
@@ -743,8 +570,7 @@ function setFilter(f, btn) {
   currentFilter = f;
   document.querySelectorAll('#filterChips .chip').forEach(c => c.classList.remove('active'));
   btn.classList.add('active');
-  const favBtn = document.getElementById('favFilterBtn');
-  if (favBtn) favBtn.classList.remove('primary');
+  document.getElementById('favFilterBtn').classList.remove('primary');
   renderItems();
 }
 function toggleFavFilter() {
@@ -761,42 +587,33 @@ function toggleFavFilter() {
   renderItems();
 }
 
+// ── Parsing helpers ───────────────────────────────────────────
 function extractSizes(text) {
   const t = (text||'').replace(/[Ｗｗ幅]/g,'W').replace(/[Ｈｈ高さ]/g,'H').replace(/[Ｄｄ奥行]/g,'D');
   const ps = [/W\s*(\d+)[^\d]+D\s*(\d+)[^\d]+H\s*(\d+)/i,/W(\d+)[\s×x]+D(\d+)[\s×x]+H(\d+)/i,/幅\s*(\d+)[^\d]*奥行[^\d]*(\d+)[^\d]*高さ[^\d]*(\d+)/,/(\d+)\s*[×x]\s*(\d+)\s*[×x]\s*(\d+)/];
   for (const p of ps) { const m=t.match(p); if(m) return {w:+m[1],d:+m[2]||0,h:+m[3]||+m[2]||0}; }
   return null;
 }
-// RSS
 function extractListPrice(text) {
   const m = (text||'').match(/(?:定価|参考価格|参考小売価格|メーカー希望価格|新品定価|希望小売価格|通常価格|新品価格)[：:\s]*([¥￥]?\s*[\d,]+\s*円?)/);
   return m ? m[1].trim() : null;
 }
 function extractPrice(text) {
   const t = text || '';
-  // HTMLタグを除去（Atom CDATAのHTML混入に対応）
   let clean = t.replace(/<[^>]+>/g, ' ');
-  // パターン1: 送料[説明]¥金額 の形式（「送料込み」「送料無料」は除外）
   clean = clean.replace(/送料(?!込|無料|は含|を含)[^\n¥￥\d]{0,25}[¥￥]?\s*[\d,]+\s*円?/gi, '');
-  // パターン2: ¥金額（送料）の形式（金額がラベルより先に来るケース）
   clean = clean.replace(/[¥￥]\s*[\d,]+\s*円?\s*[（(][^）)]{0,20}(?:送料|配送料|運送料)[^）)]{0,10}[）)]/gi, '');
-  // 定価系を除去
   clean = clean.replace(/(?:定価|参考価格|希望小売価格|メーカー希望価格|通常価格|新品定価)[^\n¥￥\d]{0,20}[¥￥]?\s*[\d,]+\s*円?/gi, '');
-  // 販売価格の明示マーカーを優先
   const ex = clean.match(/(?:販売価格|売価|本体価格|商品価格|価格)[：:\s]*([¥￥]\s*[\d,]+|[\d,]+\s*円)/);
   if (ex) return ex[1].replace(/\s/g, '');
   const m = clean.match(/[¥￥]\s*[\d,]+|[\d,]+\s*円/);
   return m ? m[0].replace(/\s/g, '') : null;
 }
 function isSoldOut(text) { return /sold[\s-]?out|在庫切れ|売り切れ|売切れ|完売|ソールドアウト/i.test(text||''); }
-
-// ─────────────────────────────────────────────────────────────────────────────
 function isMatch(t) { return keywords.length > 0 && keywords.some(k=>t.toLowerCase().includes(k.toLowerCase())); }
 function hl(text) {
   let out = text;
-  keywords.forEach(k => {
-    out = out.replace(new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'), m=>`<mark>${m}</mark>`);
-  });
+  keywords.forEach(k => { out = out.replace(new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'), m=>`<mark>${m}</mark>`); });
   return out;
 }
 function parseDate(str) {
@@ -804,10 +621,24 @@ function parseDate(str) {
   const d = new Date(str);
   return isNaN(d) ? str.slice(0,10) : d.toLocaleDateString('ja-JP',{month:'short',day:'numeric'});
 }
+function parseNum(priceStr) {
+  if (!priceStr) return 0;
+  const n = parseInt(String(priceStr).replace(/[^\d]/g, ''), 10);
+  return isNaN(n) ? 0 : n;
+}
+function isTodayItem(ts) {
+  if (!ts) return false;
+  const d = new Date(ts), n = new Date();
+  return d.getFullYear()===n.getFullYear() && d.getMonth()===n.getMonth() && d.getDate()===n.getDate();
+}
+
+// ── Status ────────────────────────────────────────────────────
 function setStatus(s, txt) {
   document.getElementById('dot').className = 'sdot'+(s==='loading'?' loading':s==='err'?' err':'');
   document.getElementById('statusTxt').textContent = txt;
 }
+
+// ── Render items ──────────────────────────────────────────────
 function renderItems(keepLimit = false) {
   if (!keepLimit) renderLimit = 60;
   const mainEl = document.querySelector('.main');
@@ -839,7 +670,7 @@ function renderItems(keepLimit = false) {
   document.getElementById('sShops').textContent = RSS_FEEDS.filter(f=>!f.disabled).length;
 
   const el = document.getElementById('itemsList');
-  if (!items.length) { el.innerHTML='<div class="empty">該当するアイテムがありません<br>キーワードやサイズ条件を調整してみてください</div>'; return; }
+  if (!items.length) { el.innerHTML='<div class="empty">該当するアイテムがありません<br>キーワードやフィルター条件を調整してみてください</div>'; return; }
   el.innerHTML = items.slice(0, renderLimit).map(item => {
     const feed = RSS_FEEDS.find(f=>f.id===item.source);
     const thumb = item.thumbnail
@@ -861,9 +692,7 @@ function renderItems(keepLimit = false) {
           ${item.price?`<span class="item-price">${item.price}</span>`:''}
           ${item.listPrice?`<span style="font-size:10px;color:var(--text3)">定価 ${item.listPrice}</span>`:''}
         </div>
-        <div class="item-meta" style="margin-top:auto;padding-top:4px">
-          <span>${item.date}</span>
-        </div>
+        <div class="item-meta" style="margin-top:auto;padding-top:4px"><span>${item.date}</span></div>
       </div>
     </a>`;
   }).join('');
@@ -876,6 +705,8 @@ function renderItems(keepLimit = false) {
   if (mainEl && sv > 0) mainEl.scrollTop = sv;
 }
 function loadMoreItems() { renderLimit += 60; renderItems(true); }
+
+// ── XML / RSS parsing ─────────────────────────────────────────
 function gbt(el, tag) { return [...el.getElementsByTagNameNS('*', tag)]; }
 function gbt1(el, tag) { return el.getElementsByTagNameNS('*', tag)[0]; }
 function parseXmlFeed(xmlStr, feed) {
@@ -891,24 +722,21 @@ function parseXmlFeed(xmlStr, feed) {
       link = (links.find(l => l.getAttribute('rel') === 'alternate') || links[0])?.getAttribute('href') || feed.site;
       pubDate = gbt1(e, 'published')?.textContent || gbt1(e, 'updated')?.textContent;
       desc = gbt1(e, 'content')?.textContent || gbt1(e, 'summary')?.textContent || '';
-      thumb = gbt1(e, 'thumbnail')?.getAttribute('url')
-           || desc.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1]
-           || null;
+      thumb = gbt1(e, 'thumbnail')?.getAttribute('url') || desc.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || null;
     } else {
       title = gbt1(e, 'title')?.textContent?.trim() || '—';
       link = gbt1(e, 'link')?.textContent?.trim() || feed.site;
       pubDate = gbt1(e, 'pubDate')?.textContent;
       desc = gbt1(e, 'description')?.textContent || '';
-      thumb = gbt1(e, 'thumbnail')?.getAttribute('url')
-           || gbt(e, 'enclosure').find(el => el.getAttribute('type')?.startsWith('image'))?.getAttribute('url')
-           || desc.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1]
-           || null;
+      thumb = gbt1(e, 'thumbnail')?.getAttribute('url') || gbt(e, 'enclosure').find(el => el.getAttribute('type')?.startsWith('image'))?.getAttribute('url') || desc.match(/<img[^>]+src=["']([^"']+)["']/i)?.[1] || null;
     }
     const full = title + ' ' + desc;
     const ts = pubDate ? (new Date(pubDate).getTime() || 0) : 0;
     return { source:feed.id, title, link, date:parseDate(pubDate), ts, thumbnail:thumb, price:extractPrice(full), listPrice:extractListPrice(full), sizes:extractSizes(full), matched:isMatch(full), soldOut:isSoldOut(full), isNew:false };
   }).filter(item => !/様専用|専用決済/.test(item.title));
 }
+
+// ── Fetch helpers ─────────────────────────────────────────────
 function fetchWithTimeout(url, timeoutMs) {
   const ctrl = new AbortController();
   const tid = setTimeout(() => ctrl.abort(), timeoutMs);
@@ -947,18 +775,15 @@ async function fetchViaRss2json(feed) {
     return { source:feed.id, title:item.title||'—', link:item.link||feed.site, date:parseDate(item.pubDate), ts, thumbnail:item.thumbnail||item.enclosure?.link||null, price:extractPrice(full), listPrice:extractListPrice(full), sizes:extractSizes(full), matched:isMatch(full), soldOut:isSoldOut(full), isNew:false };
   }).filter(item => !/様専用|専用決済/.test(item.title));
 }
+
+// ── Shopify ───────────────────────────────────────────────────
 const SHOPIFY_CACHE_TTL = 60 * 60 * 1000;
 const shopifyBgFetching = new Set();
 let _bgRenderTimer = null;
-
 function scheduleBackgroundRender() {
   clearTimeout(_bgRenderTimer);
-  _bgRenderTimer = setTimeout(() => {
-    accumulateItems(allItems);
-    renderItems();
-  }, 800);
+  _bgRenderTimer = setTimeout(() => { accumulateItems(allItems); renderItems(); }, 800);
 }
-
 function processShopifyRawProducts(products, feed) {
   const items = [];
   for (const p of products) {
@@ -973,25 +798,16 @@ function processShopifyRawProducts(products, feed) {
     const link = `https://${feed.shopifyStore}/products/${p.handle}`;
     const pubAt = p.published_at || p.created_at;
     const ts = new Date(pubAt).getTime() || 0;
-    items.push({
-      source: feed.id, title: p.title, link,
-      date: parseDate(pubAt), ts,
-      thumbnail: thumb, price, listPrice,
-      sizes: extractSizes(p.title),
-      matched: isMatch(p.title),
-      soldOut: false, isNew: false,
-    });
+    items.push({ source:feed.id, title:p.title, link, date:parseDate(pubAt), ts, thumbnail:thumb, price, listPrice, sizes:extractSizes(p.title), matched:isMatch(p.title), soldOut:false, isNew:false });
   }
   return items;
 }
-
 async function fetchShopifyPage(feed, page) {
   const url = `https://${feed.shopifyStore}/products.json?limit=250&sort_by=created-descending&page=${page}`;
   const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(url), 15000);
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return (await res.json()).products || [];
 }
-
 async function fetchShopifyProducts(feed) {
   const cacheKey = 'shopify2_' + feed.id;
   let staleItems = null;
@@ -999,43 +815,30 @@ async function fetchShopifyProducts(feed) {
     const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
     if (cached) {
       const items = cached.items.map(item => ({ ...item, matched: isMatch(item.title) }));
-      if (Date.now() - cached.ts < SHOPIFY_CACHE_TTL) return items; // 新鮮なキャッシュ→即返す
-      staleItems = items; // 古いキャッシュ→とりあえず返しつつバックグラウンドで更新
+      if (Date.now() - cached.ts < SHOPIFY_CACHE_TTL) return items;
+      staleItems = items;
     }
   } catch(e) {}
-
-  if (!cfWorkerUrl) {
-    if (staleItems) return staleItems;
-    throw new Error('Worker URL 未設定');
-  }
-
+  if (!cfWorkerUrl) { if (staleItems) return staleItems; throw new Error('Worker URL 未設定'); }
   if (staleItems) {
-    // stale-while-revalidate: 古いデータを即返してバックグラウンドで全件更新
     if (!shopifyBgFetching.has(feed.id)) {
       shopifyBgFetching.add(feed.id);
-      fetchShopifyProductsBackground(feed, [], cacheKey, 1)
-        .finally(() => shopifyBgFetching.delete(feed.id));
+      fetchShopifyProductsBackground(feed, [], cacheKey, 1).finally(() => shopifyBgFetching.delete(feed.id));
     }
     return staleItems;
   }
-
-  // キャッシュなし: page 1 を同期取得してすぐ返す
   const raw1 = await fetchShopifyPage(feed, 1);
   const firstItems = processShopifyRawProducts(raw1, feed);
-
   if (raw1.length < 250) {
     try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items: firstItems })); } catch(e) {}
     return firstItems;
   }
-
   if (!shopifyBgFetching.has(feed.id)) {
     shopifyBgFetching.add(feed.id);
-    fetchShopifyProductsBackground(feed, firstItems, cacheKey, 2)
-      .finally(() => shopifyBgFetching.delete(feed.id));
+    fetchShopifyProductsBackground(feed, firstItems, cacheKey, 2).finally(() => shopifyBgFetching.delete(feed.id));
   }
   return firstItems;
 }
-
 async function fetchShopifyProductsBackground(feed, initialItems, cacheKey, startPage = 2) {
   const bgItems = [...initialItems];
   let page = startPage;
@@ -1045,10 +848,7 @@ async function fetchShopifyProductsBackground(feed, initialItems, cacheKey, star
       bgItems.push(...processShopifyRawProducts(raw, feed));
       if (raw.length < 250) break;
       page++;
-    } catch(e) {
-      console.warn('[shopify bg]', feed.name, 'p' + page, e.message);
-      break;
-    }
+    } catch(e) { console.warn('[shopify bg]', feed.name, 'p' + page, e.message); break; }
   }
   if (!bgItems.length) return;
   try { localStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), items: bgItems })); } catch(e) {}
@@ -1057,22 +857,17 @@ async function fetchShopifyProductsBackground(feed, initialItems, cacheKey, star
 }
 async function fetchFeed(feed) {
   if (feed.shopifyStore) {
-    try {
-      return await fetchShopifyProducts(feed);
-    } catch(e) {
-      console.warn('[shopify]', feed.name, '失敗 → RSSフォールバック:', e.message);
-      if (!feed.url) throw e;
-    }
+    try { return await fetchShopifyProducts(feed); }
+    catch(e) { console.warn('[shopify]', feed.name, '失敗 → RSSフォールバック:', e.message); if (!feed.url) throw e; }
   }
   const fns = cfWorkerUrl
     ? [fetchViaCfWorker, fetchViaCorsproxy, fetchViaAllOrigins, fetchViaRss2json]
     : [fetchViaCorsproxy, fetchViaAllOrigins, fetchViaRss2json];
-  for (const fn of fns) {
-    try { return await fn(feed); } catch(e) {}
-  }
+  for (const fn of fns) { try { return await fn(feed); } catch(e) {} }
   throw new Error(feed.name + ': 全プロキシ失敗');
 }
-// ─── 商品履歴 蓄積 ───────────────────────────────────────────
+
+// ── Item history ──────────────────────────────────────────────
 function accumulateItems(items) {
   let changed = false;
   items.forEach(item => {
@@ -1082,183 +877,16 @@ function accumulateItems(items) {
     }
   });
   if (changed) {
-    // 上限 5000件 を超えたら古いものから削除
     const keys = Object.keys(itemHistory);
     if (keys.length > 5000) {
-      keys.sort((a, b) => (itemHistory[a].ts || 0) - (itemHistory[b].ts || 0))
-          .slice(0, keys.length - 5000)
-          .forEach(k => delete itemHistory[k]);
+      keys.sort((a,b) => (itemHistory[a].ts||0)-(itemHistory[b].ts||0)).slice(0, keys.length-5000).forEach(k => delete itemHistory[k]);
     }
     localStorage.setItem('itemHistory', JSON.stringify(itemHistory));
   }
   document.getElementById('sTotalAll').textContent = Object.keys(itemHistory).length;
 }
-// ─────────────────────────────────────────────────────────────
 
-// ═══════════════════════════════════════════════════════════
-//  市場相場エンジン
-// ═══════════════════════════════════════════════════════════
-let marketDB = JSON.parse(localStorage.getItem('marketDB') || '{}');
-
-function parseNum(priceStr) {
-  if (!priceStr) return 0;
-  const n = parseInt(String(priceStr).replace(/[^\d]/g, ''), 10);
-  return isNaN(n) ? 0 : n;
-}
-
-// 取得済みアイテムの価格をキーワード別に蓄積
-function recordPrices(items) {
-  let changed = false;
-  items.forEach(item => {
-    const p = parseNum(item.price);
-    if (!p || p < 1000 || p > 5000000) return;
-    keywords.forEach(kw => {
-      if (!item.title.toLowerCase().includes(kw.toLowerCase())) return;
-      if (!marketDB[kw]) marketDB[kw] = [];
-      if (marketDB[kw].some(d => d.lnk === item.link)) return; // 重複スキップ
-      marketDB[kw].push({ p, ts: Date.now(), src: item.source, lnk: item.link });
-      if (marketDB[kw].length > 400) marketDB[kw] = marketDB[kw].slice(-400);
-      changed = true;
-    });
-  });
-  if (changed) { localStorage.setItem('marketDB', JSON.stringify(marketDB)); renderMarket(); }
-}
-
-// Mercari 検索ページから価格を抽出
-async function fetchMercariPrices(kw) {
-  if (!cfWorkerUrl) return [];
-  try {
-    const url = 'https://jp.mercari.com/search?keyword=' + encodeURIComponent(kw) + '&status=on_sale';
-    const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(url), 14000);
-    if (!res.ok) return [];
-    const html = await res.text();
-    const prices = [];
-    // __NEXT_DATA__ 内の price フィールドを探す
-    const m = html.match(/<script id="__NEXT_DATA__"[^>]*>([\s\S]*?)<\/script>/);
-    if (m) {
-      try {
-        const findPrices = (obj, depth) => {
-          if (!obj || typeof obj !== 'object' || depth > 10) return;
-          if (Array.isArray(obj)) { obj.forEach(x => findPrices(x, depth + 1)); return; }
-          if (obj.price != null && typeof obj.price === 'number' && obj.name) prices.push(obj.price);
-          if (obj.price != null && typeof obj.price === 'string' && obj.name) prices.push(parseNum(obj.price));
-          Object.values(obj).forEach(v => findPrices(v, depth + 1));
-        };
-        findPrices(JSON.parse(m[1]), 0);
-      } catch(e) {}
-    }
-    // フォールバック: HTML 内の ¥価格パターン（重複排除）
-    if (prices.length === 0) {
-      const re = /["']price["']\s*:\s*(\d+)/g;
-      let mm;
-      while ((mm = re.exec(html)) !== null) { const v = +mm[1]; if (v >= 1000) prices.push(v); }
-    }
-    return prices.filter(p => p >= 1000 && p <= 5000000);
-  } catch(e) { return []; }
-}
-
-// Mercari 価格を marketDB へ保存
-async function fetchMarketData() {
-  if (!keywords.length) { document.getElementById('marketStatus').textContent = 'キーワードを先に登録してください'; return; }
-  document.getElementById('marketStatus').textContent = '取得中…';
-  let total = 0;
-  for (const kw of keywords) {
-    const prices = await fetchMercariPrices(kw);
-    if (!prices.length) continue;
-    if (!marketDB[kw]) marketDB[kw] = [];
-    prices.forEach(p => {
-      if (!marketDB[kw].some(d => d.p === p && d.src === 'mercari' && Date.now() - d.ts < 86400000)) {
-        marketDB[kw].push({ p, ts: Date.now(), src: 'mercari' });
-        total++;
-      }
-    });
-    if (marketDB[kw].length > 400) marketDB[kw] = marketDB[kw].slice(-400);
-  }
-  localStorage.setItem('marketDB', JSON.stringify(marketDB));
-  document.getElementById('marketStatus').textContent = `+${total} 件追加（${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}）`;
-  renderMarket();
-  renderItems(); // バッジ更新
-}
-
-function clearMarketDB() {
-  if (!confirm('相場データをリセットしますか？')) return;
-  marketDB = {};
-  localStorage.removeItem('marketDB');
-  document.getElementById('marketStatus').textContent = 'リセット完了';
-  renderMarket(); renderItems();
-}
-
-// 統計計算
-function calcStats(kw) {
-  const data = (marketDB[kw] || []).filter(d => d.p > 0);
-  if (data.length < 3) return null;
-  const prices = data.map(d => d.p).sort((a, b) => a - b);
-  const n = prices.length;
-  const median = prices[Math.floor(n / 2)];
-  const p25 = prices[Math.floor(n * 0.25)];
-  const p75 = prices[Math.floor(n * 0.75)];
-  const srcCount = {};
-  data.forEach(d => { srcCount[d.src] = (srcCount[d.src] || 0) + 1; });
-  return { median, p25, p75, min: prices[0], max: prices[n - 1], count: n, srcCount };
-}
-
-// カードに表示するバッジ HTML
-function marketBadgeHtml(item) {
-  const p = parseNum(item.price);
-  if (!p) return '';
-  for (const kw of keywords) {
-    if (!item.title.toLowerCase().includes(kw.toLowerCase())) continue;
-    const s = calcStats(kw);
-    if (!s) continue;
-    const ratio = p / s.median;
-    const pct = Math.round(Math.abs(ratio - 1) * 100);
-    if (ratio <= 0.85) return `<span class="badge b-market-low">↓ 相場比 -${pct}%</span>`;
-    if (ratio <= 1.15) return `<span class="badge b-market-mid">相場並</span>`;
-    return `<span class="badge b-market-high">↑ 相場超 +${pct}%</span>`;
-  }
-  return '';
-}
-
-// 市場相場ページ描画
-function renderMarket() {
-  const el = document.getElementById('marketGrid');
-  if (!el) return;
-  if (!keywords.length) {
-    el.innerHTML = '<div class="market-no-data">検索リンク集にキーワードを登録すると相場データが蓄積されます</div>';
-    return;
-  }
-  const cards = keywords.map(kw => {
-    const s = calcStats(kw);
-    const data = marketDB[kw] || [];
-    const mercariN = data.filter(d => d.src === 'mercari').length;
-    const storeN = data.filter(d => d.src !== 'mercari').length;
-    if (!s) {
-      return `<div class="market-card">
-        <div class="market-kw">${kw}</div>
-        <div class="market-sub">データ収集中… (${data.length}件)</div>
-        <div class="market-sub" style="margin-top:4px">監視店舗: ${storeN} / Mercari: ${mercariN}</div>
-      </div>`;
-    }
-    const barW = Math.min(100, Math.round(((s.median - s.min) / (s.max - s.min || 1)) * 100));
-    return `<div class="market-card">
-      <div class="market-kw">${kw}</div>
-      <div class="market-median">¥${s.median.toLocaleString()}</div>
-      <div class="market-sub">中央値（n=${s.count}）</div>
-      <div class="market-bar-wrap"><div class="market-bar" style="width:${barW}%"></div></div>
-      <div class="market-badge-row">
-        <span class="badge b-market-low">下限 ¥${s.p25.toLocaleString()}</span>
-        <span class="badge b-market-high">上限 ¥${s.p75.toLocaleString()}</span>
-      </div>
-      <div class="market-sub" style="margin-top:6px">
-        最小 ¥${s.min.toLocaleString()} — 最大 ¥${s.max.toLocaleString()}
-      </div>
-      <div class="market-sub" style="margin-top:2px">監視店舗: ${storeN} / Mercari: ${mercariN}</div>
-    </div>`;
-  });
-  el.innerHTML = cards.join('');
-}
-// ═══════════════════════════════════════════════════════════
-
+// ── Load all feeds ────────────────────────────────────────────
 async function loadAll() {
   setStatus('loading','取得中...');
   const results = await Promise.allSettled(RSS_FEEDS.filter(f=>!f.disabled).map(fetchFeed));
@@ -1270,42 +898,36 @@ async function loadAll() {
   prevLinks = newLinks;
   allItems = combined.sort((a,b)=>b.ts-a.ts);
   document.getElementById('sNew').textContent = nc>0?`+${nc}`:'—';
-  const hint = document.getElementById('errHint');
+  const banner = document.getElementById('errBanner');
   if (errs.length && !combined.length) {
     setStatus('err', '取得失敗');
-    if (hint) { hint.style.display = ''; hint.innerHTML = `${errs.join('・')} の取得に失敗しました。<br><button onclick="goPage('cfworker',document.querySelectorAll('.nav-item')[4])" style="background:none;border:none;color:var(--red);text-decoration:underline;cursor:pointer;font-size:11px;padding:0">→ 詳細設定を確認</button>`; }
+    if (banner) { banner.style.display=''; banner.innerHTML=`${errs.join('・')} の取得に失敗しました。<button onclick="openSettings()" style="background:none;border:none;color:var(--red);text-decoration:underline;cursor:pointer;font-size:12px;padding:0 4px">→ 設定を確認</button>`; }
   } else if (errs.length) {
     setStatus('err', `一部失敗 (${errs.length}店)`);
-    if (hint) { hint.style.display = ''; hint.innerHTML = `${errs.join('・')} を取得できませんでした`; }
+    if (banner) { banner.style.display=''; banner.innerHTML=`${errs.join('・')} を取得できませんでした`; }
   } else {
     setStatus('ok', `更新 ${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`);
-    if (hint) hint.style.display = 'none';
+    if (banner) banner.style.display='none';
   }
   renderItems();
   accumulateItems(allItems);
   sendNewItemNotif(allItems);
   startCd();
 }
-// ─── お気に入り管理 ───────────────────────────────────────────
+
+// ── Favorites ─────────────────────────────────────────────────
 function toggleFavorite(link, e) {
-  e.preventDefault();
-  e.stopPropagation();
+  e.preventDefault(); e.stopPropagation();
   if (favoriteItems[link]) {
     delete favoriteItems[link];
   } else {
     const item = allItems.find(i => i.link === link);
-    if (item) {
-      favoriteItems[link] = {
-        link: item.link, title: item.title, thumbnail: item.thumbnail,
-        source: item.source, price: item.price, date: item.date, ts: item.ts,
-      };
-    }
+    if (item) favoriteItems[link] = { link:item.link, title:item.title, thumbnail:item.thumbnail, source:item.source, price:item.price, date:item.date, ts:item.ts };
   }
   try { localStorage.setItem('favoriteItems', JSON.stringify(favoriteItems)); } catch(_) {}
   updateFavCount();
   renderItems();
-  const favPage = document.getElementById('page-favorites');
-  if (favPage && favPage.style.display !== 'none') renderFavorites();
+  if (document.getElementById('panel-favorites').classList.contains('active')) renderFavorites();
 }
 function updateFavCount() {
   const n = Object.keys(favoriteItems).length;
@@ -1316,19 +938,13 @@ function updateFavCount() {
 }
 function renderFavorites() {
   const el = document.getElementById('favList');
-  const favs = Object.values(favoriteItems).sort((a, b) => b.ts - a.ts);
-  if (!favs.length) {
-    el.innerHTML = '<div class="empty">お気に入りはまだありません<br>商品カードの ★ をタップして保存できます</div>';
-    return;
-  }
-  const shopifyIds = new Set(RSS_FEEDS.filter(f => f.shopifyStore).map(f => f.id));
+  const favs = Object.values(favoriteItems).sort((a,b) => b.ts-a.ts);
+  if (!favs.length) { el.innerHTML='<div class="empty">お気に入りはまだありません<br>商品カードの ★ をタップして保存できます</div>'; return; }
+  const shopifyIds = new Set(RSS_FEEDS.filter(f=>f.shopifyStore).map(f=>f.id));
   el.innerHTML = favs.map(item => {
-    const live = allItems.find(i => i.link === item.link);
-    const feed = RSS_FEEDS.find(f => f.id === item.source);
-    // Shopifyフィードで現在フィードにない = 売り切れの可能性が高い
-    const likelySold = !live && shopifyIds.has(item.source);
-    const confirmedSold = live && live.soldOut;
-    const isSold = likelySold || confirmedSold;
+    const live = allItems.find(i=>i.link===item.link);
+    const feed = RSS_FEEDS.find(f=>f.id===item.source);
+    const isSold = (!live && shopifyIds.has(item.source)) || (live && live.soldOut);
     const currentPrice = live?.price || item.price;
     const thumb = item.thumbnail
       ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
@@ -1342,50 +958,40 @@ function renderFavorites() {
           ${isSold?'<span class="badge b-sold">売り切れ</span>':''}
         </div>
         <div class="item-title">${item.title}</div>
-        <div class="item-meta">
-          ${currentPrice?`<span class="item-price">${currentPrice}</span>`:''}
-        </div>
-        <div class="item-meta" style="margin-top:auto;padding-top:4px">
-          <span>${item.date}</span>
-        </div>
+        <div class="item-meta">${currentPrice?`<span class="item-price">${currentPrice}</span>`:''}</div>
+        <div class="item-meta" style="margin-top:auto;padding-top:4px"><span>${item.date}</span></div>
       </div>
     </a>`;
   }).join('');
 }
 
-// ─── ブラウザ通知 ─────────────────────────────────────────────
+// ── Notifications ─────────────────────────────────────────────
 function updateNotifBtn() {
   const btn = document.getElementById('notifBtn');
   if (!btn) return;
   const perm = Notification.permission;
-  btn.className = 'notif-btn' + (perm === 'granted' ? ' on' : perm === 'denied' ? ' denied' : '');
-  btn.title = perm === 'granted' ? '通知オン（クリックでオフ）' : perm === 'denied' ? '通知がブロックされています' : '通知をオンにする';
+  btn.className = 'notif-btn' + (perm==='granted'?' on':perm==='denied'?' denied':'');
+  btn.title = perm==='granted'?'通知オン（クリックでオフ）':perm==='denied'?'通知がブロックされています':'通知をオンにする';
 }
 async function toggleNotif() {
-  if (Notification.permission === 'denied') return;
-  if (Notification.permission === 'granted') {
-    // 現状はAPIで通知を完全オフにはできないため、状態を維持
-    alert('通知を止めるにはブラウザの設定から変更してください。');
-    return;
-  }
+  if (Notification.permission==='denied') return;
+  if (Notification.permission==='granted') { alert('通知を止めるにはブラウザの設定から変更してください。'); return; }
   await Notification.requestPermission();
   updateNotifBtn();
 }
 function sendNewItemNotif(items) {
-  if (Notification.permission !== 'granted') return;
-  const newMatched = items.filter(i => i.isNew && i.matched);
+  if (Notification.permission!=='granted') return;
+  const newMatched = items.filter(i=>i.isNew&&i.matched);
   if (!newMatched.length) return;
-  if (newMatched.length === 1) {
+  if (newMatched.length===1) {
     const item = newMatched[0];
-    new Notification(`🛋 新着: ${item.title}`, { body: item.price || '', icon: '/favicon.ico' });
+    new Notification(`🛋 新着: ${item.title}`, { body:item.price||'', icon:'/favicon.ico' });
   } else {
-    new Notification(`🛋 キーワード一致 ${newMatched.length}件の新着`, {
-      body: newMatched.slice(0, 3).map(i => i.title).join('\n'),
-      icon: '/favicon.ico',
-    });
+    new Notification(`🛋 キーワード一致 ${newMatched.length}件の新着`, { body:newMatched.slice(0,3).map(i=>i.title).join('\n'), icon:'/favicon.ico' });
   }
 }
 
+// ── Countdown ─────────────────────────────────────────────────
 function startCd() {
   if (countRef) clearInterval(countRef);
   countdown = intervalSec;
@@ -1397,196 +1003,116 @@ function startCd() {
   }, 1000);
 }
 function manualRefresh() {
-  RSS_FEEDS.filter(f => f.shopifyStore).forEach(f => { localStorage.removeItem('shopify_' + f.id); localStorage.removeItem('shopify2_' + f.id); });
-  if(countRef) clearInterval(countRef);
+  RSS_FEEDS.filter(f=>f.shopifyStore).forEach(f => { localStorage.removeItem('shopify_'+f.id); localStorage.removeItem('shopify2_'+f.id); });
+  if (countRef) clearInterval(countRef);
   loadAll();
 }
 function updateInterval() { intervalSec=parseInt(document.getElementById('intervalSel').value); if(countRef)clearInterval(countRef); startCd(); }
 
-// Search
-function saveShopOrder() { localStorage.setItem('shopOrder', JSON.stringify(shopOrder)); }
-function moveShop(si, dir) {
-  const j = si + dir;
-  if (j < 0 || j >= shopOrder.length) return;
-  [shopOrder[si], shopOrder[j]] = [shopOrder[j], shopOrder[si]];
-  saveShopOrder(); renderSearch();
-}
+// ── Search links ──────────────────────────────────────────────
 function renderSearch() {
   const el = document.getElementById('searchShops');
-  if (!keywords.length) { el.innerHTML='<div class="empty">キーワードを追加してください</div>'; return; }
+  if (!keywords.length) { el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--text3);font-size:13px">キーワードを追加してください</div>'; return; }
   el.innerHTML = keywords.map(kw => `
     <div style="margin-bottom:16px">
       <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px">${kw}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px" id="links-${CSS.escape(kw)}">
+      <div style="display:flex;flex-wrap:wrap;gap:6px">
         ${SEARCH_SHOPS.map(s=>`
-          <a class="search-link" href="${s.url(kw)}" target="_blank" rel="noopener" data-kw="${kw}" data-shop="${s.name}">
-            ${s.icon} ${s.name}${s.noCount ? '' : `<span class="hit-count" id="hit-${CSS.escape(s.name+kw)}" style="margin-left:4px;font-size:10px;opacity:.7"></span>`}
+          <a class="search-link" href="${s.url(kw)}" target="_blank" rel="noopener">
+            ${s.icon} ${s.name}${s.noCount?'':`<span class="hit-count" id="hit-${CSS.escape(s.name+kw)}"></span>`}
           </a>`).join('')}
       </div>
     </div>`).join('<div class="divider"></div>');
   if (cfWorkerUrl) fetchHitCounts();
 }
 
-// ヒット数 汎用パーサー（サイト構造に依存しない多段マッチ）
+// ── Hit counts ────────────────────────────────────────────────
 function extractHitCount(html) {
-  // ── Step 1: 複数マッチ → 最小値を採用するパターン ──────────────────────────
-  // ヤフオクのように「すべての商品 808,506件」と「すべて 33,162件（タブ）」が
-  // 両方ページ内に存在する場合、絞り込み後のカウントが常に小さいため最小値が正解。
-  // 全パターンの全マッチを集約して最小値を返す。
   const multiNums = [];
-  const multiPats = [
-    /([\d,]+)\s*(?:件|点)\s*中/g,                           // XX件中（ページネーション）
-    /すべて[^０-９\d\n\r]{0,60}([\d,]+)\s*(?:件|点)/g,     // すべて XX件（ヤフオクタブ等）
-  ];
-  for (const re of multiPats) {
-    let m;
-    while ((m = re.exec(html)) !== null) {
-      const n = +m[1].replace(/,/g, '');
-      if (n > 0 && n < 9999999) multiNums.push(n);
-    }
-  }
-  if (multiNums.length > 0) return Math.min(...multiNums).toLocaleString() + '件';
-
-  // ── Step 2: 単一マッチで十分な高精度パターン ───────────────────────────────
-  const singlePats = [
-    /([\d,]+)\s*(?:件|点)\s*が見つかり/,
-    /検索結果[^\d\n]{0,20}([\d,]+)\s*(?:件|点)/,
-    /([\d,]+)\s*(?:件|点)\s*の投稿/,
-    /([\d,]+)\s*(?:件|点)\s*の商品/,
-    /全\s*([\d,]+)\s*(?:件|点)/,
-    /<title[^>]*>[^<]*?([\d,]{4,})\s*(?:件|点)[^<]*<\/title>/i,
-  ];
-  for (const re of singlePats) {
-    const m = html.match(re);
-    if (m) {
-      const n = +m[1].replace(/,/g, '');
-      if (n > 0 && n < 9999999) return n.toLocaleString() + '件';
-    }
-  }
-
+  const multiPats = [/([\d,]+)\s*(?:件|点)\s*中/g, /すべて[^０-９\d\n\r]{0,60}([\d,]+)\s*(?:件|点)/g];
+  for (const re of multiPats) { let m; while((m=re.exec(html))!==null){const n=+m[1].replace(/,/g,'');if(n>0&&n<9999999)multiNums.push(n);} }
+  if (multiNums.length>0) return Math.min(...multiNums).toLocaleString()+'件';
+  const singlePats = [/([\d,]+)\s*(?:件|点)\s*が見つかり/,/検索結果[^\d\n]{0,20}([\d,]+)\s*(?:件|点)/,/([\d,]+)\s*(?:件|点)\s*の投稿/,/([\d,]+)\s*(?:件|点)\s*の商品/,/全\s*([\d,]+)\s*(?:件|点)/,/<title[^>]*>[^<]*?([\d,]{4,})\s*(?:件|点)[^<]*<\/title>/i];
+  for (const re of singlePats) { const m=html.match(re); if(m){const n=+m[1].replace(/,/g,'');if(n>0&&n<9999999)return n.toLocaleString()+'件';} }
   const candidates = [];
-
-  // 1) Next.js __NEXT_DATA__ の深い JSON 探索（セカスト等 Next.js SSR ページ対応）
   const nextDataM = html.match(/<script[^>]+id=["']__NEXT_DATA__["'][^>]*>([\s\S]*?)<\/script>/i);
   if (nextDataM) {
     try {
-      // 検索件数専用フィールド（カタログ総数より優先）: 最初に見つかれば即返却
-      const isSearchKey = k => /^(?:searchCount|searchHitCount|resultCount|hitCount|hitNum|numHits|num_hits|total_hits|totalResultCount|searchResultCount|numResult|searchTotal|searchHitTotal)$/i.test(k);
-      // 汎用フィールド（カタログ総数の可能性あり）: candidates に追加してフォールバック
-      const isGeneralKey = k => /^(?:numItems|totalCount|total_count|numOfItems|totalNum|itemCount|allCount|total|count)$/i.test(k);
+      const isSearchKey = k=>/^(?:searchCount|searchHitCount|resultCount|hitCount|hitNum|numHits|num_hits|total_hits|totalResultCount|searchResultCount|numResult|searchTotal|searchHitTotal)$/i.test(k);
+      const isGeneralKey = k=>/^(?:numItems|totalCount|total_count|numOfItems|totalNum|itemCount|allCount|total|count)$/i.test(k);
       let searchBest = null;
-      const scanForCount = (obj, depth) => {
-        if (depth > 14 || !obj || typeof obj !== 'object') return;
-        for (const [k, v] of Object.entries(obj)) {
-          if (typeof v === 'number' && v > 0 && v < 9999999) {
-            if (isSearchKey(k) && searchBest === null) searchBest = v;
-            else if (isGeneralKey(k)) candidates.push(v);
-          }
-          if (v && typeof v === 'object') scanForCount(v, depth + 1);
+      const scanForCount = (obj,depth) => {
+        if (depth>14||!obj||typeof obj!=='object') return;
+        for (const [k,v] of Object.entries(obj)) {
+          if (typeof v==='number'&&v>0&&v<9999999){if(isSearchKey(k)&&searchBest===null)searchBest=v;else if(isGeneralKey(k))candidates.push(v);}
+          if (v&&typeof v==='object') scanForCount(v,depth+1);
         }
       };
-      scanForCount(JSON.parse(nextDataM[1]), 0);
-      // 検索専用フィールドが見つかれば MAX を使わず即返却
-      if (searchBest !== null) return searchBest.toLocaleString() + '件';
+      scanForCount(JSON.parse(nextDataM[1]),0);
+      if (searchBest!==null) return searchBest.toLocaleString()+'件';
     } catch(e) {}
   }
-
-  // 2a) 検索ヒット数専用の埋め込み JSON フィールド（見つかれば即返却）
   const searchRe = /"(?:searchCount|searchHitCount|resultCount|hitCount|hitNum|numHits|num_hits|totalResultCount|searchResultCount|numResult|searchHitTotal|searchFoundCount)"\s*:\s*(\d+)/g;
   let m;
-  while ((m = searchRe.exec(html)) !== null) {
-    const n = +m[1];
-    if (n > 0 && n < 9999999) return n.toLocaleString() + '件';
-  }
-
-  // 2b) 汎用フィールド（SPA/SSR フォールバック、MAX に参加）
+  while((m=searchRe.exec(html))!==null){const n=+m[1];if(n>0&&n<9999999)return n.toLocaleString()+'件';}
   const jsonRe = /"(?:numItems|totalCount|total_count|numOfItems|totalNum|total|count|num_hits|total_hits|itemCount|productCount|totalItems|totalProducts|totalHits|found|matches|hits|allCount)"\s*:\s*(\d+)/g;
-  while ((m = jsonRe.exec(html)) !== null) {
-    const n = +m[1];
-    if (n > 0 && n < 9999999) candidates.push(n);
-  }
-
-  // 3) 日本語テキスト「○○件」「○○点」（セカスト等は「点」表記を使用）
+  while((m=jsonRe.exec(html))!==null){const n=+m[1];if(n>0&&n<9999999)candidates.push(n);}
   const jpRe = /(\d[\d,]*)\s*(?:件|点)/g;
-  while ((m = jpRe.exec(html)) !== null) {
-    const n = +m[1].replace(/,/g, '');
-    if (n > 0 && n < 9999999) candidates.push(n);
-  }
-
+  while((m=jpRe.exec(html))!==null){const n=+m[1].replace(/,/g,'');if(n>0&&n<9999999)candidates.push(n);}
   if (!candidates.length) return null;
-  // 最大値を採用（ページ内に複数パターンある場合、検索総件数が最大になることが多い）
-  return Math.max(...candidates).toLocaleString() + '件';
+  return Math.max(...candidates).toLocaleString()+'件';
 }
-
-const hitCache = {}; // "shopName+kw" → count string
-
+const hitCache = {};
 async function fetchHitCounts() {
   for (const kw of keywords) {
     for (const shop of SEARCH_SHOPS) {
-      if (shop.noCount) continue; // 件数取得対象外
+      if (shop.noCount) continue;
       const cacheKey = shop.name + kw;
-      if (hitCache[cacheKey] !== undefined) {
-        setHitCount(shop.name, kw, hitCache[cacheKey]);
-        continue;
-      }
-      // 非同期で取得（UI をブロックしない）
+      if (hitCache[cacheKey] !== undefined) { setHitCount(shop.name, kw, hitCache[cacheKey]); continue; }
       fetchOneHit(shop, kw, cacheKey);
     }
   }
 }
-
 async function fetchOneHit(shop, kw, cacheKey) {
-  // hitUrl があればカウント専用 URL を使用（nav URL とは別）
-  const countUrl = shop.hitUrl ? shop.hitUrl(kw) : shop.url(kw);
   try {
-    const res = await fetchWithTimeout(cfWorkerUrl + '?url=' + encodeURIComponent(countUrl), 15000);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const html = await res.text();
-    const display = extractHitCount(html);
-    hitCache[cacheKey] = display || '—';
-    setHitCount(shop.name, kw, display || '—');
-  } catch(e) {
-    console.warn('[hitCount err]', shop.name, kw, e.message);
-    hitCache[cacheKey] = '—';
-    setHitCount(shop.name, kw, '—');
-  }
+    const res = await fetchWithTimeout(cfWorkerUrl+'?url='+encodeURIComponent(shop.url(kw)), 15000);
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    const display = extractHitCount(await res.text());
+    hitCache[cacheKey] = display||'—'; setHitCount(shop.name, kw, display||'—');
+  } catch(e) { hitCache[cacheKey]='—'; setHitCount(shop.name, kw, '—'); }
 }
-
 function setHitCount(shopName, kw, text) {
-  const el = document.getElementById('hit-' + CSS.escape(shopName + kw));
-  if (el) el.textContent = text ? `(${text})` : '';
+  const el = document.getElementById('hit-'+CSS.escape(shopName+kw));
+  if (el) el.textContent = text?`(${text})`:'';
 }
 
+// ── Settings ──────────────────────────────────────────────────
 function saveCfWorker() {
   cfWorkerUrl = document.getElementById('cfWorkerUrl').value.trim().replace(/\/$/, '');
   localStorage.setItem('cfWorkerUrl', cfWorkerUrl);
-  alert('保存しました');
+  const r = document.getElementById('cfWorkerResult');
+  r.style.display=''; r.className='test-result test-ok'; r.textContent='✓ 保存しました';
 }
 async function testCfWorker() {
   const url = document.getElementById('cfWorkerUrl').value.trim().replace(/\/$/, '');
   const r = document.getElementById('cfWorkerResult');
   if (!url) { r.style.display=''; r.className='test-result test-err'; r.textContent='Worker URLを入力してください'; return; }
+  r.style.display=''; r.className='test-result'; r.textContent='テスト中...';
   try {
-    const res = await fetchWithTimeout(url + '?url=' + encodeURIComponent(RSS_FEEDS[0].url), 10000);
-    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const res = await fetchWithTimeout(url+'?url='+encodeURIComponent(RSS_FEEDS[0].url), 10000);
+    if (!res.ok) throw new Error('HTTP '+res.status);
     const text = await res.text();
-    if (text.trim().length < 30) throw new Error('empty response');
-    r.style.display=''; r.className='test-result test-ok'; r.textContent='✓ 接続成功！RSS取得を確認しました';
+    if (text.trim().length<30) throw new Error('empty response');
+    r.className='test-result test-ok'; r.textContent='✓ 接続成功！RSS取得を確認しました';
   } catch(e) {
-    r.style.display=''; r.className='test-result test-err'; r.textContent='接続失敗: ' + e.message;
+    r.className='test-result test-err'; r.textContent='接続失敗: '+e.message;
   }
 }
-// ─── 本日入荷判定 ──────────────────────────────────────────────────────────
-function isTodayItem(ts) {
-  if (!ts) return false;
-  const d = new Date(ts), n = new Date();
-  return d.getFullYear() === n.getFullYear() && d.getMonth() === n.getMonth() && d.getDate() === n.getDate();
-}
 
-// Init
+// ── Init ──────────────────────────────────────────────────────
 function init() {
-  document.getElementById('cfWorkerUrl').value=cfWorkerUrl;
-  renderTags(); loadAll();
+  renderTags();
+  loadAll();
   _updatePriceFill();
   document.getElementById('sTotalAll').textContent = Object.keys(itemHistory).length;
   updateFavCount();
