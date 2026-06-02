@@ -112,6 +112,10 @@ textarea { resize: vertical; min-height: 80px; }
 .profile-card-del:hover { color: var(--red); }
 .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
+.usage-bar-wrap { background: var(--bg3); border-radius: 99px; height: 4px; margin-top: 8px; overflow: hidden; }
+.usage-bar { height: 100%; border-radius: 99px; background: var(--green); transition: width .4s, background .4s; }
+.usage-bar.warn { background: #fb923c; }
+.usage-bar.limit { background: var(--red); }
 </style>
 </head>
 <body>
@@ -147,6 +151,14 @@ textarea { resize: vertical; min-height: 80px; }
       取得先: console.groq.com → API Keys → Create API Key（クレカ不要・1日14,400リクエスト無料）
     </div>
     <div id="keyStatus" class="status"></div>
+    <div id="usageWrap" style="margin-top:12px;display:none">
+      <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--text3);margin-bottom:4px">
+        <span>本日の使用量（Groq 無料枠）</span>
+        <span id="usageText">0 / 14,400</span>
+      </div>
+      <div class="usage-bar-wrap"><div class="usage-bar" id="usageBar" style="width:0%"></div></div>
+      <div id="usageReset" style="font-size:10px;color:var(--text3);margin-top:5px;text-align:right"></div>
+    </div>
   </div>
 
   <div class="section">
@@ -326,17 +338,66 @@ const SAMPLES = [
   { title:'人妻の危険な誘惑 〜夫の目を盗んで不倫を重ねた三十路の告白〜', actress:['宮下玲奈（34歳）','北川礼子（31歳）'], director:'伊藤D', maker:'マドンナ', label:'Madonna', time:'240分（4作品収録）', date:'2025-03-10', price:'¥3,278', genres:['人妻','不倫','熟女','巨乳','中出し'], rank:4.4, review_count:634 },
 ];
 
+const DAILY_LIMIT = 14400;
+
 let currentProduct = null;
 let groqKey = localStorage.getItem('poc_groq_key') || '';
 let genStart = 0;
 let reviewerProfiles = JSON.parse(localStorage.getItem('reviewerProfiles') || '{}');
 let activeProfile = null;
 
+function todayKey() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function getUsageCount() {
+  const s = JSON.parse(localStorage.getItem('groq_daily_usage') || '{}');
+  return s.date === todayKey() ? (s.count || 0) : 0;
+}
+function incrementUsage() {
+  const key = todayKey();
+  const s = JSON.parse(localStorage.getItem('groq_daily_usage') || '{}');
+  const count = (s.date === key ? s.count || 0 : 0) + 1;
+  localStorage.setItem('groq_daily_usage', JSON.stringify({ date: key, count }));
+  updateUsageDisplay();
+}
+function updateUsageDisplay() {
+  const count = getUsageCount();
+  const remaining = Math.max(DAILY_LIMIT - count, 0);
+  const pct = Math.min(count / DAILY_LIMIT * 100, 100);
+
+  document.getElementById('usageWrap').style.display = 'block';
+  document.getElementById('usageText').textContent = `${count.toLocaleString()} / ${DAILY_LIMIT.toLocaleString()}`;
+
+  const bar = document.getElementById('usageBar');
+  bar.style.width = pct + '%';
+  bar.className = 'usage-bar' + (pct >= 100 ? ' limit' : pct >= 80 ? ' warn' : '');
+
+  const now = new Date();
+  const tomorrow = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+  const mins = Math.round((tomorrow - now) / 60000);
+  const h = Math.floor(mins / 60), m = mins % 60;
+  const resetStr = `${h}時間${m}分後にリセット`;
+
+  const resetEl = document.getElementById('usageReset');
+  if (remaining === 0) {
+    resetEl.textContent = `上限到達 — ${resetStr}`;
+    resetEl.style.color = 'var(--red)';
+    const btn = document.getElementById('genBtn');
+    btn.disabled = true;
+    btn.innerHTML = '⛔ 本日の上限到達';
+  } else {
+    resetEl.textContent = `残り ${remaining.toLocaleString()} 回 / ${resetStr}`;
+    resetEl.style.color = pct >= 80 ? '#fb923c' : 'var(--text3)';
+  }
+}
+
 function saveKey() {
   groqKey = document.getElementById('groqKey').value.trim();
   if (!groqKey) { showStatus('keyStatus', 'error', 'APIキーを入力してください'); return; }
   localStorage.setItem('poc_groq_key', groqKey);
   showStatus('keyStatus', 'ok', 'APIキーを保存しました');
+  updateUsageDisplay();
 }
 
 function loadSample(idx) {
@@ -388,6 +449,10 @@ function buildPrompt(product) {
 async function generateReview() {
   if (!currentProduct) { showStatus('genStatus', 'error', 'サンプルデータを選択してください'); return; }
   if (!groqKey) { showStatus('genStatus', 'error', 'Groq APIキーを入力・保存してください'); return; }
+  if (getUsageCount() >= DAILY_LIMIT) {
+    showStatus('genStatus', 'error', '本日の無料枠上限（14,400回）に達しました。明日リセットされます。');
+    return;
+  }
 
   const btn = document.getElementById('genBtn');
   btn.disabled = true;
@@ -431,6 +496,7 @@ async function generateReview() {
     document.getElementById('mChars').textContent = text.length.toLocaleString();
     document.getElementById('mTime').textContent = elapsed + 's';
     document.getElementById('mTokens').textContent = (data.usage?.total_tokens || '—');
+    incrementUsage();
     showStatus('genStatus', 'ok', `生成完了 — ${elapsed}秒 / ${text.length}字`);
 
   } catch(e) {
@@ -438,8 +504,10 @@ async function generateReview() {
     output.textContent = '❌ エラー詳細:\n' + e.message + '\n\n【よくある原因】\n・APIキーが間違っている（gsk_ で始まる文字列か確認）\n・レート制限（少し待ってから再試行）';
     showStatus('genStatus', 'error', e.message);
   } finally {
-    btn.disabled = false;
-    btn.innerHTML = '✦ レビューを生成';
+    if (getUsageCount() < DAILY_LIMIT) {
+      btn.disabled = false;
+      btn.innerHTML = '✦ レビューを生成';
+    }
   }
 }
 
@@ -583,6 +651,7 @@ function switchTab(id, btn) {
   if (savedWorker) document.getElementById('workerUrl').value = savedWorker;
   renderProfiles();
   loadSample(0);
+  if (groqKey) updateUsageDisplay();
 })();
 </script>
 </body>
