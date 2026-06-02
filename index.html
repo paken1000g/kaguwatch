@@ -145,15 +145,23 @@ mark { background: rgba(42,92,63,.15); color: var(--accent); border-radius: 3px;
 .empty { text-align: center; padding: 4rem 2rem; color: var(--text3); font-size: 13px; line-height: 2.4; }
 .divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
-/* ── Search shops (modal内) ──────────────── */
-.search-link {
-  display: flex; align-items: center; gap: 8px; padding: 10px 14px;
-  background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg);
-  font-size: 13px; color: var(--text2); text-decoration: none;
-  transition: all .15s; box-shadow: var(--shadow-sm);
+/* ── Search panel ────────────────────────── */
+.search-kw-section { margin-bottom: 28px; }
+.search-kw-header {
+  font-size: 17px; font-weight: 500; color: var(--text); letter-spacing: -.02em;
+  padding-bottom: 10px; margin-bottom: 12px; border-bottom: 2px solid var(--accent-lt);
 }
-.search-link:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); box-shadow: var(--shadow); transform: translateY(-1px); }
-.hit-count { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-left: auto; }
+.search-link-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.search-link-card {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 5px; padding: 16px 8px; background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); text-decoration: none; color: var(--text2);
+  transition: all .15s; box-shadow: var(--shadow-sm); text-align: center; min-height: 80px;
+}
+.search-link-card:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); box-shadow: var(--shadow); transform: translateY(-2px); }
+.search-link-icon { font-size: 22px; line-height: 1; }
+.search-link-name { font-size: 11px; font-weight: 400; line-height: 1.3; color: inherit; }
+.search-link-count { font-family: var(--mono); font-size: 10px; color: var(--text3); }
 
 /* ── Watch top bar ───────────────────────── */
 .watch-topbar { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; margin-bottom: 16px; }
@@ -194,24 +202,23 @@ mark { background: rgba(42,92,63,.15); color: var(--accent); border-radius: 3px;
 
 /* ── Modal ───────────────────────────────── */
 .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); backdrop-filter: blur(2px); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
-.modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 24px; width: 100%; max-width: 480px; box-shadow: var(--shadow); max-height: 85vh; overflow-y: auto; }
-.modal-wide { max-width: 600px; }
-.modal-title { font-size: 15px; font-weight: 500; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; }
-.modal-close { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 18px; padding: 0; }
+.modal { background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 32px; width: 100%; max-width: 640px; box-shadow: var(--shadow); max-height: 90vh; overflow-y: auto; }
+.modal-title { font-size: 18px; font-weight: 500; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; }
+.modal-close { background: none; border: none; color: var(--text3); cursor: pointer; font-size: 20px; padding: 0; }
 
 /* ── Settings ────────────────────────────── */
-.settings-section { margin-bottom: 18px; }
+.settings-section { margin-bottom: 24px; }
 .settings-section:last-child { margin-bottom: 0; }
-.settings-title { font-size: 12px; font-weight: 500; color: var(--text3); letter-spacing: .06em; text-transform: uppercase; font-family: var(--mono); margin-bottom: 12px; }
-.settings-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-.settings-row label { font-size: 12px; color: var(--text2); width: 80px; flex-shrink: 0; font-weight: 400; }
+.settings-title { font-size: 13px; font-weight: 500; color: var(--text); margin-bottom: 14px; }
+.settings-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+.settings-row label { font-size: 13px; color: var(--text2); width: 100px; flex-shrink: 0; font-weight: 400; }
 .settings-row input, .settings-row select { flex: 1; }
 .settings-row:last-child { margin-bottom: 0; }
-.guide-box { background: var(--accent-lt); border: 1px solid rgba(42,92,63,.18); border-radius: var(--radius-lg); padding: 14px 16px; margin-bottom: 14px; }
-.guide-title { font-size: 12px; font-weight: 500; color: var(--accent); margin-bottom: 6px; }
-.guide-body { font-size: 12px; color: var(--text2); line-height: 1.9; font-weight: 300; }
+.guide-box { background: var(--accent-lt); border: 1px solid rgba(42,92,63,.18); border-radius: var(--radius-lg); padding: 16px 18px; margin-bottom: 16px; }
+.guide-title { font-size: 13px; font-weight: 500; color: var(--accent); margin-bottom: 8px; }
+.guide-body { font-size: 13px; color: var(--text2); line-height: 2; font-weight: 300; }
 .guide-body b { font-weight: 500; color: var(--text); }
-.test-result { font-size: 12px; padding: 8px 12px; border-radius: var(--radius); margin-top: 10px; }
+.test-result { font-size: 13px; padding: 10px 14px; border-radius: var(--radius); margin-top: 12px; }
 .test-ok { background: var(--accent-lt); color: var(--accent); }
 .test-err { background: var(--red-lt); color: var(--red); }
 
@@ -242,23 +249,13 @@ mark { background: rgba(42,92,63,.15); color: var(--accent); border-radius: 3px;
   .items-list { grid-template-columns: repeat(2, 1fr); }
   .watch-topbar { grid-template-columns: 1fr; }
   .fav-btn { opacity: 1 !important; }
+  .modal { padding: 20px; }
+  .search-link-grid { grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); }
 }
 </style>
 </head>
 <body>
 
-<!-- 外部検索モーダル -->
-<div id="searchModalOverlay" class="modal-overlay" onclick="if(event.target===this)closeSearchModal()" style="display:none">
-  <div class="modal modal-wide">
-    <div class="modal-title">外部検索<button class="modal-close" onclick="closeSearchModal()">×</button></div>
-    <div class="row">
-      <input type="text" id="kwIn" placeholder="キーワードを追加　例：USMハラー、カリモク">
-      <button class="btn primary" onclick="addKw()">＋ 追加</button>
-    </div>
-    <div class="tag-list" id="tagList"></div>
-    <div id="searchShops"></div>
-  </div>
-</div>
 
 <!-- 設定モーダル -->
 <div id="settingsModalOverlay" class="modal-overlay" onclick="if(event.target===this)closeSettings()" style="display:none">
@@ -310,8 +307,7 @@ mark { background: rgba(42,92,63,.15); color: var(--accent); border-radius: 3px;
         <span id="statusTxt">接続中...</span>
         <span class="ct" id="ctDown">5:00</span>
       </div>
-      <button id="notifBtn" class="notif-btn" onclick="toggleNotif()" title="新着通知">🔔</button>
-      <button class="icon-btn" onclick="openSearchModal()" title="外部検索">🔗</button>
+      <button id="notifBtn" class="notif-btn" onclick="toggleNotif()" title="新着通知 — キーワード一致商品が出たときにデスクトップ通知">🔔</button>
       <button class="icon-btn" onclick="openSettings()" title="設定">⚙</button>
     </div>
   </header>
@@ -325,6 +321,7 @@ mark { background: rgba(42,92,63,.15); color: var(--accent); border-radius: 3px;
     <button class="main-tab" id="tab-favorites" onclick="switchMainTab('favorites',this)">
       お気に入り<span class="tab-badge" id="favCount" style="display:none">0</span>
     </button>
+    <button class="main-tab" id="tab-search" onclick="switchMainTab('search',this)">外部検索</button>
   </div>
 
   <main class="main">
@@ -404,6 +401,18 @@ mark { background: rgba(42,92,63,.15); color: var(--accent); border-radius: 3px;
       </div>
     </div>
 
+    <!-- 外部検索パネル -->
+    <div id="panel-search" class="main-panel">
+      <div class="content">
+        <div class="row">
+          <input type="text" id="kwIn" placeholder="キーワードを追加　例：USMハラー、カリモク">
+          <button class="btn primary" onclick="addKw()">＋ 追加</button>
+        </div>
+        <div class="tag-list" id="tagList"></div>
+        <div id="searchShops"></div>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -449,14 +458,7 @@ function switchMainTab(id, btn) {
   document.querySelectorAll('.main-panel').forEach(p => p.classList.remove('active'));
   document.getElementById('panel-' + id).classList.add('active');
   if (id === 'favorites') renderFavorites();
-}
-function openSearchModal() {
-  document.getElementById('searchModalOverlay').style.display = '';
-  renderTags();
-  renderSearch();
-}
-function closeSearchModal() {
-  document.getElementById('searchModalOverlay').style.display = 'none';
+  if (id === 'search') { renderTags(); renderSearch(); }
 }
 function openSettings() {
   document.getElementById('cfWorkerUrl').value = cfWorkerUrl;
@@ -1012,17 +1014,22 @@ function updateInterval() { intervalSec=parseInt(document.getElementById('interv
 // ── Search links ──────────────────────────────────────────────
 function renderSearch() {
   const el = document.getElementById('searchShops');
-  if (!keywords.length) { el.innerHTML='<div style="text-align:center;padding:2rem;color:var(--text3);font-size:13px">キーワードを追加してください</div>'; return; }
+  if (!keywords.length) {
+    el.innerHTML = '<div class="empty">キーワードを追加すると<br>各サイトへのリンクが表示されます</div>';
+    return;
+  }
   el.innerHTML = keywords.map(kw => `
-    <div style="margin-bottom:16px">
-      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px">${kw}</div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px">
-        ${SEARCH_SHOPS.map(s=>`
-          <a class="search-link" href="${s.url(kw)}" target="_blank" rel="noopener">
-            ${s.icon} ${s.name}${s.noCount?'':`<span class="hit-count" id="hit-${CSS.escape(s.name+kw)}"></span>`}
+    <div class="search-kw-section">
+      <div class="search-kw-header">${kw}</div>
+      <div class="search-link-grid">
+        ${SEARCH_SHOPS.map(s => `
+          <a class="search-link-card" href="${s.url(kw)}" target="_blank" rel="noopener">
+            <span class="search-link-icon">${s.icon}</span>
+            <span class="search-link-name">${s.name}</span>
+            ${s.noCount ? '' : `<span class="search-link-count" id="hit-${CSS.escape(s.name+kw)}">—</span>`}
           </a>`).join('')}
       </div>
-    </div>`).join('<div class="divider"></div>');
+    </div>`).join('');
   if (cfWorkerUrl) fetchHitCounts();
 }
 
@@ -1083,7 +1090,7 @@ async function fetchOneHit(shop, kw, cacheKey) {
 }
 function setHitCount(shopName, kw, text) {
   const el = document.getElementById('hit-'+CSS.escape(shopName+kw));
-  if (el) el.textContent = text?`(${text})`:'';
+  if (el) el.textContent = text || '';
 }
 
 // ── Settings ──────────────────────────────────────────────────
