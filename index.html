@@ -239,14 +239,20 @@ tr:hover td { background: var(--bg3); }
 .filter-chips::-webkit-scrollbar { display: none; }
 .filter-price { display: flex; align-items: center; gap: 8px; padding: 8px 12px; flex-wrap: wrap; }
 /* ── Dual range price slider ─────────────── */
-.price-slider-wrap { position: relative; width: 140px; height: 20px; flex-shrink: 0; }
+.price-slider-wrap { position: relative; width: 140px; height: 28px; flex-shrink: 0; }
 .price-slider-track { position: absolute; top: 50%; left: 0; right: 0; height: 4px; transform: translateY(-50%); background: var(--bg3); border-radius: 2px; }
 .price-slider-fill { position: absolute; top: 0; bottom: 0; background: var(--accent); border-radius: 2px; }
-.price-range-thumb { position: absolute; width: 100%; top: 0; left: 0; height: 20px; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; outline: none; margin: 0; padding: 0; }
+.price-range-thumb { position: absolute; width: 100%; top: 0; left: 0; height: 28px; background: none; pointer-events: none; -webkit-appearance: none; appearance: none; outline: none; margin: 0; padding: 0; }
 .price-range-thumb::-webkit-slider-runnable-track { background: transparent; }
 .price-range-thumb::-moz-range-track { background: transparent; }
-.price-range-thumb::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); pointer-events: all; cursor: grab; }
-.price-range-thumb::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); pointer-events: all; cursor: grab; border: none; }
+.price-range-thumb::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); pointer-events: all; cursor: grab; }
+.price-range-thumb::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); pointer-events: all; cursor: grab; }
+@media (max-width: 767px) {
+  .price-slider-wrap { width: 120px; height: 44px; }
+  .price-range-thumb { height: 44px; }
+  .price-range-thumb::-webkit-slider-thumb { width: 28px; height: 28px; }
+  .price-range-thumb::-moz-range-thumb { width: 26px; height: 26px; }
+}
 /* ── Watch stats (compact 2-col) ─────────── */
 .watch-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
 .watch-stat-n { font-family: var(--mono); font-size: 20px; font-weight: 500; color: var(--text); line-height: 1; }
@@ -364,6 +370,7 @@ tr:hover td { background: var(--bg3); }
       <span class="ct" id="ctDown">5:00</span>
       <button id="notifBtn" class="notif-btn" onclick="toggleNotif()" title="新着通知">🔔</button>
     </div>
+    <div id="errHint" style="display:none;font-size:11px;color:var(--red);padding:4px 8px 6px;line-height:1.6"></div>
   </div>
 </aside>
 
@@ -676,6 +683,14 @@ function _updatePriceFill() {
   const pMax = maxPrice > 0 ? Math.min(maxPrice, PRICE_SLIDER_MAX) / PRICE_SLIDER_MAX * 100 : 100;
   fill.style.left = pMin + '%';
   fill.style.width = Math.max(pMax - pMin, 0) + '%';
+  // サムが重なったとき min 側を前面に出してドラッグ可能にする
+  const minEl = document.getElementById('minPriceSlider');
+  const maxEl = document.getElementById('maxPriceSlider');
+  if (minEl && maxEl) {
+    const minVal = parseInt(minEl.value);
+    const maxVal = parseInt(maxEl.value);
+    minEl.style.zIndex = minVal >= maxVal - 5000 ? '5' : '';
+  }
 }
 function onMinSlider(val) {
   const maxSliderVal = parseInt(document.getElementById('maxPriceSlider').value);
@@ -1243,9 +1258,17 @@ async function loadAll() {
   prevLinks = newLinks;
   allItems = combined.sort((a,b)=>b.ts-a.ts);
   document.getElementById('sNew').textContent = nc>0?`+${nc}`:'—';
-  if (errs.length && !combined.length) setStatus('err','取得失敗: ' + errs.join(' / '));
-  else if (errs.length) setStatus('err','一部失敗: ' + errs.join(' / '));
-  else setStatus('ok', `更新 ${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`);
+  const hint = document.getElementById('errHint');
+  if (errs.length && !combined.length) {
+    setStatus('err', '取得失敗');
+    if (hint) { hint.style.display = ''; hint.innerHTML = `${errs.join('・')} の取得に失敗しました。<br><button onclick="goPage('cfworker',document.querySelectorAll('.nav-item')[4])" style="background:none;border:none;color:var(--red);text-decoration:underline;cursor:pointer;font-size:11px;padding:0">→ 詳細設定を確認</button>`; }
+  } else if (errs.length) {
+    setStatus('err', `一部失敗 (${errs.length}店)`);
+    if (hint) { hint.style.display = ''; hint.innerHTML = `${errs.join('・')} を取得できませんでした`; }
+  } else {
+    setStatus('ok', `更新 ${new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'})}`);
+    if (hint) hint.style.display = 'none';
+  }
   renderItems();
   accumulateItems(allItems);
   sendNewItemNotif(allItems);
