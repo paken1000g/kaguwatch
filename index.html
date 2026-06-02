@@ -252,10 +252,10 @@ tr:hover td { background: var(--bg3); }
 .price-range-thumb::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); pointer-events: all; cursor: grab; }
 .price-range-thumb::-moz-range-thumb { width: 16px; height: 16px; border-radius: 50%; background: var(--accent); border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.3); pointer-events: all; cursor: grab; }
 @media (max-width: 767px) {
-  .price-slider-wrap { width: 120px; height: 44px; }
-  .price-range-thumb { height: 44px; }
-  .price-range-thumb::-webkit-slider-thumb { width: 28px; height: 28px; }
-  .price-range-thumb::-moz-range-thumb { width: 26px; height: 26px; }
+  .price-slider-wrap { width: 120px; height: 36px; }
+  .price-range-thumb { height: 36px; }
+  .price-range-thumb::-webkit-slider-thumb { width: 22px; height: 22px; }
+  .price-range-thumb::-moz-range-thumb { width: 20px; height: 20px; }
 }
 /* ── Watch stats (compact 2-col) ─────────── */
 .watch-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; }
@@ -448,9 +448,9 @@ tr:hover td { background: var(--bg3); }
           </div>
           <div class="filter-price-row">
             <span style="font-size:11px;color:var(--text3)">¥</span>
-            <input type="number" id="minPriceInput" min="0" step="1000" placeholder="下限" style="width:72px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMinPriceFromInput(this.value)">
+            <input type="number" id="minPriceInput" min="0" step="1000" placeholder="下限" style="width:88px;font-size:12px;font-family:var(--mono);padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMinPriceFromInput(this.value)">
             <span style="font-size:11px;color:var(--text3)">〜 ¥</span>
-            <input type="number" id="maxPriceInput" min="0" step="1000" placeholder="上限なし" style="width:72px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMaxPriceFromInput(this.value)">
+            <input type="number" id="maxPriceInput" min="0" step="1000" placeholder="上限なし" style="width:88px;font-size:12px;font-family:var(--mono);padding:6px 8px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMaxPriceFromInput(this.value)">
             <button id="favFilterBtn" class="btn" onclick="toggleFavFilter()" style="font-size:13px;padding:5px 14px;margin-left:auto">★ お気に入りのみ</button>
           </div>
         </div>
