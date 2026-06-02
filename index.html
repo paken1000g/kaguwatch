@@ -237,7 +237,11 @@ tr:hover td { background: var(--bg3); }
 .filter-lbl { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: .12em; text-transform: uppercase; line-height: 1; }
 .filter-chips { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .filter-chips::-webkit-scrollbar { display: none; }
-.filter-price { display: flex; align-items: center; gap: 8px; padding: 8px 12px; flex-wrap: wrap; }
+.filter-price { display: flex; flex-direction: column; gap: 8px; padding: 8px 12px; }
+.filter-price-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+@media (max-width: 767px) {
+  .filter-price-row .price-slider-wrap { flex: 1; width: auto; }
+}
 /* ── Dual range price slider ─────────────── */
 .price-slider-wrap { position: relative; width: 140px; height: 28px; flex-shrink: 0; }
 .price-slider-track { position: absolute; top: 50%; left: 0; right: 0; height: 4px; transform: translateY(-50%); background: var(--bg3); border-radius: 2px; }
@@ -434,17 +438,21 @@ tr:hover td { background: var(--bg3); }
         </div>
         <!-- 価格 -->
         <div class="filter-price">
-          <span class="filter-lbl" style="white-space:nowrap">価格</span>
-          <div class="price-slider-wrap">
-            <div class="price-slider-track"><div class="price-slider-fill" id="priceSliderFill"></div></div>
-            <input type="range" class="price-range-thumb" id="minPriceSlider" min="0" max="200000" step="5000" value="0" oninput="onMinSlider(this.value)">
-            <input type="range" class="price-range-thumb" id="maxPriceSlider" min="0" max="200000" step="5000" value="200000" oninput="onMaxSlider(this.value)">
+          <div class="filter-price-row">
+            <span class="filter-lbl" style="white-space:nowrap">価格</span>
+            <div class="price-slider-wrap">
+              <div class="price-slider-track"><div class="price-slider-fill" id="priceSliderFill"></div></div>
+              <input type="range" class="price-range-thumb" id="minPriceSlider" min="0" max="200000" step="5000" value="0" oninput="onMinSlider(this.value)">
+              <input type="range" class="price-range-thumb" id="maxPriceSlider" min="0" max="200000" step="5000" value="200000" oninput="onMaxSlider(this.value)">
+            </div>
           </div>
-          <span style="font-size:11px;color:var(--text3)">¥</span>
-          <input type="number" id="minPriceInput" min="0" step="1000" placeholder="下限" style="width:72px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMinPriceFromInput(this.value)">
-          <span style="font-size:11px;color:var(--text3)">〜 ¥</span>
-          <input type="number" id="maxPriceInput" min="0" step="1000" placeholder="上限なし" style="width:72px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMaxPriceFromInput(this.value)">
-          <button id="favFilterBtn" class="btn" onclick="toggleFavFilter()" style="font-size:13px;padding:5px 14px;margin-left:auto">★ お気に入りのみ</button>
+          <div class="filter-price-row">
+            <span style="font-size:11px;color:var(--text3)">¥</span>
+            <input type="number" id="minPriceInput" min="0" step="1000" placeholder="下限" style="width:72px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMinPriceFromInput(this.value)">
+            <span style="font-size:11px;color:var(--text3)">〜 ¥</span>
+            <input type="number" id="maxPriceInput" min="0" step="1000" placeholder="上限なし" style="width:72px;font-size:12px;font-family:var(--mono);padding:3px 6px;border:1px solid var(--border2);border-radius:var(--radius);background:var(--bg);color:var(--text)" oninput="setMaxPriceFromInput(this.value)">
+            <button id="favFilterBtn" class="btn" onclick="toggleFavFilter()" style="font-size:13px;padding:5px 14px;margin-left:auto">★ お気に入りのみ</button>
+          </div>
         </div>
       </div>
 
