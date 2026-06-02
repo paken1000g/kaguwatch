@@ -386,7 +386,10 @@ tr:hover td { background: var(--bg3); }
     <div class="content">
       <div class="watch-topbar">
         <div style="display:flex;gap:8px;align-items:center">
-          <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル" style="flex:1;min-width:0">
+          <div style="position:relative;flex:1;min-width:0">
+            <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル" style="width:100%;padding-right:28px">
+            <button id="watchSearchClear" onclick="clearWatchSearch()" title="クリア" style="display:none;position:absolute;right:7px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;line-height:1;color:var(--text3);padding:0">×</button>
+          </div>
           <button class="btn primary" onclick="applyWatchSearch()">検索</button>
           <button class="btn" onclick="manualRefresh()">↺ 更新</button>
         </div>
@@ -631,6 +634,15 @@ function renderTags() {
 }
 function applyWatchSearch() {
   watchQuery = document.getElementById('watchSearch').value.trim().toLowerCase();
+  document.getElementById('watchSearchClear').style.display = watchQuery ? '' : 'none';
+  renderItems();
+}
+function clearWatchSearch() {
+  const inp = document.getElementById('watchSearch');
+  inp.value = '';
+  watchQuery = '';
+  document.getElementById('watchSearchClear').style.display = 'none';
+  inp.focus();
   renderItems();
 }
 // iPad / iOS では keydown が発火しない・isComposing が残るケースがあるため
@@ -646,11 +658,13 @@ function applyWatchSearch() {
 })();
 document.getElementById('watchSearch').addEventListener('keydown', e => {
   if(e.key==='Enter') applyWatchSearch();
-  if(e.key==='Escape') { e.target.value=''; watchQuery=''; renderItems(); }
+  if(e.key==='Escape') clearWatchSearch();
 });
-
 document.getElementById('watchSearch').addEventListener('keyup', e => {
-  if(e.key==='Enter') applyWatchSearch(); // iOS fallback (applyWatchSearch は冪等)
+  if(e.key==='Enter') applyWatchSearch(); // iOS fallback
+});
+document.getElementById('watchSearch').addEventListener('input', e => {
+  document.getElementById('watchSearchClear').style.display = e.target.value ? '' : 'none';
 });
 
 // Filter
