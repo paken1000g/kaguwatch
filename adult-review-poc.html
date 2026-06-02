@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>アダルトレビュー自動生成 PoC</title>
+<style>
+:root {
+  --bg: #0f0f13;
+  --bg2: #1a1a22;
+  --bg3: #22222e;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.14);
+  --text: #e8e8f0;
+  --text2: #9898b0;
+  --text3: #5a5a72;
+  --accent: #c084fc;
+  --accent-lt: rgba(192,132,252,0.12);
+  --accent-dk: #a855f7;
+  --red: #f87171;
+  --green: #4ade80;
+  --radius: 8px;
+  --radius-lg: 14px;
+  --mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  --sans: -apple-system, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { background: var(--bg); color: var(--text); font-family: var(--sans); font-size: 14px; min-height: 100vh; }
+
+.container { max-width: 960px; margin: 0 auto; padding: 40px 24px; }
+.header { margin-bottom: 32px; }
+.title { font-size: 22px; font-weight: 700; letter-spacing: -.03em; margin-bottom: 6px; }
+.title span { color: var(--accent); }
+.subtitle { font-size: 13px; color: var(--text3); line-height: 1.7; }
+
+.section { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 22px; margin-bottom: 16px; }
+.section-title { font-size: 11px; font-family: var(--mono); color: var(--text3); letter-spacing: .12em; text-transform: uppercase; margin-bottom: 14px; }
+
+.form-row { display: flex; gap: 10px; margin-bottom: 12px; align-items: flex-end; }
+.form-group { display: flex; flex-direction: column; gap: 5px; flex: 1; }
+.form-label { font-size: 10px; color: var(--text3); font-family: var(--mono); letter-spacing: .08em; text-transform: uppercase; }
+input, select, textarea {
+  background: var(--bg3); border: 1px solid var(--border2); color: var(--text);
+  border-radius: var(--radius); padding: 9px 12px; font-size: 13px; font-family: var(--sans);
+  outline: none; transition: border-color .15s; width: 100%;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(192,132,252,.08); }
+input::placeholder, textarea::placeholder { color: var(--text3); }
+textarea { resize: vertical; min-height: 80px; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px; padding: 9px 18px;
+  border-radius: var(--radius); border: 1px solid var(--border2);
+  background: var(--bg3); color: var(--text); font-size: 13px; cursor: pointer;
+  transition: all .15s; font-family: var(--sans); white-space: nowrap;
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
+.btn.primary { background: var(--accent-dk); color: #fff; border-color: var(--accent-dk); font-weight: 600; }
+.btn.primary:hover { background: var(--accent); border-color: var(--accent); }
+.btn:disabled { opacity: .4; cursor: not-allowed; }
+
+.tag-grid { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.tag { padding: 3px 10px; border-radius: 99px; font-size: 11px; background: var(--bg3); border: 1px solid var(--border2); color: var(--text2); cursor: pointer; transition: all .12s; }
+.tag:hover, .tag.on { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
+
+.review-output {
+  background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius);
+  padding: 18px; min-height: 120px; font-size: 13px; line-height: 2.0; color: var(--text);
+  white-space: pre-wrap; font-family: var(--sans);
+}
+.review-output.placeholder { color: var(--text3); }
+.review-output.streaming::after { content: '▋'; animation: blink .7s step-end infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+.product-card { display: grid; grid-template-columns: 160px 1fr; gap: 16px; }
+.product-img { width: 100%; aspect-ratio: 7/10; object-fit: cover; border-radius: var(--radius); background: var(--bg3); display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 32px; }
+.product-info { display: flex; flex-direction: column; gap: 6px; }
+.product-title { font-size: 14px; font-weight: 600; line-height: 1.5; }
+.product-meta { font-size: 12px; color: var(--text2); }
+.product-meta span { color: var(--text3); font-size: 10px; }
+.product-price { font-family: var(--mono); font-size: 18px; color: var(--accent); }
+
+.chip-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+.chip { padding: 2px 9px; background: var(--bg); border: 1px solid var(--border2); border-radius: 99px; font-size: 11px; color: var(--text3); }
+
+.status { font-size: 12px; padding: 8px 12px; border-radius: var(--radius); margin-top: 10px; display: none; }
+.status.ok { background: rgba(74,222,128,.1); color: var(--green); border: 1px solid rgba(74,222,128,.2); display: block; }
+.status.err { background: rgba(248,113,113,.1); color: var(--red); border: 1px solid rgba(248,113,113,.2); display: block; }
+.status.info { background: var(--accent-lt); color: var(--accent); border: 1px solid rgba(192,132,252,.2); display: block; }
+
+.step { display: flex; gap: 14px; align-items: flex-start; margin-bottom: 12px; }
+.step-num { font-family: var(--mono); font-size: 10px; color: var(--accent); background: var(--accent-lt); border: 1px solid rgba(192,132,252,.25); border-radius: 99px; padding: 2px 8px; flex-shrink: 0; margin-top: 1px; }
+.step-body { font-size: 13px; color: var(--text2); line-height: 1.7; }
+.step-body b { color: var(--text); font-weight: 600; }
+.step-body a { color: var(--accent); text-decoration: none; }
+.step-body a:hover { text-decoration: underline; }
+.step-body code { background: var(--bg3); padding: 1px 5px; border-radius: 4px; font-family: var(--mono); font-size: 11px; color: var(--text); }
+
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+.tab { padding: 9px 16px; font-size: 12px; color: var(--text3); border-bottom: 2px solid transparent; cursor: pointer; background: none; border-top: none; border-left: none; border-right: none; transition: all .15s; font-family: var(--sans); margin-bottom: -1px; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.panel { display: none; }
+.panel.active { display: block; }
+
+.metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 16px; }
+.metric { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px 14px; }
+.metric-n { font-family: var(--mono); font-size: 20px; font-weight: 600; color: var(--accent); }
+.metric-l { font-size: 10px; color: var(--text3); margin-top: 3px; }
+
+.copy-btn { margin-top: 10px; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<div class="header">
+  <div class="title">アダルトレビュー自動生成 <span>PoC</span></div>
+  <div class="subtitle">
+    Fanza API（DMM Web Service）で作品情報を取得 → Claude API でレビュー文を自動生成するフィジビリティ確認ツールです。<br>
+    APIキー未取得でもサンプルデータで動作テストできます。
+  </div>
+</div>
+
+<!-- タブ -->
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('demo', this)">デモ（サンプルデータ）</button>
+  <button class="tab" onclick="switchTab('fanza', this)">Fanza API 接続テスト</button>
+  <button class="tab" onclick="switchTab('setup', this)">APIキー取得手順</button>
+</div>
+
+<!-- ── デモタブ ── -->
+<div id="panel-demo" class="panel active">
+
+  <!-- Claude APIキー設定 -->
+  <div class="section">
+    <div class="section-title">Claude API キー</div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">Anthropic API Key</div>
+        <input type="password" id="claudeKey" placeholder="sk-ant-api03-..." value="">
+      </div>
+      <button class="btn" onclick="saveKey()">保存</button>
+    </div>
+    <div id="keyStatus" class="status"></div>
+  </div>
+
+  <!-- サンプル作品（Fanza API レスポンス形式を模したダミーデータ） -->
+  <div class="section">
+    <div class="section-title">作品情報（サンプル / Fanza API 形式）</div>
+    <div class="product-card" id="productCard">
+      <div class="product-img">🎬</div>
+      <div class="product-info">
+        <div class="product-title" id="prodTitle">サンプル作品タイトル（ダミーデータ）</div>
+        <div class="product-meta"><span>女優</span> <span id="prodActress">――</span></div>
+        <div class="product-meta"><span>監督</span> <span id="prodDirector">――</span></div>
+        <div class="product-meta"><span>メーカー</span> <span id="prodMaker">――</span></div>
+        <div class="product-meta"><span>収録時間</span> <span id="prodTime">――</span></div>
+        <div class="product-meta"><span>発売日</span> <span id="prodDate">――</span></div>
+        <div class="product-price" id="prodPrice">¥——</div>
+        <div class="chip-row" id="prodGenres"></div>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn" onclick="loadSample(0)">サンプル A</button>
+      <button class="btn" onclick="loadSample(1)">サンプル B</button>
+      <button class="btn" onclick="loadSample(2)">サンプル C</button>
+    </div>
+  </div>
+
+  <!-- レビュー生成設定 -->
+  <div class="section">
+    <div class="section-title">レビュー生成設定</div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">レビュースタイル</div>
+        <select id="reviewStyle">
+          <option value="casual">カジュアル（読みやすい口語体）</option>
+          <option value="detailed">詳細レビュー（構成・演出・女優評など）</option>
+          <option value="short">短評（2〜3行）</option>
+          <option value="seo">SEO向け（検索流入を意識した構成）</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <div class="form-label">文字数目安</div>
+        <select id="reviewLength">
+          <option value="200">約200字</option>
+          <option value="400" selected>約400字</option>
+          <option value="800">約800字</option>
+          <option value="1500">約1500字（長文）</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <div class="form-label">追加指示（任意）</div>
+      <textarea id="extraInst" placeholder="例：★5評価で書いてください、特にシーン2を重点的に評価してください"></textarea>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn primary" id="genBtn" onclick="generateReview()">✦ レビューを生成</button>
+      <button class="btn" onclick="copyReview()">コピー</button>
+    </div>
+  </div>
+
+  <!-- 出力 -->
+  <div class="section">
+    <div class="section-title">生成されたレビュー</div>
+    <div class="metrics">
+      <div class="metric"><div class="metric-n" id="mChars">—</div><div class="metric-l">文字数</div></div>
+      <div class="metric"><div class="metric-n" id="mTime">—</div><div class="metric-l">生成時間</div></div>
+      <div class="metric"><div class="metric-n" id="mTokens">—</div><div class="metric-l">使用トークン概算</div></div>
+    </div>
+    <div class="review-output placeholder" id="reviewOutput">ここにレビューが生成されます</div>
+    <div id="genStatus" class="status"></div>
+  </div>
+</div>
+
+<!-- ── Fanza API タブ ── -->
+<div id="panel-fanza" class="panel">
+  <div class="section">
+    <div class="section-title">Fanza API 接続テスト</div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">API ID</div>
+        <input type="text" id="dmmApiId" placeholder="DMM Webサービス API ID">
+      </div>
+      <div class="form-group">
+        <div class="form-label">アフィリエイトID</div>
+        <input type="text" id="dmmAffId" placeholder="xxxxx-990">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">Cloudflare Worker URL（CORSプロキシ）</div>
+        <input type="text" id="workerUrl" placeholder="https://kaguwatch-rss-proxy.xxxxx.workers.dev">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <div class="form-label">検索キーワード</div>
+        <input type="text" id="dmmKeyword" placeholder="例：巨乳、人妻、アイドル">
+      </div>
+      <div class="form-group">
+        <div class="form-label">取得件数</div>
+        <select id="dmmHits">
+          <option value="10">10件</option>
+          <option value="20" selected>20件</option>
+          <option value="50">50件</option>
+        </select>
+      </div>
+      <button class="btn primary" onclick="testFanzaApi()" style="align-self:flex-end">接続テスト</button>
+    </div>
+    <div id="fanzaStatus" class="status"></div>
+    <div id="fanzaResult" style="margin-top:14px"></div>
+  </div>
+</div>
+
+<!-- ── 手順タブ ── -->
+<div id="panel-setup" class="panel">
+  <div class="section">
+    <div class="section-title">Fanza（DMM）APIキー取得手順</div>
+
+    <div class="step">
+      <div class="step-num">01</div>
+      <div class="step-body">
+        <b>DMMアカウント作成</b><br>
+        <a href="https://www.dmm.com" target="_blank" rel="noopener">dmm.com</a> でアカウント登録（無料）。年齢確認が必要です。
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">02</div>
+      <div class="step-body">
+        <b>DMM アフィリエイト登録</b><br>
+        <a href="https://affiliate.dmm.com" target="_blank" rel="noopener">affiliate.dmm.com</a> でアフィリエイト会員登録。
+        サイトURL（GitHub PagesやLocalhost可）を入力します。
+        審査は通常2〜3営業日。
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">03</div>
+      <div class="step-body">
+        <b>DMM Web サービス API 申請</b><br>
+        アフィリエイト承認後、<a href="https://affiliate.dmm.com/api/" target="_blank" rel="noopener">affiliate.dmm.com/api/</a> から
+        「Web サービス API」を申請。API ID とアフィリエイト ID が発行されます。
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">04</div>
+      <div class="step-body">
+        <b>APIエンドポイント</b><br>
+        商品一覧: <code>https://api.dmm.com/affiliate/v3/ItemList</code><br>
+        取得できる情報: 作品タイトル・女優名・監督・メーカー・ジャンル・評価・収録時間・サムネイル・価格・発売日
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">05</div>
+      <div class="step-body">
+        <b>CORS対策</b><br>
+        ブラウザから直接APIを呼ぶとCORSエラーになります。
+        既存の <code>kaguwatch-rss-proxy</code> Worker のコードを拡張して Fanza API もプロキシするか、
+        Worker 側で全処理（API取得 → Claude生成 → キャッシュ）を行う構成を推奨します。
+      </div>
+    </div>
+
+    <div class="step">
+      <div class="step-num">06</div>
+      <div class="step-body">
+        <b>Claude API キー取得</b><br>
+        <a href="https://console.anthropic.com" target="_blank" rel="noopener">console.anthropic.com</a> でアカウント作成 → API Keys → Create Key。
+        使用量に応じた従量課金（$3/M tokens〜）。
+        <b>※ Claude APIキーはブラウザのコードに直接埋め込まず、Workerサーバーサイドで呼ぶことを強く推奨します。</b>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">推奨アーキテクチャ（本番想定）</div>
+    <pre style="background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:16px;font-family:var(--mono);font-size:11px;color:var(--text2);overflow-x:auto;line-height:1.8">
+ブラウザ（SPA）
+  │
+  │  /review?product_id=xxx
+  ▼
+Cloudflare Worker（kaguwatch-rss-proxy を拡張）
+  ├─ /fanza?keyword=XXX    → DMM API をプロキシ
+  └─ /review?item_id=XXX   → DMM API で作品情報取得
+                              → キャッシュ確認（KV Store）
+                              → Claude API でレビュー生成
+                              → KV に保存して返却
+  │
+  ├─ Cloudflare KV（生成済みレビューのキャッシュ）
+  ├─ DMM Web Service API
+  └─ Anthropic Claude API
+    </pre>
+    <div style="font-size:12px;color:var(--text3);margin-top:10px;line-height:1.8">
+      • Cloudflare Workers 無料枠：10万req/日<br>
+      • Cloudflare KV 無料枠：10万read/日、1万write/日（レビューキャッシュに十分）<br>
+      • Claude API コスト目安：1レビュー約0.003〜0.01ドル（Haiku使用時）
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+// ── サンプルデータ ──────────────────────────────
+const SAMPLES = [
+  {
+    title: '完全素人 ガチな出会い系でナンパしてきた現役女子大生をハメ撮り！',
+    actress: ['桜木りな（21歳）'],
+    director: '山田P',
+    maker: 'プレステージ',
+    label: 'PRESTIGE PREMIUM',
+    time: '120分',
+    date: '2025-05-15',
+    price: '¥4,389',
+    genres: ['素人', 'ハメ撮り', '女子大生', '単体作品', '独占配信'],
+    rank: 4.2,
+    review_count: 287,
+    id: 'test001',
+  },
+  {
+    title: '【VR】超高画質8K専属AV女優と完全密着SEX！ 現実と見分けがつかないリアル体験',
+    actress: ['葵つかさ'],
+    director: '鈴木T',
+    maker: 'SOD CREATE',
+    label: 'SOD VR',
+    time: '92分',
+    date: '2025-04-28',
+    price: '¥6,380',
+    genres: ['VR', '専属', 'ハイビジョン', '8K', 'フェラ', '中出し'],
+    rank: 4.6,
+    review_count: 512,
+    id: 'test002',
+  },
+  {
+    title: '人妻の危険な誘惑 〜夫の目を盗んで不倫を重ねた三十路の告白〜',
+    actress: ['宮下玲奈（34歳）', '北川礼子（31歳）'],
+    director: '伊藤D',
+    maker: 'マドンナ',
+    label: 'Madonna',
+    time: '240分（4作品収録）',
+    date: '2025-03-10',
+    price: '¥3,278',
+    genres: ['人妻', '不倫', '熟女', '巨乳', '中出し'],
+    rank: 4.4,
+    review_count: 634,
+    id: 'test003',
+  },
+];
+
+let currentProduct = null;
+let claudeKey = localStorage.getItem('poc_claude_key') || '';
+let genStart = 0;
+
+function saveKey() {
+  claudeKey = document.getElementById('claudeKey').value.trim();
+  if (!claudeKey) { showStatus('keyStatus', 'error', 'APIキーを入力してください'); return; }
+  localStorage.setItem('poc_claude_key', claudeKey);
+  showStatus('keyStatus', 'ok', 'APIキーを保存しました（localStorageに保存）');
+}
+
+function loadSample(idx) {
+  currentProduct = SAMPLES[idx];
+  const p = currentProduct;
+  document.getElementById('prodTitle').textContent = p.title;
+  document.getElementById('prodActress').textContent = p.actress.join('、');
+  document.getElementById('prodDirector').textContent = p.director;
+  document.getElementById('prodMaker').textContent = `${p.maker} / ${p.label}`;
+  document.getElementById('prodTime').textContent = p.time;
+  document.getElementById('prodDate').textContent = p.date;
+  document.getElementById('prodPrice').textContent = p.price;
+  document.getElementById('prodGenres').innerHTML = p.genres.map(g => `<span class="chip">${g}</span>`).join('');
+  document.querySelector('.product-img').textContent = '🎬';
+  clearReview();
+}
+
+function clearReview() {
+  const el = document.getElementById('reviewOutput');
+  el.textContent = 'ここにレビューが生成されます';
+  el.className = 'review-output placeholder';
+  document.getElementById('mChars').textContent = '—';
+  document.getElementById('mTime').textContent = '—';
+  document.getElementById('mTokens').textContent = '—';
+  document.getElementById('genStatus').style.display = 'none';
+}
+
+function buildPrompt(product) {
+  const style = document.getElementById('reviewStyle').value;
+  const length = document.getElementById('reviewLength').value;
+  const extra = document.getElementById('extraInst').value.trim();
+
+  const styleGuide = {
+    casual: 'カジュアルで読みやすい口語体。一般視聴者が共感しやすい言葉で書く。',
+    detailed: '演出・撮影技法・女優のパフォーマンス・シーン構成を詳しく分析するレビュー。',
+    short: '端的に魅力を伝える短評。要点のみ。',
+    seo: 'SEOを意識した構成。タイトルに対応したキーワードを自然に含め、見出し構造を意識する。',
+  };
+
+  return `あなたはアダルトビデオのレビューライターです。以下の作品情報をもとに、${styleGuide[style]}
+
+【作品情報】
+タイトル：${product.title}
+出演：${product.actress.join('、')}
+監督：${product.director}
+メーカー：${product.maker} / ${product.label}
+収録時間：${product.time}
+発売日：${product.date}
+価格：${product.price}
+ジャンル：${product.genres.join('、')}
+ユーザー評価：★${product.rank} / 5.0（${product.review_count}件）
+
+【要件】
+- 文字数：約${length}字
+- 作品タイトルは冒頭に自然に含める
+- ユーザーが購入判断できる情報を含める
+${extra ? `- 追加指示：${extra}` : ''}
+
+レビュー本文のみを出力してください（見出し等の前置きは不要）：`;
+}
+
+async function generateReview() {
+  if (!currentProduct) { showStatus('genStatus', 'error', 'サンプルデータを選択してください'); return; }
+  if (!claudeKey) { showStatus('genStatus', 'error', 'Claude APIキーを入力・保存してください'); return; }
+
+  const btn = document.getElementById('genBtn');
+  btn.disabled = true;
+  btn.textContent = '生成中...';
+  genStart = Date.now();
+
+  const output = document.getElementById('reviewOutput');
+  output.textContent = '';
+  output.className = 'review-output streaming';
+  document.getElementById('genStatus').style.display = 'none';
+
+  const prompt = buildPrompt(currentProduct);
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'x-api-key': claudeKey,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 2048,
+        stream: true,
+        messages: [{ role: 'user', content: prompt }],
+      }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ error: { message: res.statusText } }));
+      throw new Error(err.error?.message || `HTTP ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    let inputTokens = 0, outputTokens = 0;
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const chunk = decoder.decode(value);
+      const lines = chunk.split('\n');
+      for (const line of lines) {
+        if (!line.startsWith('data: ')) continue;
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') continue;
+        try {
+          const evt = JSON.parse(data);
+          if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') {
+            fullText += evt.delta.text;
+            output.textContent = fullText;
+          }
+          if (evt.type === 'message_delta' && evt.usage) {
+            outputTokens = evt.usage.output_tokens;
+          }
+          if (evt.type === 'message_start' && evt.message?.usage) {
+            inputTokens = evt.message.usage.input_tokens;
+          }
+        } catch(e) {}
+      }
+    }
+
+    const elapsed = ((Date.now() - genStart) / 1000).toFixed(1);
+    output.className = 'review-output';
+    document.getElementById('mChars').textContent = fullText.length.toLocaleString();
+    document.getElementById('mTime').textContent = elapsed + 's';
+    document.getElementById('mTokens').textContent = (inputTokens + outputTokens).toLocaleString();
+    showStatus('genStatus', 'ok', `生成完了 — ${elapsed}秒 / ${fullText.length}字`);
+
+  } catch(e) {
+    output.className = 'review-output placeholder';
+    output.textContent = 'エラーが発生しました';
+    showStatus('genStatus', 'error', 'エラー: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✦ レビューを生成';
+  }
+}
+
+function copyReview() {
+  const text = document.getElementById('reviewOutput').textContent;
+  if (!text || text === 'ここにレビューが生成されます') return;
+  navigator.clipboard.writeText(text).then(() => {
+    showStatus('genStatus', 'ok', 'クリップボードにコピーしました');
+  });
+}
+
+// ── Fanza API テスト ────────────────────────────
+async function testFanzaApi() {
+  const apiId = document.getElementById('dmmApiId').value.trim();
+  const affId = document.getElementById('dmmAffId').value.trim();
+  const worker = document.getElementById('workerUrl').value.trim();
+  const keyword = document.getElementById('dmmKeyword').value.trim();
+  const hits = document.getElementById('dmmHits').value;
+
+  if (!apiId || !affId) { showStatus('fanzaStatus', 'error', 'API IDとアフィリエイトIDを入力してください'); return; }
+
+  showStatus('fanzaStatus', 'info', 'Fanza APIに接続中...');
+  document.getElementById('fanzaResult').innerHTML = '';
+
+  const params = new URLSearchParams({
+    api_id: apiId,
+    affiliate_id: affId,
+    site: 'FANZA',
+    service: 'digital',
+    floor: 'videoa',
+    hits: hits,
+    sort: 'date',
+    output: 'json',
+    ...(keyword ? { keyword } : {}),
+  });
+
+  const fanzaUrl = `https://api.dmm.com/affiliate/v3/ItemList?${params}`;
+  const proxyUrl = worker
+    ? `${worker.replace(/\/$/, '')}?url=${encodeURIComponent(fanzaUrl)}`
+    : fanzaUrl;
+
+  try {
+    const res = await fetch(proxyUrl, { headers: { 'Accept': 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+
+    if (data.result?.status !== 200) {
+      throw new Error(data.result?.message || 'APIエラー（ステータス: ' + data.result?.status + '）');
+    }
+
+    const items = data.result?.items || [];
+    showStatus('fanzaStatus', 'ok', `取得成功！ ${items.length}件 / 総件数 ${data.result?.total_count?.toLocaleString()}`);
+
+    document.getElementById('fanzaResult').innerHTML = items.map(item => {
+      const actress = (item.iteminfo?.actress || []).map(a => a.name).join('、') || '—';
+      const genres = (item.iteminfo?.genre || []).map(g => g.name).slice(0,4).join(' / ') || '—';
+      const thumb = item.imageURL?.small || '';
+      return `<div style="display:flex;gap:12px;align-items:flex-start;padding:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:8px">
+        ${thumb ? `<img src="${thumb}" style="width:60px;border-radius:4px;flex-shrink:0" onerror="this.style.display='none'">` : ''}
+        <div style="flex:1;min-width:0">
+          <div style="font-size:12px;font-weight:600;line-height:1.5;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">${item.title}</div>
+          <div style="font-size:11px;color:var(--text3)">女優: ${actress}</div>
+          <div style="font-size:11px;color:var(--text3)">ジャンル: ${genres}</div>
+          <div style="font-size:11px;color:var(--accent);font-family:var(--mono)">${item.prices?.price || '—'}</div>
+        </div>
+        <button class="btn" style="font-size:11px;padding:4px 10px;flex-shrink:0" onclick="importFanzaItem(${JSON.stringify(item).replace(/"/g,'&quot;')})">デモへ</button>
+      </div>`;
+    }).join('');
+
+  } catch(e) {
+    showStatus('fanzaStatus', 'error', 'エラー: ' + e.message);
+    if (!worker) {
+      document.getElementById('fanzaResult').innerHTML = '<div style="font-size:12px;color:var(--text3);padding:10px;background:var(--bg3);border-radius:var(--radius)">ヒント: Cloudflare Worker URLを設定するとCORSエラーを回避できます。</div>';
+    }
+  }
+}
+
+function importFanzaItem(item) {
+  currentProduct = {
+    title: item.title,
+    actress: (item.iteminfo?.actress || []).map(a => a.name),
+    director: (item.iteminfo?.director || []).map(d => d.name).join('、') || '不明',
+    maker: item.iteminfo?.maker?.[0]?.name || '不明',
+    label: item.iteminfo?.label?.[0]?.name || '—',
+    time: item.volume ? item.volume + '分' : '—',
+    date: item.date?.slice(0,10) || '—',
+    price: item.prices?.price || '—',
+    genres: (item.iteminfo?.genre || []).map(g => g.name).slice(0, 8),
+    rank: item.review?.average || 0,
+    review_count: item.review?.count || 0,
+    id: item.content_id,
+  };
+  const p = currentProduct;
+  document.getElementById('prodTitle').textContent = p.title;
+  document.getElementById('prodActress').textContent = p.actress.join('、') || '—';
+  document.getElementById('prodDirector').textContent = p.director;
+  document.getElementById('prodMaker').textContent = `${p.maker} / ${p.label}`;
+  document.getElementById('prodTime').textContent = p.time;
+  document.getElementById('prodDate').textContent = p.date;
+  document.getElementById('prodPrice').textContent = p.price;
+  document.getElementById('prodGenres').innerHTML = p.genres.map(g => `<span class="chip">${g}</span>`).join('');
+  const thumb = item.imageURL?.small;
+  const imgEl = document.querySelector('.product-img');
+  if (thumb) { imgEl.innerHTML = `<img src="${thumb}" style="width:100%;height:100%;object-fit:cover;border-radius:var(--radius)">`; }
+  else { imgEl.textContent = '🎬'; }
+  clearReview();
+  switchTab('demo', document.querySelector('.tab'));
+  showStatus('genStatus', 'ok', 'Fanza作品をインポートしました。レビューを生成してください。');
+}
+
+// ── ユーティリティ ──────────────────────────────
+function showStatus(id, type, msg) {
+  const el = document.getElementById(id);
+  el.className = 'status ' + (type === 'ok' ? 'ok' : type === 'error' ? 'err' : 'info');
+  el.textContent = msg;
+}
+
+function switchTab(id, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+}
+
+// 初期化
+(function() {
+  if (claudeKey) document.getElementById('claudeKey').value = claudeKey;
+  const savedWorker = localStorage.getItem('cfWorkerUrl');
+  if (savedWorker) document.getElementById('workerUrl').value = savedWorker;
+  loadSample(0);
+})();
+</script>
+</body>
+</html>
