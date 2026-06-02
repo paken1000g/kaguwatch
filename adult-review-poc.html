@@ -65,8 +65,8 @@ textarea { resize: vertical; min-height: 80px; }
   white-space: pre-wrap; font-family: var(--sans);
 }
 .review-output.placeholder { color: var(--text3); }
-.review-output.streaming::after { content: '▋'; animation: blink .7s step-end infinite; }
-@keyframes blink { 50% { opacity: 0; } }
+.review-output.loading { color: var(--text3); }
+.review-output.error-text { color: var(--red); font-size: 12px; font-family: var(--mono); }
 
 .product-card { display: grid; grid-template-columns: 160px 1fr; gap: 16px; }
 .product-img { width: 100%; aspect-ratio: 7/10; object-fit: cover; border-radius: var(--radius); background: var(--bg3); display: flex; align-items: center; justify-content: center; color: var(--text3); font-size: 32px; }
@@ -103,8 +103,7 @@ textarea { resize: vertical; min-height: 80px; }
 .metric-n { font-family: var(--mono); font-size: 20px; font-weight: 600; color: var(--accent); }
 .metric-l { font-size: 10px; color: var(--text3); margin-top: 3px; }
 
-/* 文体コピー */
-.style-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 6px 0; border-bottom: 1px solid var(--border); margin-bottom: 0; }
+.style-toggle { display: flex; align-items: center; justify-content: space-between; cursor: pointer; padding: 6px 0; border-bottom: 1px solid var(--border); }
 .style-toggle-label { font-size: 11px; font-family: var(--mono); color: var(--accent); letter-spacing: .08em; text-transform: uppercase; }
 .style-toggle-icon { font-size: 11px; color: var(--text3); }
 .style-panel { padding-top: 12px; }
@@ -112,6 +111,9 @@ textarea { resize: vertical; min-height: 80px; }
 .profile-card:hover, .profile-card.active { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
 .profile-card-del { color: var(--text3); background: none; border: none; cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
 .profile-card-del:hover { color: var(--red); }
+
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
 <body>
@@ -120,8 +122,8 @@ textarea { resize: vertical; min-height: 80px; }
 <div class="header">
   <div class="title">アダルトレビュー自動生成 <span>PoC</span></div>
   <div class="subtitle">
-    Fanza API（DMM Web Service）で作品情報を取得 → Gemini API でレビュー文を自動生成するフィジビリティ確認ツールです。<br>
-    Gemini APIキーは無料で取得できます。Fanza APIキー未取得でもサンプルデータで動作テストできます。
+    Fanza API（DMM Web Service）で作品情報を取得 → Gemini API でレビュー文を自動生成します。<br>
+    Gemini APIキーは <b style="color:var(--text)">aistudio.google.com</b> で無料取得できます（Googleアカウントのみ）。
   </div>
 </div>
 
@@ -143,8 +145,8 @@ textarea { resize: vertical; min-height: 80px; }
       </div>
       <button class="btn" onclick="saveKey()">保存</button>
     </div>
-    <div style="font-size:11px;color:var(--text3);margin-top:6px">
-      aistudio.google.com → Get API key → Googleアカウントだけで無料取得できます
+    <div style="font-size:11px;color:var(--text3);margin-top:4px">
+      取得先: aistudio.google.com → Get API key → Create API key（クレカ不要）
     </div>
     <div id="keyStatus" class="status"></div>
   </div>
@@ -223,7 +225,7 @@ textarea { resize: vertical; min-height: 80px; }
 ---
 例3のレビューテキストをここに貼り付け"></textarea>
       </div>
-      <div style="font-size:11px;color:var(--text3)">Fanzaのレビュー欄のテキストをそのままコピペしてください。件数が多いほど再現精度が上がります。</div>
+      <div style="font-size:11px;color:var(--text3)">Fanzaのレビュー欄のテキストをそのままコピペ。件数が多いほど再現精度が上がります。</div>
     </div>
 
     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:14px">
@@ -287,61 +289,38 @@ textarea { resize: vertical; min-height: 80px; }
 <!-- ── 手順 ── -->
 <div id="panel-setup" class="panel">
   <div class="section">
-    <div class="section-title">Gemini APIキー取得手順（無料・5分）</div>
-
+    <div class="section-title">Gemini APIキー取得手順（無料・2分）</div>
     <div class="step">
       <div class="step-num">01</div>
-      <div class="step-body">
-        <b>Google AI Studio を開く</b><br>
-        <a href="https://aistudio.google.com" target="_blank" rel="noopener">aistudio.google.com</a> にアクセス。Googleアカウントでログインするだけ。
-      </div>
+      <div class="step-body"><b>Google AI Studio を開く</b><br><a href="https://aistudio.google.com" target="_blank" rel="noopener">aistudio.google.com</a> にアクセス。Googleアカウントでログイン。</div>
     </div>
     <div class="step">
       <div class="step-num">02</div>
-      <div class="step-body">
-        <b>「Get API key」→「Create API key」</b><br>
-        発行された <code>AIzaSy...</code> の文字列をコピー。
-      </div>
+      <div class="step-body"><b>「Get API key」→「Create API key」</b><br>発行された <code>AIzaSy...</code> の文字列をコピー。クレジットカード登録不要。</div>
     </div>
     <div class="step">
       <div class="step-num">03</div>
-      <div class="step-body">
-        <b>このページの「Gemini API キー」欄に貼り付けて「保存」</b><br>
-        以上で完了。クレジットカード登録不要、完全無料で使えます。
-      </div>
-    </div>
-    <div class="step">
-      <div class="step-num">04</div>
-      <div class="step-body">
-        <b>無料枠の目安</b><br>
-        Gemini 1.5 Flash：毎分15リクエスト・1日1500リクエスト無料。<br>
-        レビュー1本生成 ≒ 1リクエストなので、個人利用なら実質無制限。
-      </div>
+      <div class="step-body"><b>このページの「Gemini API キー」欄に貼り付けて「保存」</b><br>以上で完了。1日1500リクエスト無料（レビュー1本=1リクエスト）。</div>
     </div>
   </div>
-
   <div class="section">
     <div class="section-title">Fanza（DMM）APIキー取得手順</div>
     <div class="step">
       <div class="step-num">01</div>
-      <div class="step-body"><b>DMMアカウント作成</b><br><a href="https://www.dmm.com" target="_blank" rel="noopener">dmm.com</a> でアカウント登録（無料）。年齢確認が必要です。</div>
+      <div class="step-body"><b>DMMアカウント作成</b><br><a href="https://www.dmm.com" target="_blank" rel="noopener">dmm.com</a> でアカウント登録（無料）。年齢確認が必要。</div>
     </div>
     <div class="step">
       <div class="step-num">02</div>
-      <div class="step-body"><b>DMM アフィリエイト登録</b><br><a href="https://affiliate.dmm.com" target="_blank" rel="noopener">affiliate.dmm.com</a> でアフィリエイト会員登録。審査は通常2〜3営業日。</div>
+      <div class="step-body"><b>DMM アフィリエイト登録</b><br><a href="https://affiliate.dmm.com" target="_blank" rel="noopener">affiliate.dmm.com</a> でアフィリエイト会員登録。審査2〜3営業日。</div>
     </div>
     <div class="step">
       <div class="step-num">03</div>
       <div class="step-body"><b>DMM Web サービス API 申請</b><br>承認後、<a href="https://affiliate.dmm.com/api/" target="_blank" rel="noopener">affiliate.dmm.com/api/</a> から申請。API ID とアフィリエイト ID が発行されます。</div>
     </div>
-    <div class="step">
-      <div class="step-num">04</div>
-      <div class="step-body"><b>CORS対策</b><br>ブラウザから直接APIを呼ぶとCORSエラーになります。既存の <code>kaguwatch-rss-proxy</code> Worker URLを「Fanza API 接続テスト」タブに設定してください。</div>
-    </div>
   </div>
 </div>
 
-</div><!-- /container -->
+</div>
 
 <script>
 const SAMPLES = [
@@ -356,7 +335,6 @@ let genStart = 0;
 let reviewerProfiles = JSON.parse(localStorage.getItem('reviewerProfiles') || '{}');
 let activeProfile = null;
 
-// ── キー保存 ──
 function saveKey() {
   geminiKey = document.getElementById('geminiKey').value.trim();
   if (!geminiKey) { showStatus('keyStatus', 'error', 'APIキーを入力してください'); return; }
@@ -364,7 +342,6 @@ function saveKey() {
   showStatus('keyStatus', 'ok', 'APIキーを保存しました');
 }
 
-// ── サンプルロード ──
 function loadSample(idx) {
   currentProduct = SAMPLES[idx];
   const p = currentProduct;
@@ -388,128 +365,102 @@ function clearReview() {
   document.getElementById('genStatus').style.display = 'none';
 }
 
-// ── プロンプト構築 ──
 function buildPrompt(product) {
   const style = document.getElementById('reviewStyle').value;
   const length = document.getElementById('reviewLength').value;
   const extra = document.getElementById('extraInst').value.trim();
   const examples = document.getElementById('reviewerExamples').value.trim();
-
   const styleGuide = {
     casual: 'カジュアルで読みやすい口語体。一般視聴者が共感しやすい言葉で書く。',
     detailed: '演出・撮影技法・女優のパフォーマンス・シーン構成を詳しく分析するレビュー。',
     short: '端的に魅力を伝える短評。要点のみ。',
     seo: 'SEOを意識した構成。タイトルに対応したキーワードを自然に含め、見出し構造を意識する。',
   };
-
   let prompt = 'あなたはアダルトビデオのレビューライターです。';
-
   if (examples) {
-    prompt += `\n\n【文体の参考】\n以下は参考にすべきレビュワーの実際のレビュー例です。この人物の文体・語彙・口調・文章リズム・改行のクセ・感情表現のパターンを徹底分析し、完全に同じ筆致で書いてください。内容ではなく「書き方」を真似ることが目的です。\n\n${examples}\n\n上記の文体を完全に再現して、`;
+    prompt += `\n\n【文体の参考】\n以下は参考にすべきレビュワーの実際のレビュー例です。この人物の文体・語彙・口調・文章リズム・改行のクセ・感情表現のパターンを徹底分析し、完全に同じ筆致で書いてください。\n\n${examples}\n\n上記の文体を完全に再現して、`;
   } else {
     prompt += `\n\n以下の作品情報をもとに、${styleGuide[style]}`;
   }
-
-  prompt += `\n\n【作品情報】
-タイトル：${product.title}
-出演：${product.actress.join('、')}
-監督：${product.director}
-メーカー：${product.maker} / ${product.label}
-収録時間：${product.time}
-発売日：${product.date}
-価格：${product.price}
-ジャンル：${product.genres.join('、')}
-ユーザー評価：★${product.rank} / 5.0（${product.review_count}件）
-
-【要件】
-- 文字数：約${length}字
-- 作品タイトルは冒頭に自然に含める
-- ユーザーが購入判断できる情報を含める`;
+  prompt += `\n\n【作品情報】\nタイトル：${product.title}\n出演：${product.actress.join('、')}\n監督：${product.director}\nメーカー：${product.maker} / ${product.label}\n収録時間：${product.time}\n発売日：${product.date}\n価格：${product.price}\nジャンル：${product.genres.join('、')}\nユーザー評価：★${product.rank} / 5.0（${product.review_count}件）\n\n【要件】\n- 文字数：約${length}字\n- 作品タイトルは冒頭に自然に含める\n- ユーザーが購入判断できる情報を含める`;
   if (extra) prompt += `\n- 追加指示：${extra}`;
   prompt += '\n\nレビュー本文のみを出力してください（前置き不要）：';
   return prompt;
 }
 
-// ── Gemini API でレビュー生成 ──
 async function generateReview() {
   if (!currentProduct) { showStatus('genStatus', 'error', 'サンプルデータを選択してください'); return; }
   if (!geminiKey) { showStatus('genStatus', 'error', 'Gemini APIキーを入力・保存してください'); return; }
 
   const btn = document.getElementById('genBtn');
   btn.disabled = true;
-  btn.textContent = '生成中...';
+  btn.innerHTML = '<span class="spinner"></span> 生成中...';
   genStart = Date.now();
 
   const output = document.getElementById('reviewOutput');
-  output.textContent = '';
-  output.className = 'review-output streaming';
+  output.textContent = '生成中...';
+  output.className = 'review-output loading';
   document.getElementById('genStatus').style.display = 'none';
 
   const prompt = buildPrompt(currentProduct);
 
-  try {
-    const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse&key=${geminiKey}`;
-    const res = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 2048, temperature: 0.9 },
-      }),
-    });
+  // モデルを順に試す
+  const models = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-2.0-flash-lite'];
+  let lastError = null;
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      throw new Error(err.error?.message || `HTTP ${res.status}`);
-    }
+  for (const model of models) {
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiKey)}`;
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 2048, temperature: 0.9 },
+        }),
+      });
 
-    const reader = res.body.getReader();
-    const decoder = new TextDecoder();
-    let fullText = '';
-    let totalTokens = 0;
+      const data = await res.json();
 
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      const chunk = decoder.decode(value);
-      for (const line of chunk.split('\n')) {
-        if (!line.startsWith('data: ')) continue;
-        const raw = line.slice(6).trim();
-        if (!raw) continue;
-        try {
-          const evt = JSON.parse(raw);
-          const text = evt.candidates?.[0]?.content?.parts?.[0]?.text;
-          if (text) { fullText += text; output.textContent = fullText; }
-          const usage = evt.usageMetadata;
-          if (usage?.totalTokenCount) totalTokens = usage.totalTokenCount;
-        } catch(e) {}
+      if (!res.ok) {
+        lastError = `[${model}] ${data.error?.message || 'HTTP ' + res.status}`;
+        continue;
       }
+
+      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+      if (!text) { lastError = `[${model}] レスポンスが空`; continue; }
+
+      const elapsed = ((Date.now() - genStart) / 1000).toFixed(1);
+      output.textContent = text;
+      output.className = 'review-output';
+      document.getElementById('mChars').textContent = text.length.toLocaleString();
+      document.getElementById('mTime').textContent = elapsed + 's';
+      document.getElementById('mTokens').textContent = (data.usageMetadata?.totalTokenCount || '—');
+      showStatus('genStatus', 'ok', `生成完了（${model}）— ${elapsed}秒 / ${text.length}字`);
+      btn.disabled = false;
+      btn.innerHTML = '✦ レビューを生成';
+      return;
+
+    } catch(e) {
+      lastError = `[${model}] ${e.message}`;
     }
-
-    const elapsed = ((Date.now() - genStart) / 1000).toFixed(1);
-    output.className = 'review-output';
-    document.getElementById('mChars').textContent = fullText.length.toLocaleString();
-    document.getElementById('mTime').textContent = elapsed + 's';
-    document.getElementById('mTokens').textContent = totalTokens || '—';
-    showStatus('genStatus', 'ok', `生成完了 — ${elapsed}秒 / ${fullText.length}字`);
-
-  } catch(e) {
-    output.className = 'review-output placeholder';
-    output.textContent = 'エラーが発生しました';
-    showStatus('genStatus', 'error', 'エラー: ' + e.message);
-  } finally {
-    btn.disabled = false;
-    btn.textContent = '✦ レビューを生成';
   }
+
+  // 全モデル失敗
+  output.className = 'review-output error-text';
+  output.textContent = '❌ エラー詳細:\n' + lastError + '\n\n【よくある原因】\n・APIキーが間違っている（AIzaSy... で始まる文字列か確認）\n・APIキーの利用制限（aistudio.google.com で確認）\n・ネットワーク接続の問題';
+  showStatus('genStatus', 'error', lastError);
+  btn.disabled = false;
+  btn.innerHTML = '✦ レビューを生成';
 }
 
 function copyReview() {
   const text = document.getElementById('reviewOutput').textContent;
-  if (!text || text === 'ここにレビューが生成されます') return;
+  if (!text || text.includes('ここにレビュー') || text.includes('❌')) return;
   navigator.clipboard.writeText(text).then(() => showStatus('genStatus', 'ok', 'コピーしました'));
 }
 
-// ── 文体コピー ──
+// 文体コピー
 function toggleStylePanel() {
   const panel = document.getElementById('stylePanel');
   const icon = document.getElementById('styleIcon');
@@ -517,7 +468,6 @@ function toggleStylePanel() {
   panel.style.display = open ? 'block' : 'none';
   icon.textContent = open ? '－ 閉じる' : '＋ 展開';
 }
-
 function saveProfile() {
   const name = document.getElementById('reviewerName').value.trim();
   const examples = document.getElementById('reviewerExamples').value.trim();
@@ -527,42 +477,35 @@ function saveProfile() {
   activeProfile = name;
   renderProfiles();
 }
-
 function loadProfile(name) {
   activeProfile = name;
   document.getElementById('reviewerName').value = name;
   document.getElementById('reviewerExamples').value = reviewerProfiles[name] || '';
   renderProfiles();
 }
-
 function deleteProfile(name) {
   delete reviewerProfiles[name];
   localStorage.setItem('reviewerProfiles', JSON.stringify(reviewerProfiles));
   if (activeProfile === name) clearProfile();
   renderProfiles();
 }
-
 function clearProfile() {
   activeProfile = null;
   document.getElementById('reviewerName').value = '';
   document.getElementById('reviewerExamples').value = '';
   renderProfiles();
 }
-
 function renderProfiles() {
   const el = document.getElementById('profileCards');
   const names = Object.keys(reviewerProfiles);
   if (!names.length) { el.innerHTML = '<span style="font-size:11px;color:var(--text3)">保存済みなし</span>'; return; }
   el.innerHTML = names.map(n => {
-    const safe = n.replace(/'/g, "\\'");
-    return `<div class="profile-card${n === activeProfile ? ' active' : ''}" onclick="loadProfile('${safe}')">
-      ${n}
-      <button class="profile-card-del" onclick="event.stopPropagation();deleteProfile('${safe}')">×</button>
-    </div>`;
+    const safe = n.replace(/'/g,"\\'");
+    return `<div class="profile-card${n===activeProfile?' active':''}" onclick="loadProfile('${safe}')">${n}<button class="profile-card-del" onclick="event.stopPropagation();deleteProfile('${safe}')">×</button></div>`;
   }).join('');
 }
 
-// ── Fanza API テスト ──
+// Fanza API テスト
 async function testFanzaApi() {
   const apiId = document.getElementById('dmmApiId').value.trim();
   const affId = document.getElementById('dmmAffId').value.trim();
@@ -635,7 +578,6 @@ function importItem(item) {
   showStatus('genStatus', 'ok', 'Fanza作品をインポートしました。');
 }
 
-// ── ユーティリティ ──
 function showStatus(id, type, msg) {
   const el = document.getElementById(id);
   el.className = 'status ' + (type==='ok'?'ok':type==='error'?'err':'info');
@@ -648,7 +590,6 @@ function switchTab(id, btn) {
   document.getElementById('panel-'+id).classList.add('active');
 }
 
-// 初期化
 (function() {
   if (geminiKey) document.getElementById('geminiKey').value = geminiKey;
   const savedWorker = localStorage.getItem('cfWorkerUrl');
