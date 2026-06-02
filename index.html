@@ -235,6 +235,8 @@ tr:hover td { background: var(--bg3); }
 .filter-col.grow { flex: 1; }
 .filter-sep { width: 1px; background: var(--border); flex-shrink: 0; }
 .filter-lbl { font-family: var(--mono); font-size: 9px; color: var(--text3); letter-spacing: .12em; text-transform: uppercase; line-height: 1; }
+.filter-chips-wrap { position: relative; overflow: hidden; min-width: 0; }
+.filter-chips-wrap::after { content: ''; position: absolute; right: 0; top: 0; bottom: 0; width: 32px; background: linear-gradient(to right, transparent, var(--bg2)); pointer-events: none; }
 .filter-chips { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .filter-chips::-webkit-scrollbar { display: none; }
 .filter-price { display: flex; flex-direction: column; gap: 8px; padding: 8px 12px; }
@@ -359,7 +361,7 @@ tr:hover td { background: var(--bg3); }
     <button class="nav-item" onclick="goPage('search',this)">
       <span class="nav-dot"></span>検索リンク集
     </button>
-    <button class="nav-item" onclick="goPage('market',this)" style="display:none">
+    <button class="nav-item" onclick="goPage('market',this)">
       <span class="nav-dot"></span>市場相場
     </button>
     <div class="nav-label">設定</div>
@@ -417,13 +419,15 @@ tr:hover td { background: var(--bg3); }
         <div class="filter-row">
           <div class="filter-col grow">
             <span class="filter-lbl">店舗</span>
-            <div class="filter-chips" id="filterChips">
-              <button class="chip active" onclick="setFilter('all',this)" style="flex-shrink:0">すべて</button>
-              <button class="chip" onclick="setFilter('tokyo',this)" style="flex-shrink:0">imption</button>
-              <button class="chip" onclick="setFilter('furuichi',this)" style="flex-shrink:0">furuichi</button>
-              <button class="chip" onclick="setFilter('timehype',this)" style="flex-shrink:0">TIME HYPE</button>
-              <button class="chip" onclick="setFilter('shark',this)" style="flex-shrink:0">SHARK ATTACK</button>
-              <button class="chip" onclick="setFilter('restyle',this)" style="flex-shrink:0">リスタイル</button>
+            <div class="filter-chips-wrap">
+              <div class="filter-chips" id="filterChips">
+                <button class="chip active" onclick="setFilter('all',this)" style="flex-shrink:0">すべて</button>
+                <button class="chip" onclick="setFilter('tokyo',this)" style="flex-shrink:0">imption</button>
+                <button class="chip" onclick="setFilter('furuichi',this)" style="flex-shrink:0">furuichi</button>
+                <button class="chip" onclick="setFilter('timehype',this)" style="flex-shrink:0">TIME HYPE</button>
+                <button class="chip" onclick="setFilter('shark',this)" style="flex-shrink:0">SHARK ATTACK</button>
+                <button class="chip" onclick="setFilter('restyle',this)" style="flex-shrink:0">リスタイル</button>
+              </div>
             </div>
           </div>
           <div class="filter-sep"></div>
