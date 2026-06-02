@@ -88,7 +88,6 @@ textarea { resize: vertical; min-height: 80px; }
 .step-body { font-size: 13px; color: var(--text2); line-height: 1.7; }
 .step-body b { color: var(--text); font-weight: 600; }
 .step-body a { color: var(--accent); text-decoration: none; }
-.step-body a:hover { text-decoration: underline; }
 .step-body code { background: var(--bg3); padding: 1px 5px; border-radius: 4px; font-family: var(--mono); font-size: 11px; color: var(--text); }
 
 .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
@@ -111,8 +110,7 @@ textarea { resize: vertical; min-height: 80px; }
 .profile-card:hover, .profile-card.active { border-color: var(--accent); color: var(--accent); background: var(--accent-lt); }
 .profile-card-del { color: var(--text3); background: none; border: none; cursor: pointer; font-size: 14px; padding: 0; line-height: 1; }
 .profile-card-del:hover { color: var(--red); }
-
-.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; }
+.spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
 </head>
@@ -122,8 +120,8 @@ textarea { resize: vertical; min-height: 80px; }
 <div class="header">
   <div class="title">アダルトレビュー自動生成 <span>PoC</span></div>
   <div class="subtitle">
-    Fanza API（DMM Web Service）で作品情報を取得 → Gemini API でレビュー文を自動生成します。<br>
-    Gemini APIキーは <b style="color:var(--text)">aistudio.google.com</b> で無料取得できます（Googleアカウントのみ）。
+    Fanza API で作品情報を取得 → <b style="color:var(--text)">Groq（Llama 3.3）</b> でレビュー文を自動生成します。<br>
+    Groq APIキーは <b style="color:var(--text)">console.groq.com</b> で無料取得できます（Googleアカウントで即登録）。
   </div>
 </div>
 
@@ -137,16 +135,16 @@ textarea { resize: vertical; min-height: 80px; }
 <div id="panel-demo" class="panel active">
 
   <div class="section">
-    <div class="section-title">Gemini API キー（無料）</div>
+    <div class="section-title">Groq API キー（無料）</div>
     <div class="form-row">
       <div class="form-group">
-        <div class="form-label">Google AI Studio API Key</div>
-        <input type="password" id="geminiKey" placeholder="AIzaSy...">
+        <div class="form-label">Groq API Key</div>
+        <input type="password" id="groqKey" placeholder="gsk_...">
       </div>
       <button class="btn" onclick="saveKey()">保存</button>
     </div>
     <div style="font-size:11px;color:var(--text3);margin-top:4px">
-      取得先: aistudio.google.com → Get API key → Create API key（クレカ不要）
+      取得先: console.groq.com → API Keys → Create API Key（クレカ不要・1日14,400リクエスト無料）
     </div>
     <div id="keyStatus" class="status"></div>
   </div>
@@ -200,7 +198,6 @@ textarea { resize: vertical; min-height: 80px; }
       <textarea id="extraInst" placeholder="例：★5評価で書いてください、特にシーン2を重点的に評価してください"></textarea>
     </div>
 
-    <!-- 文体コピー -->
     <div class="style-toggle" onclick="toggleStylePanel()">
       <span class="style-toggle-label">✦ 文体コピー — 特定レビュワーの筆致を真似る</span>
       <span class="style-toggle-icon" id="styleIcon">＋ 展開</span>
@@ -219,11 +216,11 @@ textarea { resize: vertical; min-height: 80px; }
       </div>
       <div class="form-group" style="margin-bottom:8px">
         <div class="form-label">参考レビュー例（Fanzaからコピペ、2〜3件 ／ 「---」で区切る）</div>
-        <textarea id="reviewerExamples" style="min-height:150px" placeholder="例1のレビューテキストをここに貼り付け
+        <textarea id="reviewerExamples" style="min-height:150px" placeholder="例1のレビューテキスト
 ---
-例2のレビューテキストをここに貼り付け
+例2のレビューテキスト
 ---
-例3のレビューテキストをここに貼り付け"></textarea>
+例3のレビューテキスト"></textarea>
       </div>
       <div style="font-size:11px;color:var(--text3)">Fanzaのレビュー欄のテキストをそのままコピペ。件数が多いほど再現精度が上がります。</div>
     </div>
@@ -289,18 +286,18 @@ textarea { resize: vertical; min-height: 80px; }
 <!-- ── 手順 ── -->
 <div id="panel-setup" class="panel">
   <div class="section">
-    <div class="section-title">Gemini APIキー取得手順（無料・2分）</div>
+    <div class="section-title">Groq APIキー取得手順（無料・2分）</div>
     <div class="step">
       <div class="step-num">01</div>
-      <div class="step-body"><b>Google AI Studio を開く</b><br><a href="https://aistudio.google.com" target="_blank" rel="noopener">aistudio.google.com</a> にアクセス。Googleアカウントでログイン。</div>
+      <div class="step-body"><b>console.groq.com を開く</b><br><a href="https://console.groq.com" target="_blank" rel="noopener">console.groq.com</a> にアクセス。Googleアカウントで即登録できます。</div>
     </div>
     <div class="step">
       <div class="step-num">02</div>
-      <div class="step-body"><b>「Get API key」→「Create API key」</b><br>発行された <code>AIzaSy...</code> の文字列をコピー。クレジットカード登録不要。</div>
+      <div class="step-body"><b>「API Keys」→「Create API Key」</b><br>発行された <code>gsk_...</code> の文字列をコピー。クレカ不要。</div>
     </div>
     <div class="step">
       <div class="step-num">03</div>
-      <div class="step-body"><b>このページの「Gemini API キー」欄に貼り付けて「保存」</b><br>以上で完了。1日1500リクエスト無料（レビュー1本=1リクエスト）。</div>
+      <div class="step-body"><b>このページの「Groq API キー」欄に貼り付けて「保存」</b><br>1日14,400リクエスト無料。レビュー1本=1リクエスト。</div>
     </div>
   </div>
   <div class="section">
@@ -330,15 +327,15 @@ const SAMPLES = [
 ];
 
 let currentProduct = null;
-let geminiKey = localStorage.getItem('poc_gemini_key') || '';
+let groqKey = localStorage.getItem('poc_groq_key') || '';
 let genStart = 0;
 let reviewerProfiles = JSON.parse(localStorage.getItem('reviewerProfiles') || '{}');
 let activeProfile = null;
 
 function saveKey() {
-  geminiKey = document.getElementById('geminiKey').value.trim();
-  if (!geminiKey) { showStatus('keyStatus', 'error', 'APIキーを入力してください'); return; }
-  localStorage.setItem('poc_gemini_key', geminiKey);
+  groqKey = document.getElementById('groqKey').value.trim();
+  if (!groqKey) { showStatus('keyStatus', 'error', 'APIキーを入力してください'); return; }
+  localStorage.setItem('poc_groq_key', groqKey);
   showStatus('keyStatus', 'ok', 'APIキーを保存しました');
 }
 
@@ -376,7 +373,7 @@ function buildPrompt(product) {
     short: '端的に魅力を伝える短評。要点のみ。',
     seo: 'SEOを意識した構成。タイトルに対応したキーワードを自然に含め、見出し構造を意識する。',
   };
-  let prompt = 'あなたはアダルトビデオのレビューライターです。';
+  let prompt = 'あなたはアダルトビデオのレビューライターです。必ず日本語で書いてください。';
   if (examples) {
     prompt += `\n\n【文体の参考】\n以下は参考にすべきレビュワーの実際のレビュー例です。この人物の文体・語彙・口調・文章リズム・改行のクセ・感情表現のパターンを徹底分析し、完全に同じ筆致で書いてください。\n\n${examples}\n\n上記の文体を完全に再現して、`;
   } else {
@@ -390,7 +387,7 @@ function buildPrompt(product) {
 
 async function generateReview() {
   if (!currentProduct) { showStatus('genStatus', 'error', 'サンプルデータを選択してください'); return; }
-  if (!geminiKey) { showStatus('genStatus', 'error', 'Gemini APIキーを入力・保存してください'); return; }
+  if (!groqKey) { showStatus('genStatus', 'error', 'Groq APIキーを入力・保存してください'); return; }
 
   const btn = document.getElementById('genBtn');
   btn.disabled = true;
@@ -404,54 +401,46 @@ async function generateReview() {
 
   const prompt = buildPrompt(currentProduct);
 
-  // モデルを順に試す
-  const models = ['gemini-1.5-flash-latest', 'gemini-1.5-flash', 'gemini-2.0-flash-lite'];
-  let lastError = null;
+  try {
+    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${groqKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        max_tokens: 2048,
+        temperature: 0.9,
+      }),
+    });
 
-  for (const model of models) {
-    try {
-      const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(geminiKey)}`;
-      const res = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: { maxOutputTokens: 2048, temperature: 0.9 },
-        }),
-      });
+    const data = await res.json();
 
-      const data = await res.json();
-
-      if (!res.ok) {
-        lastError = `[${model}] ${data.error?.message || 'HTTP ' + res.status}`;
-        continue;
-      }
-
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      if (!text) { lastError = `[${model}] レスポンスが空`; continue; }
-
-      const elapsed = ((Date.now() - genStart) / 1000).toFixed(1);
-      output.textContent = text;
-      output.className = 'review-output';
-      document.getElementById('mChars').textContent = text.length.toLocaleString();
-      document.getElementById('mTime').textContent = elapsed + 's';
-      document.getElementById('mTokens').textContent = (data.usageMetadata?.totalTokenCount || '—');
-      showStatus('genStatus', 'ok', `生成完了（${model}）— ${elapsed}秒 / ${text.length}字`);
-      btn.disabled = false;
-      btn.innerHTML = '✦ レビューを生成';
-      return;
-
-    } catch(e) {
-      lastError = `[${model}] ${e.message}`;
+    if (!res.ok) {
+      throw new Error(data.error?.message || `HTTP ${res.status}`);
     }
-  }
 
-  // 全モデル失敗
-  output.className = 'review-output error-text';
-  output.textContent = '❌ エラー詳細:\n' + lastError + '\n\n【よくある原因】\n・APIキーが間違っている（AIzaSy... で始まる文字列か確認）\n・APIキーの利用制限（aistudio.google.com で確認）\n・ネットワーク接続の問題';
-  showStatus('genStatus', 'error', lastError);
-  btn.disabled = false;
-  btn.innerHTML = '✦ レビューを生成';
+    const text = data.choices?.[0]?.message?.content || '';
+    if (!text) throw new Error('レスポンスが空です');
+
+    const elapsed = ((Date.now() - genStart) / 1000).toFixed(1);
+    output.textContent = text;
+    output.className = 'review-output';
+    document.getElementById('mChars').textContent = text.length.toLocaleString();
+    document.getElementById('mTime').textContent = elapsed + 's';
+    document.getElementById('mTokens').textContent = (data.usage?.total_tokens || '—');
+    showStatus('genStatus', 'ok', `生成完了 — ${elapsed}秒 / ${text.length}字`);
+
+  } catch(e) {
+    output.className = 'review-output error-text';
+    output.textContent = '❌ エラー詳細:\n' + e.message + '\n\n【よくある原因】\n・APIキーが間違っている（gsk_ で始まる文字列か確認）\n・レート制限（少し待ってから再試行）';
+    showStatus('genStatus', 'error', e.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✦ レビューを生成';
+  }
 }
 
 function copyReview() {
@@ -460,7 +449,6 @@ function copyReview() {
   navigator.clipboard.writeText(text).then(() => showStatus('genStatus', 'ok', 'コピーしました'));
 }
 
-// 文体コピー
 function toggleStylePanel() {
   const panel = document.getElementById('stylePanel');
   const icon = document.getElementById('styleIcon');
@@ -505,7 +493,6 @@ function renderProfiles() {
   }).join('');
 }
 
-// Fanza API テスト
 async function testFanzaApi() {
   const apiId = document.getElementById('dmmApiId').value.trim();
   const affId = document.getElementById('dmmAffId').value.trim();
@@ -591,7 +578,7 @@ function switchTab(id, btn) {
 }
 
 (function() {
-  if (geminiKey) document.getElementById('geminiKey').value = geminiKey;
+  if (groqKey) document.getElementById('groqKey').value = groqKey;
   const savedWorker = localStorage.getItem('cfWorkerUrl');
   if (savedWorker) document.getElementById('workerUrl').value = savedWorker;
   renderProfiles();
