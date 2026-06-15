@@ -1036,7 +1036,7 @@ function accumulateItems(items) {
   let changed = false;
   items.forEach(item => {
     if (item.link && !itemHistory[item.link]) {
-      itemHistory[item.link] = { title: item.title, source: item.source, ts: item.ts };
+      itemHistory[item.link] = { title: item.title, source: item.source, ts: item.ts, price: parseNum(item.price) || undefined };
       changed = true;
     }
   });
@@ -1147,9 +1147,19 @@ function clearMarketDB() {
   renderMarket(); renderItems();
 }
 
-// 統計計算
+// 統計計算（marketDB + itemHistory の価格をマージ）
 function calcStats(kw) {
   const data = (marketDB[kw] || []).filter(d => d.p > 0);
+  // itemHistory から同キーワードにマッチするアイテムの価格を補完
+  const kwLow = kw.toLowerCase();
+  Object.values(itemHistory).forEach(h => {
+    if (!h.price || h.price < 1000 || h.price > 5000000) return;
+    if (!h.title || !h.title.toLowerCase().includes(kwLow)) return;
+    // marketDB に同リンクがなければ追加（重複回避）
+    if (!data.some(d => d.lnk && d.src === h.source && d.p === h.price)) {
+      data.push({ p: h.price, ts: h.ts, src: h.source });
+    }
+  });
   if (data.length < 3) return null;
   const prices = data.map(d => d.p).sort((a, b) => a - b);
   const n = prices.length;
