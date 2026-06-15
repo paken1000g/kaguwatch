@@ -545,7 +545,7 @@ const SEARCH_SHOPS = [
   // noCount:true = タブ件数はCSRレンダリングのためSSR HTMLに含まれず取得不可
   // カテゴリ総数（80万件超）が誤表示されるため件数非表示
   { name:'ヤフオク', icon:'🔨', noCount:true, url:kw=>`https://auctions.yahoo.co.jp/search/search?p=${encodeURIComponent(kw)}&auccat=0` },
-  { name:'メルカリ',             icon:'🏷', url:kw=>`https://jp.mercari.com/search/?keyword=${encodeURIComponent(kw)}&status=on_sale` },
+  { name:'メルカリ',             icon:'🏷', noCount:true, url:kw=>`https://jp.mercari.com/search/?keyword=${encodeURIComponent(kw)}&status=on_sale` },
   // ジモティー全国: url:kw=>`https://jmty.jp/all/sale?keyword=${encodeURIComponent(kw)}`
   // noCount:true = 受付終了を除外するURLパラメータが存在しないため件数非表示
   { name:'ジモティー',           icon:'📍', noCount:true, url:kw=>`https://jmty.jp/tokyo/sale?keyword=${encodeURIComponent(kw)}` },
@@ -555,7 +555,7 @@ const SEARCH_SHOPS = [
     url: kw=>`https://netmall.hardoff.co.jp/hashtag/${encodeURIComponent(kw)}/` },
   // 追加サイト（最右配置）
   // fril.jp: status=on_sale は未検証パラメータのためシンプルな検索URLを使用
-  { name:'ラクマ',               icon:'🎀', url:kw=>`https://fril.jp/s?query=${encodeURIComponent(kw)}` },
+  { name:'ラクマ',               icon:'🎀', noCount:true, url:kw=>`https://fril.jp/s?query=${encodeURIComponent(kw)}` },
   { name:'Yahoo!フリマ',         icon:'🛍', url:kw=>`https://paypayfleamarket.yahoo.co.jp/search/${encodeURIComponent(kw)}` },
   // step=1 = 在庫：あり フィルター（なしだと売切含む全件）
   { name:'トレファクONLINE',     icon:'🏪', url:kw=>`https://ec.treasure-f.com/search?word=${encodeURIComponent(kw)}&step=1` },
