@@ -751,10 +751,18 @@ function isSoldOut(text) { return /sold[\s-]?out|在庫切れ|売り切れ|売�
 
 // ─────────────────────────────────────────────────────────────────────────────
 function isMatch(t) { return keywords.length > 0 && keywords.some(k=>t.toLowerCase().includes(k.toLowerCase())); }
+function escHtml(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+function safeUrl(url) {
+  if (!url) return '#';
+  const s = String(url).trim();
+  return /^https?:\/\//i.test(s) ? s : '#';
+}
 function hl(text) {
-  let out = text;
+  let out = escHtml(text);
   keywords.forEach(k => {
-    out = out.replace(new RegExp(k.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'), m=>`<mark>${m}</mark>`);
+    out = out.replace(new RegExp(escHtml(k).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'gi'), m=>`<mark>${m}</mark>`);
   });
   return out;
 }
@@ -802,12 +810,13 @@ function renderItems(keepLimit = false) {
   el.innerHTML = items.slice(0, renderLimit).map(item => {
     const feed = RSS_FEEDS.find(f=>f.id===item.source);
     const thumb = item.thumbnail
-      ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      ? `<img class="item-thumb" src="${safeUrl(item.thumbnail)}" alt="" loading="lazy" onerror="this.style.display='none'">`
       : `<div class="item-thumb-ph">🛋</div>`;
     const isFav = !!favoriteItems[item.link];
-    const encodedLink = item.link.replace(/'/g,"\\'");
-    return `<a class="item-card${item.soldOut?' soldout':''}" href="${item.link}" target="_blank" rel="noopener">
-      <span class="fav-btn${isFav?' on':''}" onclick="toggleFavorite('${encodedLink}',event)" title="${isFav?'お気に入りを解除':'お気に入りに追加'}">★</span>
+    const safeLink = safeUrl(item.link);
+    const escapedLink = escHtml(item.link);
+    return `<a class="item-card${item.soldOut?' soldout':''}" href="${safeLink}" target="_blank" rel="noopener">
+      <span class="fav-btn${isFav?' on':''}" data-link="${escapedLink}" onclick="toggleFavorite(this.dataset.link,event)" title="${isFav?'お気に入りを解除':'お気に入りに追加'}">★</span>
       ${thumb}
       <div class="item-body">
         <div class="item-top">
@@ -817,11 +826,11 @@ function renderItems(keepLimit = false) {
         </div>
         <div class="item-title">${hl(item.title)}</div>
         <div class="item-meta">
-          ${item.price?`<span class="item-price">${item.price}</span>`:''}
-          ${item.listPrice?`<span style="font-size:10px;color:var(--text3)">定価 ${item.listPrice}</span>`:''}
+          ${item.price?`<span class="item-price">${escHtml(item.price)}</span>`:''}
+          ${item.listPrice?`<span style="font-size:10px;color:var(--text3)">定価 ${escHtml(item.listPrice)}</span>`:''}
         </div>
         <div class="item-meta" style="margin-top:auto;padding-top:4px">
-          <span>${item.date}</span>
+          <span>${escHtml(item.date)}</span>
         </div>
       </div>
     </a>`;
@@ -1292,22 +1301,23 @@ function renderFavorites() {
     const isSold = likelySold || confirmedSold;
     const currentPrice = live?.price || item.price;
     const thumb = item.thumbnail
-      ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      ? `<img class="item-thumb" src="${safeUrl(item.thumbnail)}" alt="" loading="lazy" onerror="this.style.display='none'">`
       : `<div class="item-thumb-ph">🛋</div>`;
-    return `<a class="item-card${isSold?' soldout':''}" href="${item.link}" target="_blank" rel="noopener">
-      <span class="fav-btn on" onclick="toggleFavorite('${item.link.replace(/'/g,"\\'")}',event)" title="お気に入りを解除">★</span>
+    const escapedLink = escHtml(item.link);
+    return `<a class="item-card${isSold?' soldout':''}" href="${safeUrl(item.link)}" target="_blank" rel="noopener">
+      <span class="fav-btn on" data-link="${escapedLink}" onclick="toggleFavorite(this.dataset.link,event)" title="お気に入りを解除">★</span>
       ${thumb}
       <div class="item-body">
         <div class="item-top">
-          <span class="badge ${feed?.badge||''}">${feed?.name||item.source}</span>
+          <span class="badge ${feed?.badge||''}">${feed?.name||escHtml(item.source)}</span>
           ${isSold?'<span class="badge b-sold">売り切れ</span>':''}
         </div>
-        <div class="item-title">${item.title}</div>
+        <div class="item-title">${escHtml(item.title)}</div>
         <div class="item-meta">
-          ${currentPrice?`<span class="item-price">${currentPrice}</span>`:''}
+          ${currentPrice?`<span class="item-price">${escHtml(currentPrice)}</span>`:''}
         </div>
         <div class="item-meta" style="margin-top:auto;padding-top:4px">
-          <span>${item.date}</span>
+          <span>${escHtml(item.date)}</span>
         </div>
       </div>
     </a>`;
@@ -1377,11 +1387,11 @@ function renderSearch() {
   if (!keywords.length) { el.innerHTML='<div class="empty">キーワードを追加してください</div>'; return; }
   el.innerHTML = keywords.map(kw => `
     <div style="margin-bottom:16px">
-      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px">${kw}</div>
+      <div style="font-size:12px;font-weight:500;color:var(--text2);margin-bottom:6px">${escHtml(kw)}</div>
       <div style="display:flex;flex-wrap:wrap;gap:6px" id="links-${CSS.escape(kw)}">
         ${SEARCH_SHOPS.map(s=>`
-          <a class="search-link" href="${s.url(kw)}" target="_blank" rel="noopener" data-kw="${kw}" data-shop="${s.name}">
-            ${s.icon} ${s.name}${s.noCount ? '' : `<span class="hit-count" id="hit-${CSS.escape(s.name+kw)}" style="margin-left:4px;font-size:10px;opacity:.7"></span>`}
+          <a class="search-link" href="${safeUrl(s.url(kw))}" target="_blank" rel="noopener" data-kw="${escHtml(kw)}" data-shop="${escHtml(s.name)}">
+            ${s.icon} ${escHtml(s.name)}${s.noCount ? '' : `<span class="hit-count" id="hit-${CSS.escape(s.name+kw)}" style="margin-left:4px;font-size:10px;opacity:.7"></span>`}
           </a>`).join('')}
       </div>
     </div>`).join('<div class="divider"></div>');
