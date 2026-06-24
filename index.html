@@ -305,6 +305,12 @@ tr:hover td { background: var(--bg3); }
   .page-head { padding: 20px 16px 0; }
   .items-list { grid-template-columns: repeat(2,1fr); }
   .fav-btn { opacity: 1 !important; }
+  .watch-topbar { min-width: 0; }
+  .watch-topbar > * { min-width: 0; }
+  .btn-refresh { display: none; }
+  #statsRow { grid-template-columns: 1fr 1fr; min-width: 0; }
+  #statsRow .watch-stat { min-width: 0; overflow: hidden; }
+  .watch-stat-n { font-size: 16px; }
 }
 /* ── お気に入りボタン ─────────────────────── */
 .fav-btn {
@@ -388,7 +394,7 @@ tr:hover td { background: var(--bg3); }
         <div style="display:flex;gap:8px;align-items:center">
           <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル" style="flex:1;min-width:0">
           <button class="btn primary" onclick="applyWatchSearch()">検索</button>
-          <button class="btn" onclick="manualRefresh()">↺ 更新</button>
+          <button class="btn btn-refresh" onclick="manualRefresh()">↺ 更新</button>
         </div>
         <div id="statsRow" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="watch-stat"><div class="watch-stat-n" id="sMatch">—</div><div class="watch-stat-l">検索結果</div></div>
@@ -802,7 +808,7 @@ function renderItems(keepLimit = false) {
   el.innerHTML = items.slice(0, renderLimit).map(item => {
     const feed = RSS_FEEDS.find(f=>f.id===item.source);
     const thumb = item.thumbnail
-      ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'item-thumb-ph\\'>🛋</div>'">`
       : `<div class="item-thumb-ph">🛋</div>`;
     const isFav = !!favoriteItems[item.link];
     const encodedLink = item.link.replace(/'/g,"\\'");
@@ -1282,7 +1288,7 @@ function renderFavorites() {
     const isSold = likelySold || confirmedSold;
     const currentPrice = live?.price || item.price;
     const thumb = item.thumbnail
-      ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\'item-thumb-ph\'>🛋</div>'">`
       : `<div class="item-thumb-ph">🛋</div>`;
     return `<a class="item-card${isSold?' soldout':''}" href="${item.link}" target="_blank" rel="noopener">
       <span class="fav-btn on" onclick="toggleFavorite('${item.link.replace(/'/g,"\\'")}',event)" title="お気に入りを解除">★</span>
