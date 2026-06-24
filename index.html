@@ -277,6 +277,7 @@ tr:hover td { background: var(--bg3); }
 
 /* ── Mobile drawer & top bar ─────────────── */
 .mobile-bar { display: none; }
+.mobile-bar-right { display: flex; align-items: center; gap: 8px; }
 .sidebar-backdrop { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.4); z-index: 199; }
 .sidebar-backdrop.open { display: block; }
 
@@ -290,21 +291,52 @@ tr:hover td { background: var(--bg3); }
   .sidebar.open { transform: translateX(0); box-shadow: 6px 0 28px rgba(0,0,0,.18); }
   .mobile-bar {
     display: flex; align-items: center; gap: 12px;
-    padding: 12px 16px; background: var(--bg2);
+    padding: 11px 16px; background: var(--bg2);
     border-bottom: 1px solid var(--border);
     position: sticky; top: 0; z-index: 10;
   }
-  .mobile-bar-title { font-size: 15px; font-weight: 500; letter-spacing: -.01em; }
+  .mobile-bar-title { font-size: 15px; font-weight: 500; letter-spacing: -.01em; flex: 1; }
+  .mobile-bar-right { margin-left: auto; }
+  .mobile-status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent-md); flex-shrink: 0; }
+  .mobile-status-dot.loading { background: var(--amber); animation: blink 1.2s infinite; }
+  .mobile-status-dot.err { background: var(--red); }
+  .mobile-ct { font-family: var(--mono); font-size: 11px; color: var(--text3); }
   .hamburger-btn {
     background: none; border: none; cursor: pointer; padding: 5px;
     color: var(--text); display: flex; flex-direction: column;
     gap: 4px; align-items: center; justify-content: center;
   }
   .hamburger-btn span { display: block; width: 18px; height: 2px; background: currentColor; border-radius: 1px; }
-  .content { padding: 16px; }
-  .page-head { padding: 20px 16px 0; }
-  .items-list { grid-template-columns: repeat(2,1fr); }
-  .fav-btn { opacity: 1 !important; }
+  .content { padding: 14px 14px 24px; }
+  .page-head { padding: 16px 14px 0; }
+  .page-sub { display: none; }
+  .page-title { font-size: 17px; margin-bottom: 14px; }
+  .items-list { grid-template-columns: repeat(2,1fr); gap: 10px; }
+  .item-thumb { height: 155px; }
+  .item-thumb-ph { height: 155px; font-size: 34px; }
+  .item-body { padding: 10px 11px 12px; gap: 5px; }
+  .item-title { font-size: 11.5px; }
+  .fav-btn { opacity: 1 !important; width: 38px; height: 38px; font-size: 20px; }
+
+  /* フィルターカード: 縦積みレイアウト */
+  .filter-row { flex-direction: column; }
+  .filter-sep { width: 100%; height: 1px; flex-shrink: 0; }
+  .filter-col { padding: 10px 12px; }
+
+  /* 店舗チップを横スクロール継続 */
+  .filter-chips { flex-wrap: nowrap; }
+  /* タップしやすいチップサイズ */
+  .chip { padding: 7px 14px; font-size: 12px; min-height: 34px; }
+
+  /* 価格フィルター: スライダーを全幅に */
+  .filter-price { flex-wrap: wrap; gap: 6px 8px; padding: 10px 12px; }
+  .price-slider-wrap { width: 100%; flex: 1 1 100%; order: -1; height: 24px; }
+  .filter-price > span:first-of-type { display: none; }
+
+  /* 検索行 */
+  .watch-topbar { gap: 10px; margin-bottom: 12px; }
+  #watchSearch { font-size: 15px; }
+  .btn { font-size: 13px; }
 }
 /* ── お気に入りボタン ─────────────────────── */
 .fav-btn {
@@ -375,6 +407,10 @@ tr:hover td { background: var(--bg3); }
       <span></span><span></span><span></span>
     </button>
     <span class="mobile-bar-title">家具ウォッチャー</span>
+    <div class="mobile-bar-right">
+      <span class="mobile-status-dot loading" id="mobileDot"></span>
+      <span class="mobile-ct" id="mobileCtDown"></span>
+    </div>
   </div>
 
   <!-- 入荷監視 -->
@@ -764,8 +800,11 @@ function parseDate(str) {
   return isNaN(d) ? str.slice(0,10) : d.toLocaleDateString('ja-JP',{month:'short',day:'numeric'});
 }
 function setStatus(s, txt) {
-  document.getElementById('dot').className = 'sdot'+(s==='loading'?' loading':s==='err'?' err':'');
+  const cls = s==='loading'?' loading':s==='err'?' err':'';
+  document.getElementById('dot').className = 'sdot' + cls;
   document.getElementById('statusTxt').textContent = txt;
+  const md = document.getElementById('mobileDot');
+  if (md) md.className = 'mobile-status-dot' + cls;
 }
 function renderItems(keepLimit = false) {
   if (!keepLimit) renderLimit = 60;
@@ -1343,7 +1382,10 @@ function startCd() {
   countRef = setInterval(() => {
     countdown--;
     const m=Math.floor(countdown/60), s=countdown%60;
-    document.getElementById('ctDown').textContent = `${m}:${String(s).padStart(2,'0')}`;
+    const t = `${m}:${String(s).padStart(2,'0')}`;
+    document.getElementById('ctDown').textContent = t;
+    const mct = document.getElementById('mobileCtDown');
+    if (mct) mct.textContent = t;
     if (countdown<=0) { clearInterval(countRef); loadAll(); }
   }, 1000);
 }
