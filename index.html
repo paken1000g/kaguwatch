@@ -802,7 +802,7 @@ function renderItems(keepLimit = false) {
   el.innerHTML = items.slice(0, renderLimit).map(item => {
     const feed = RSS_FEEDS.find(f=>f.id===item.source);
     const thumb = item.thumbnail
-      ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\\'item-thumb-ph\\'>🛋</div>'">`
       : `<div class="item-thumb-ph">🛋</div>`;
     const isFav = !!favoriteItems[item.link];
     const encodedLink = item.link.replace(/'/g,"\\'");
@@ -1282,7 +1282,7 @@ function renderFavorites() {
     const isSold = likelySold || confirmedSold;
     const currentPrice = live?.price || item.price;
     const thumb = item.thumbnail
-      ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.style.display='none'">`
+      ? `<img class="item-thumb" src="${item.thumbnail}" alt="" loading="lazy" onerror="this.outerHTML='<div class=\'item-thumb-ph\'>🛋</div>'">`
       : `<div class="item-thumb-ph">🛋</div>`;
     return `<a class="item-card${isSold?' soldout':''}" href="${item.link}" target="_blank" rel="noopener">
       <span class="fav-btn on" onclick="toggleFavorite('${item.link.replace(/'/g,"\\'")}',event)" title="お気に入りを解除">★</span>
