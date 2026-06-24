@@ -305,6 +305,12 @@ tr:hover td { background: var(--bg3); }
   .page-head { padding: 20px 16px 0; }
   .items-list { grid-template-columns: repeat(2,1fr); }
   .fav-btn { opacity: 1 !important; }
+  .watch-topbar { min-width: 0; }
+  .watch-topbar > * { min-width: 0; }
+  .btn-refresh-lbl { display: none; }
+  #statsRow { grid-template-columns: 1fr 1fr; min-width: 0; }
+  #statsRow .watch-stat { min-width: 0; overflow: hidden; }
+  .watch-stat-n { font-size: 16px; }
 }
 /* ── お気に入りボタン ─────────────────────── */
 .fav-btn {
@@ -388,7 +394,7 @@ tr:hover td { background: var(--bg3); }
         <div style="display:flex;gap:8px;align-items:center">
           <input type="text" id="watchSearch" placeholder="絞り込み検索　例：ソファ、テーブル" style="flex:1;min-width:0">
           <button class="btn primary" onclick="applyWatchSearch()">検索</button>
-          <button class="btn" onclick="manualRefresh()">↺ 更新</button>
+          <button class="btn" onclick="manualRefresh()">↺ <span class="btn-refresh-lbl">更新</span></button>
         </div>
         <div id="statsRow" style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
           <div class="watch-stat"><div class="watch-stat-n" id="sMatch">—</div><div class="watch-stat-l">検索結果</div></div>
